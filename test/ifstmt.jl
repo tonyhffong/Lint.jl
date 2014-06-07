@@ -13,3 +13,9 @@ msgs = lintstr( s )
 @test( length(msgs)==1 )
 @test( contains( msgs[1].message, "true branch" ) )
 @test( msgs[1].line == 1 )
+
+s = """
+f(x) = (x=1)? 1 : 2 # clearly not what we want
+"""
+msgs = lintstr(s )
+@test( contains( msgs[1].message, "if-predicate") )

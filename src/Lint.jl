@@ -7,25 +7,12 @@ export test_similarity_string
 
 const SIMILARITY_THRESHOLD = 10.0
 
-# if-deadcode detection
-# premature-return deadcode detection
-# length() being used as Bool, suggest !isempty
-# length() == 0 being used as Bool, suggest isempty()
-# &, $, or | being used as Bool
-# unused variable
-# using an undef variable
-# using an assignment instead of == in a boolean context
-# export non-existent functions, types, macros, globals
-
 # Wishlist:
 # setting a value to a datatype instead of an instance of that type
-# repeated pattern (exactly the same parse tree header structure)
 # repeated pattern in Dict =>, like :a => a, :b => b, etc. Suggest macro.
-# duplicate keys in Dict
 # warn push! vs append! (requires understanding of types)
 # warn eval
 # warn variable name used outside scope, even if it's ok
-# warn variable being reused in the argument of a lambda
 
 include( "types.jl" )
 include( "knownsyms.jl")
@@ -369,6 +356,9 @@ function expr_similar_score( e1::Expr, e2::Expr, base::Float64 = 1.0 )
             end
         else
             score -= base
+        end
+        if score < 0.0 # so early disagreement dominates and short-circuit
+            break
         end
     end
     return score
@@ -935,9 +925,16 @@ end
 
 function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
     st = typed ? 2 : 1
+    ks = Set{Any}()
     for i in st:length(ex.args)
         a = ex.args[i]
         if typeof(a)== Expr && a.head == :(=>)
+            if typeof( a.args[1] ) != Expr
+                if in( a.args[1], ks )
+                    msg( ctx, 2, "Duplicate key in Dict: " * string( a.args[1] ) )
+                end
+                push!( ks, a.args[1] )
+            end
             lintexpr( a.args[2], ctx )
         end
     end
