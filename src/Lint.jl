@@ -3,6 +3,9 @@
 module Lint
 export LintMessage
 export lintfile, lintstr, lintpragma
+export test_similarity_string
+
+const SIMILARITY_THRESHOLD = 10.0
 
 # if-deadcode detection
 # premature-return deadcode detection
@@ -39,7 +42,7 @@ function lintfile( file::String )
     ctx = LintContext()
     ctx.file = file
     str = open(readall, file)
-    msgs = lintstr( str )
+    msgs = lintstr( str, ctx )
     for m in msgs
         println( m )
     end
@@ -187,19 +190,39 @@ function lintexpr( ex, ctx::LintContext )
 end
 
 function lintblock( ex::Expr, ctx::LintContext )
+    global SIMILARITY_THRESHOLD
     if ctx.macrocallLvl == 0
         push!( ctx.callstack[ end ].localvars, Dict{Symbol, Any}() )
         push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
     end
     lastexpr = nothing
     similarexprs = Expr[]
+    diffs = Float64[]
 
     checksimilarity = ()->begin
-        if !isempty(similarexprs)
-            return
+        if length( similarexprs ) <= 2 # not much I can do
+            diffs = Float64[]
+            lastexpr = nothing
+            similarexprs = Expr[]
+        else
+            # cyclic diffs, so now we have at least 3 similarity scores
+            push!( diffs, expr_similar_score( similarexprs[1], similarexprs[end] ) )
+            local n = length(diffs)
+            local m = mean(diffs)
+            local s = std( diffs )
+            local m2 = mean( [diffs[end-1], diffs[end] ] )
+            # look for screw up at the end
+            #println( diffs, "\nm=", m, " s=", s, " m2=", m2, " m-m2=", m-m2)
+            if m2 < m && m-m2 > s/2.5
+                msg( ctx, 1, "The last of a " *
+                    string(n) * "-expr block looks different. " *
+                    "\n   Avg similarity score: " * @sprintf( "%.2f", m ) *
+                    "  Last part:            " * @sprintf( "%.2f", m2 ) )
+            end
+            diffs = Float64[]
+            lastexpr = nothing
+            similarexprs = Expr[]
         end
-        lastexpr = nothing
-        similarexprs = Expr[]
     end
 
     for (i,sube) in enumerate(ex.args)
@@ -219,12 +242,14 @@ function lintblock( ex::Expr, ctx::LintContext )
                 break
             else
                 if lastexpr != nothing
-                    if areexprsimilar( lastexpr, ex )
+                    local dif = expr_similar_score( lastexpr, sube )
+                    if dif > SIMILARITY_THRESHOLD
                         if !isempty(similarexprs)
-                            append!( similarexprs, [lastexpr, ex ] )
+                            append!( similarexprs, [lastexpr, sube ] )
                         else
-                            push!( similarexprs, ex )
+                            push!( similarexprs, sube )
                         end
+                        push!( diffs, dif )
                     else
                         checksimilarity()
                     end
@@ -237,7 +262,6 @@ function lintblock( ex::Expr, ctx::LintContext )
             continue
         elseif typeof(sube) == Symbol
             registersymboluse( sube, ctx )
-        else
             checksimilarity()
         end
     end
@@ -259,11 +283,6 @@ end
 function registersymboluse( sym::Symbol, ctx::LintContext )
     global knownsyms
     stacktop = ctx.callstack[end]
-
-    # a bunch of whitelist
-    if in( sym, knownsyms )
-        return
-    end
 
     str = string(sym)
 
@@ -297,47 +316,20 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
 
     if !found
         for i in length(ctx.callstack):-1:1
-            found = in( sym, ctx.callstack[i].declglobs )
+            found = in( sym, ctx.callstack[i].declglobs ) ||
+                in( sym, ctx.callstack[i].functions ) ||
+                in( sym, ctx.callstack[i].types ) ||
+                in( sym, ctx.callstack[i].modules ) ||
+                in(sym, stacktop.imports )
             if found
                 break
             end
         end
     end
 
-    if !found
-        for i in length(ctx.callstack):-1:1
-            found = in( sym, ctx.callstack[i].functions )
-            if found
-                break
-            end
-        end
-    end
-
-    if !found
-        for i in length(ctx.callstack):-1:1
-            found = in( sym, ctx.callstack[i].types )
-            if found
-                break
-            end
-        end
-    end
-
-    if !found
-        for i in length(ctx.callstack):-1:1
-            found = in( sym, ctx.callstack[i].modules )
-            if found
-                break
-            end
-        end
-    end
-
-    if !found
-        for i in length(ctx.callstack):-1:1
-            found = in(sym, stacktop.imports )
-            if found
-                break
-            end
-        end
+    # a bunch of whitelist
+    if in( sym, knownsyms )
+        return
     end
 
     if !found
@@ -360,29 +352,57 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
     end
 end
 
-function areexprsimilar( e1::Expr, e2::Expr )
+function expr_similar_score( e1::Expr, e2::Expr, base::Float64 = 1.0 )
     if e1.head != e2.head
-        return false
+        return -base
     end
-    if length(e1.args)!= length(e2.args)
-        return false
-    end
-    for i in 1:length(e1.args)
+
+    score = base - abs( length(e1.args)-length(e2.args)) * base * 2.0
+
+    for i in 1:min( length(e1.args), length(e2.args) )
         if typeof(e1.args[i]) == Expr && typeof(e2.args[i]) == Expr
-            compare = areexprsimilar( e1.args[i], e2.args[i] )
-            if !compare
-                return false
-            end
+            score += expr_similar_score( e1.args[i], e2.args[i], base * 1.1 )
         elseif typeof(e1.args[i]) == typeof(e2.args[i])
-            continue
+            score += base * 0.3
+            if e1.args[i] == e2.args[i]
+                score += base * 0.8
+            end
         else
-            return false
+            score -= base
         end
     end
-    return true
+    return score
 end
 
-function diffscores( es::Array{Expr,1} )
+function test_similarity_string( str::String )
+    i = start(str)
+    firstexpr = nothing
+    lastexpr = nothing
+    diffs = Float64[]
+    while !done(str,i)
+        problem = false
+        ex = nothing
+        try
+            (ex, i) = parse(str,i)
+        catch
+            problem = true
+        end
+        if !problem
+            if firstexpr == nothing
+                firstexpr = ex
+            end
+            if lastexpr != nothing
+                push!( diffs, expr_similar_score( lastexpr, ex ))
+            end
+            lastexpr = ex
+        else
+            break
+        end
+    end
+    if lastexpr != nothing && length(diffs) >= 2
+        push!( diffs, expr_similar_score( lastexpr, firstexpr ) )
+    end
+    return diffs
 end
 
 function lintifexpr( ex::Expr, ctx::LintContext )
