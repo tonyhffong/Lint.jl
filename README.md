@@ -7,14 +7,21 @@ improved.
 
 ## Installation
 ```julia
-Pkg.add( “Lint” )
+Pkg.add( "Lint" )
 ```
 
 ## Usage
 ```julia
 using Lint
-lintfile( "your_.jl_file” )
+lintfile( "your_.jl_file" )
 ```
+
+The output is of the following form:
+```
+         filename.jl [       function name] Line CODE  Explanation
+```
+`Line` is the line number relative to the start of the function.
+`CODE` gives an indication of severity, and is one of `FYI`, `WARN`, `ERROR`, or `FATAL`.
 
 ## What it can find?
 * simple deadcode detection (e.g if true/false)
@@ -25,9 +32,9 @@ lintfile( "your_.jl_file” )
 * Export non-existing symbols (not fully done yet)
 * Export the same symbol twice or more.
 * Name overlap between a variable and a lambda argument
-* Assignment in an if-predicate, as a potential confusion with “==”
+* Assignment in an if-predicate, as a potential confusion with `==`
 * Suggest explicit declaration of globals in functions
-* warn length() being used as Bool, suggest !isempty()
+* warn `length()` being used as Bool, suggest `!isempty()`
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint has a hard time dealing
