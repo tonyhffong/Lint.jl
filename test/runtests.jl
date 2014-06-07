@@ -1,5 +1,9 @@
 using Lint
 using Base.Test
 
-# write your own tests here
-@test 1 == 1
+include( "ifstmt.jl")
+include( "deadcode.jl" )
+include( "bitopbool.jl" )
+include( "unusedvar.jl")
+include( "undeclare.jl" )
+include( "dupexport.jl" )

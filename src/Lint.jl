@@ -2,7 +2,7 @@
 
 module Lint
 export LintMessage
-export lintfile, lintpragma
+export lintfile, lintstr, lintpragma
 
 # if-deadcode detection
 # premature-return deadcode detection
@@ -39,6 +39,13 @@ function lintfile( file::String )
     ctx = LintContext()
     ctx.file = file
     str = open(readall, file)
+    msgs = lintstr( str )
+    for m in msgs
+        println( m )
+    end
+end
+
+function lintstr( str::String, ctx :: LintContext = LintContext() )
     linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
     i = start(str)
     while !done(str,i)
@@ -57,9 +64,7 @@ function lintfile( file::String )
             break
         end
     end
-    for m in ctx.messages
-        println( m )
-    end
+    return ctx.messages
 end
 
 function msg( ctx, lvl, str )
@@ -241,8 +246,9 @@ function lintblock( ex::Expr, ctx::LintContext )
 
     if ctx.macrocallLvl==0
         unused = setdiff( keys(ctx.callstack[end].localvars[end]), ctx.callstack[end].localusedvars[end] )
-        if !isempty( unused )
-            msg( ctx, 1, "Local vars declared but not used. " * string( unused ) )
+        for v in unused
+            ctx.line = ctx.callstack[end].localvars[end][ v ]
+            msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
         end
 
         pop!( ctx.callstack[end].localvars )
@@ -734,26 +740,9 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             file = deepcopy( ctx.file )
             lineabs = ctx.lineabs
             str = open(readall, inclfile )
-            linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
             ctx.file = deepcopy( inclfile )
-            d = dirname( inclfile )
-            ctx.path = d
-            i = start(str)
-            while !done(str,i)
-                sube = nothing
-                problem =false
-                ctx.lineabs = searchsorted( linecharc, i ).start
-                try
-                    sube, i = parse(str,i)
-                catch
-                    problem = true
-                end
-                if !problem
-                    lintexpr( sube, ctx )
-                else
-                    break
-                end
-            end
+            ctx.path = dirname( inclfile )
+            lintstr( str, ctx )
             ctx.file = file
             ctx.path = path
             ctx.lineabs = lineabs
@@ -880,12 +869,9 @@ function lintlambda( ex::Expr, ctx::LintContext )
     lintexpr( ex.args[2], ctx )
 
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
-    if !isempty( unused )
-        tmpline = ctx.line
-        for v in unused
-            ctx.line = stacktop.localvars[end][v]
-            msg( ctx, 1, "Local vars declared but not used: " * string( v) )
-        end
+    for v in unused
+        ctx.line = stacktop.localvars[end][v]
+        msg( ctx, 1, "Local vars declared but not used: " * string( v) )
     end
     pop!( stacktop.localvars )
     pop!( stacktop.localusedvars )
@@ -981,8 +967,9 @@ function linttry( ex::Expr, ctx::LintContext )
         lintexpr( ex.args[i], ctx )
     end
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
-    if !isempty( unused )
-        msg( ctx, 1, "Local vars declared but not used. " * string( unused ) )
+    for v in unused
+        ctx.line = stacktop.localvars[end][ v]
+        msg( ctx, 1, "Local vars declared but not used. " * string( v ) )
     end
     pop!( stacktop.localvars )
     pop!( stacktop.localusedvars )
