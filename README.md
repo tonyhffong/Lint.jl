@@ -38,6 +38,7 @@ The output is of the following form:
 * Suggest explicit declaration of globals in functions
 * warn `length()` being used as Bool, suggest `!isempty()`
 * Consecutively similar expressions block and that its last part looks different from the rest (work-in-progress)
+* Out-of-scope local variable name being reused again inside the same code block. (legal but frowned upon)
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint has a hard time dealing

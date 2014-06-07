@@ -12,7 +12,6 @@ const SIMILARITY_THRESHOLD = 10.0
 # repeated pattern in Dict =>, like :a => a, :b => b, etc. Suggest macro.
 # warn push! vs append! (requires understanding of types)
 # warn eval
-# warn variable name used outside scope, even if it's ok
 
 include( "types.jl" )
 include( "knownsyms.jl")
@@ -256,14 +255,16 @@ function lintblock( ex::Expr, ctx::LintContext )
     checksimilarity()
 
     if ctx.macrocallLvl==0
-        unused = setdiff( keys(ctx.callstack[end].localvars[end]), ctx.callstack[end].localusedvars[end] )
+        stacktop = ctx.callstack[end]
+        unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
         for v in unused
-            ctx.line = ctx.callstack[end].localvars[end][ v ]
+            ctx.line = stacktop.localvars[end][ v ]
             msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
         end
 
-        pop!( ctx.callstack[end].localvars )
-        pop!( ctx.callstack[end].localusedvars )
+        union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
+        pop!( stacktop.localvars )
+        pop!( stacktop.localusedvars )
     end
 end
 
@@ -475,11 +476,23 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         msg( ctx, 2, "LHS in assignment not understood by lint. please check")
     end
     for s in syms
-        n = length(ctx.callstack[end].localvars)
         if islocal
-            ctx.callstack[end].localvars[n][ s ] = ctx.line
-        else
-            ctx.callstack[end].localvars[1][ s ] = ctx.line
+            ctx.callstack[end].localvars[end][ s ] = ctx.line
+        else # it's not explicitly local, but it could be!
+            found = false
+            for i in length(ctx.callstack[end].localvars):-1:1
+                if haskey( ctx.callstack[end].localvars[i], s )
+                    found = true
+                    ctx.callstack[end].localvars[i][ s] = ctx.line
+                end
+            end
+
+            if !found && in( s, ctx.callstack[end].oosvars )
+                msg( ctx, 0, string(s) * " has been used in a local scope. Improve readability by using 'local' or another name.")
+            end
+            if !found
+                ctx.callstack[end].localvars[1][ s ] = ctx.line
+            end
         end
         if isGlobal || isConst || length( ctx.callstack[end].localvars) == 1 && ctx.callstack[end].isTop
             push!( ctx.callstack[end].declglobs, s )
@@ -883,6 +896,7 @@ function lintlambda( ex::Expr, ctx::LintContext )
         ctx.line = stacktop.localvars[end][v]
         msg( ctx, 1, "Local vars declared but not used: " * string( v) )
     end
+    union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
     pop!( stacktop.localvars )
     pop!( stacktop.localusedvars )
 end
@@ -988,6 +1002,7 @@ function linttry( ex::Expr, ctx::LintContext )
         ctx.line = stacktop.localvars[end][ v]
         msg( ctx, 1, "Local vars declared but not used. " * string( v ) )
     end
+    union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
     pop!( stacktop.localvars )
     pop!( stacktop.localusedvars )
 end

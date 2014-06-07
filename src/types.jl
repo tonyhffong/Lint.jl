@@ -23,6 +23,7 @@ type LintStack
     localvars     :: Array{ Dict{Symbol, Any}, 1 }
     localusedvars :: Array{ Set{Symbol}, 1 }
     usedvars      :: Set{Symbol}
+    oosvars       :: Set{Symbol}
     pragmas       :: Set{Symbol}
     inModule      :: Bool
     moduleName    :: Any
@@ -39,6 +40,7 @@ type LintStack
             Set{Symbol}(),
             [ Dict{Symbol, Any}() ],
             [ Set{Symbol}() ],
+            Set{Symbol}(),
             Set{Symbol}(),
             Set{Symbol}(),
             false,
