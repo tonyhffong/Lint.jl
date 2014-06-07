@@ -26,11 +26,11 @@ The output is of the following form:
 ## What it can find?
 * simple deadcode detection (e.g if true/false)
 * simple premature-return deadcode detection
-* &, | being used in a Bool context. Suggest && and ||
+* Bitwise `&`, `|` being used in a Bool context. Suggest `&&` and `||`
 * declared but unused variable
-* Using a undefined variable
-* Export non-existing symbols (not fully done yet)
-* Export the same symbol twice or more.
+* Using an undefined variable
+* Exporting non-existing symbols (not fully done yet)
+* Exporting the same symbol more than once
 * Name overlap between a variable and a lambda argument
 * Assignment in an if-predicate, as a potential confusion with `==`
 * Suggest explicit declaration of globals in functions

@@ -58,6 +58,7 @@ end
 type LintContext
     file      :: String
     line      :: Int
+    lineabs   :: Int
     scope     :: String
     path      :: String
     globals   :: Dict{Symbol,Any}
@@ -67,7 +68,7 @@ type LintContext
     macrocallLvl  :: Int
     callstack :: Array{ Any, 1 }
     messages  :: Array{ Any, 1 }
-    LintContext() = new( "none", 0, "", ".",
+    LintContext() = new( "none", 0, 1, "", ".",
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(),
             0,
             0,

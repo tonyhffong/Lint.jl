@@ -39,10 +39,12 @@ function lintfile( file::String )
     ctx = LintContext()
     ctx.file = file
     str = open(readall, file)
+    linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
     i = start(str)
     while !done(str,i)
         problem = false
         ex = nothing
+        ctx.lineabs = searchsorted( linecharc, i ).start
         try
             (ex, i) = parse(str,i)
         catch
@@ -58,6 +60,11 @@ function lintfile( file::String )
     for m in ctx.messages
         println( m )
     end
+end
+
+function msg( ctx, lvl, str )
+    push!( ctx.messages, LintMessage( ctx.file , ctx.scope,
+            ctx.lineabs + ctx.line-1, lvl, str ) )
 end
 
 function lintexpr( ex, ctx::LintContext )
@@ -202,7 +209,7 @@ function lintblock( ex::Expr, ctx::LintContext )
                 end
                 continue
             elseif sube.head == :return && i != length(ex.args)
-                push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "Unreachable code after return" ) )
+                msg( ctx, 1, "Unreachable code after return" )
                 lintexpr( sube, ctx )
                 break
             else
@@ -235,7 +242,7 @@ function lintblock( ex::Expr, ctx::LintContext )
     if ctx.macrocallLvl==0
         unused = setdiff( keys(ctx.callstack[end].localvars[end]), ctx.callstack[end].localusedvars[end] )
         if !isempty( unused )
-            push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "Local vars declared but not used. " * string( unused ) ) )
+            msg( ctx, 1, "Local vars declared but not used. " * string( unused ) )
         end
 
         pop!( ctx.callstack[end].localvars )
@@ -343,7 +350,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
     end
 
     if !found
-        push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Use of undeclared symbol " *string(sym)))
+        msg( ctx, 2, "Use of undeclared symbol " *string(sym))
     end
 end
 
@@ -374,16 +381,16 @@ end
 
 function lintifexpr( ex::Expr, ctx::LintContext )
     if ex.args[1] == false
-        push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "true branch is unreachable") )
+        msg( ctx, 1, "true branch is unreachable")
         if length(ex.args) > 2
             lintexpr( ex.args[3], ctx )
         end
     elseif ex.args[1] == true
         lintexpr( ex.args[2], ctx )
         if length(ex.args) > 2
-            push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "false branch is unreachable") )
+            msg( ctx, 1, "false branch is unreachable")
         else
-            push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "redundant if-true statement") )
+            msg( ctx, 1, "redundant if-true statement")
         end
     else
         if typeof(ex.args[1]) == Expr
@@ -398,9 +405,9 @@ end
 
 function lintboolean( ex::Expr, ctx::LintContext )
     if ex.head == :(=)
-        push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 0, "Assignment in the if-predicate clause."))
+        msg( ctx, 0, "Assignment in the if-predicate clause.")
     elseif ex.head == :call && ex.args[1] in [ :(&), :(|), :($) ]
-        push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Bit-wise " * string( ex.args[1]) * " in a boolean context?" ))
+        msg( ctx, 2, "Bit-wise " * string( ex.args[1]) * " in a boolean context?" )
     elseif ex.head == :(&&) || ex.head == :(||)
         for a in ex.args
             if typeof(a) == Symbol
@@ -408,7 +415,7 @@ function lintboolean( ex::Expr, ctx::LintContext )
             elseif typeof(a)== Expr
                 lintboolean( a, ctx )
             else
-                push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Lint doesn't understand " * string( a ) * " in a boolean context." ))
+                msg( ctx, 2, "Lint doesn't understand " * string( a ) * " in a boolean context." )
             end
         end
     elseif ex.head ==:call && ex.args[1] == :(!)
@@ -419,13 +426,13 @@ function lintboolean( ex::Expr, ctx::LintContext )
             elseif typeof(a)== Expr
                 lintboolean( a, ctx )
             else
-                push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Lint doesn't understand " * string( a ) * " in a boolean context." ))
+                msg( ctx, 2, "Lint doesn't understand " * string( a ) * " in a boolean context." )
             end
         end
     elseif ex.head == :call && ex.args[1] == :length
-        push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Incorrect usage of length() in a Boolean context. You want to use isempty()."))
+        msg( ctx, 2, "Incorrect usage of length() in a Boolean context. You want to use isempty().")
     end
-    lintexpr( ex, ctx::LintContext  )
+    lintexpr( ex, ctx )
 end
 
 function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=false, isGlobal=false ) # is it a local decl & assignment?
@@ -449,14 +456,14 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         lintexpr( ex.args[1], ctx )
         return
     else
-        push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "LHS in assignment not understood by lint. please check"))
+        msg( ctx, 2, "LHS in assignment not understood by lint. please check")
     end
     for s in syms
         n = length(ctx.callstack[end].localvars)
         if islocal
-            ctx.callstack[end].localvars[n][ s ] = 1
+            ctx.callstack[end].localvars[n][ s ] = ctx.line
         else
-            ctx.callstack[end].localvars[1][ s ] = 1
+            ctx.callstack[end].localvars[1][ s ] = ctx.line
         end
         if isGlobal || isConst || length( ctx.callstack[end].localvars) == 1 && ctx.callstack[end].isTop
             push!( ctx.callstack[end].declglobs, s )
@@ -471,7 +478,7 @@ function lintglobal( ex::Expr, ctx::LintContext )
         elseif typeof(sym) == Expr && sym.head == :(=)
             lintassignment( sym, ctx; isGlobal=true )
         else
-            push!( ctx.messages, LintMessage( ctx.file, ctx.scope, ctx.line, 2, "unknown global pattern " * string(sym)))
+            msg( ctx, 2, "unknown global pattern " * string(sym))
         end
     end
 end
@@ -480,18 +487,18 @@ function lintlocal( ex::Expr, ctx::LintContext )
     n = length(ctx.callstack[end].localvars)
     for sube in ex.args
         if typeof(sube)==Symbol
-            ctx.callstack[end].localvars[n][ sube ] = 1
+            ctx.callstack[end].localvars[n][ sube ] = ctx.line
             continue
         end
         if typeof(sube) != Expr
-            push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "local declaration not understood by lint. please check"))
+            msg( ctx, 2, "local declaration not understood by lint. please check")
             continue
         end
         if sube.head == :(=)
             lintassignment( sube, ctx; islocal = true )
         elseif sube.head == :(::)
             sym = sube.args[1]
-            ctx.callstack[end].localvars[n][ sym ] = 1
+            ctx.callstack[end].localvars[n][ sym ] = ctx.line
         end
     end
 end
@@ -516,7 +523,7 @@ function lintmodule( ex::Expr, ctx::LintContext )
     undefs = setdiff( undefs, topstack.imports )
 
     for sym in undefs
-        push!( ctx.messages, LintMessage( file , ctx.scope, line, 2, "exporting undefined symbol " * string(sym)))
+        msg( ctx, 2, "exporting undefined symbol " * string(sym))
     end
     pop!( ctx.callstack )
 end
@@ -549,7 +556,7 @@ end
 function lintexport( ex::Expr, ctx::LintContext )
     for sym in ex.args
         if in(sym, ctx.callstack[end].exports )
-            push!( ctx.messages, LintMessage( ctx.file, "", ctx.line, 2, "duplicate exports of symbol " * string( sym )))
+            msg( ctx, 2, "duplicate exports of symbol " * string( sym ))
         else
             push!( ctx.callstack[end].exports, sym )
         end
@@ -606,7 +613,7 @@ function lintfunction( ex::Expr, ctx::LintContext )
                     argsym = kw.args[1]
                     topstack.arguments[ argsym ] = 1
                 else
-                    push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Lint does not understand: " *string( kw )))
+                    msg( ctx, 2, "Lint does not understand: " *string( kw ))
                     continue
                 end
             end
@@ -619,7 +626,7 @@ function lintfunction( ex::Expr, ctx::LintContext )
                 argsym = lhs.args[1]
                 topstack.arguments[ argsym ] = 1
             else
-                push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Lint does not understand: " *string( lhs )))
+                msg( ctx, 2, "Lint does not understand: " *string( lhs ))
                 continue
             end
         elseif arg.head == :(::) && length( arg.args ) > 1
@@ -633,7 +640,7 @@ function lintfunction( ex::Expr, ctx::LintContext )
                 argsym = arg.args[1].args[1]
                 topstack.arguments[ argsym ] = 1
             else
-                push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Lint does not understand: " *string( arg )))
+                msg( ctx, 2, "Lint does not understand: " *string( arg ))
             end
         end
     end
@@ -673,7 +680,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
                     argsym = kw.args[1].args[1]
                     topstack.arguments[ argsym ] = 1
                 else
-                    push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Lint does not understand: " *string( kw )))
+                    msg( ctx, 2, "Lint does not understand: " *string( kw ))
                     continue
                 end
             end
@@ -684,7 +691,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
             elseif typeof(lhs) == Expr && lhs.head == :(::)
                 argsym = lhs.args[1]
             else
-                push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Lint does not understand: " *string( lhs )))
+                msg( ctx, 2, "Lint does not understand: " *string( lhs ))
                 continue
             end
         elseif arg.head == :(::)
@@ -719,13 +726,15 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
         end
 
         if !ispath( inclfile )
-            push!( ctx.messages, LintMessage( ctx.file, ctx.scope, ctx.line, 3, "cannot find include file: " * inclfile ))
+            msg( ctx, 3, "cannot find include file: " * inclfile )
             return
         else
             println( inclfile )
             path = ctx.path
             file = deepcopy( ctx.file )
+            lineabs = ctx.lineabs
             str = open(readall, inclfile )
+            linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
             ctx.file = deepcopy( inclfile )
             d = dirname( inclfile )
             ctx.path = d
@@ -733,6 +742,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             while !done(str,i)
                 sube = nothing
                 problem =false
+                ctx.lineabs = searchsorted( linecharc, i ).start
                 try
                     sube, i = parse(str,i)
                 catch
@@ -746,6 +756,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             end
             ctx.file = file
             ctx.path = path
+            ctx.lineabs = lineabs
         end
     else
         st = 2
@@ -774,7 +785,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                     if typeof(kw)==Expr && kw.head == :(...)
                         lintexpr( kw.args[1], ctx )
                     elseif length(kw.args) != 2
-                        push!( ctx.messages, LintMessage( ctx.file, ctx.scope, ctx.line, 2, "unknown keyword pattern " * string(kw)))
+                        msg( ctx, 2, "unknown keyword pattern " * string(kw))
                     else
                         lintexpr( kw.args[2], ctx )
                     end
@@ -808,21 +819,21 @@ function lintlambda( ex::Expr, ctx::LintContext )
     checklambdaarg = (sym)->begin
         for i in length(stacktop.localvars):-1:1
             if haskey( stacktop.localvars[i], sym )
-                push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "Lambda argument " * string( sym ) * " conflicts with a local variable. Best to rename."))
+                msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with a local variable. Best to rename.")
                 return
             end
         end
         if haskey( stacktop.arguments, sym )
-            push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "Lambda argument " * string( sym ) * " conflicts with an argument. Best to rename."))
+            msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an argument. Best to rename.")
             return
         end
 
         if in( sym, stacktop.declglobs )
-            push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "Lambda argument " * string( sym ) * " conflicts with an declared global. Best to rename."))
+            msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an declared global. Best to rename.")
             return
         end
 
-        stacktop.localvars[end][sym] = 1
+        stacktop.localvars[end][sym] = ctx.line
     end
 
     if typeof( ex.args[1] ) == Symbol
@@ -839,7 +850,7 @@ function lintlambda( ex::Expr, ctx::LintContext )
                     elseif kw.args[1].head == :(::) && typeof(kw.args[1].args[1])==Symbol
                         checklambdaarg( kw.args[1].args[1] )
                     else
-                        push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Lint does not understand: " *string( kw )))
+                        msg( ctx, 2, "Lint does not understand: " *string( kw ))
                         continue
                     end
                 end
@@ -850,7 +861,7 @@ function lintlambda( ex::Expr, ctx::LintContext )
                 elseif typeof(lhs) == Expr && lhs.head == :(::)
                     checklambdaarg( lhs.args[1] )
                 else
-                    push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 2, "Lint does not understand: " *string( lhs )))
+                    msg( ctx, 2, "Lint does not understand: " *string( lhs ))
                     continue
                 end
             elseif arg.head == :(::)
@@ -861,7 +872,7 @@ function lintlambda( ex::Expr, ctx::LintContext )
                 elseif typeof( arg.args[1] )==Expr && arg.args[1].head == :(::)
                     checklambdaarg( arg.args[1].args[1] )
                 else
-                    push!( ctx.message, LintMessage( ctx.file, ctx.scope, ctx.line, 2, "Lint does not understand: " * string( arg )))
+                    msg( ctx, 2, "Lint does not understand: " * string( arg ))
                 end
             end
         end
@@ -870,7 +881,11 @@ function lintlambda( ex::Expr, ctx::LintContext )
 
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
     if !isempty( unused )
-        push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "Local vars declared but not used. " * string( unused ) ) )
+        tmpline = ctx.line
+        for v in unused
+            ctx.line = stacktop.localvars[end][v]
+            msg( ctx, 1, "Local vars declared but not used: " * string( v) )
+        end
     end
     pop!( stacktop.localvars )
     pop!( stacktop.localusedvars )
@@ -960,14 +975,14 @@ function linttry( ex::Expr, ctx::LintContext )
     stacktop = ctx.callstack[end]
     lintexpr( ex.args[1], ctx )
     if typeof(ex.args[2]) == Symbol
-        stacktop.localvars[end][ ex.args[2] ] = 1
+        stacktop.localvars[end][ ex.args[2] ] = ctx.line
     end
     for i in 3:length(ex.args)
         lintexpr( ex.args[i], ctx )
     end
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
     if !isempty( unused )
-        push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "Local vars declared but not used. " * string( unused ) ) )
+        msg( ctx, 1, "Local vars declared but not used. " * string( unused ) )
     end
     pop!( stacktop.localvars )
     pop!( stacktop.localusedvars )
