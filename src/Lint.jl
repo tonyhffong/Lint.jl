@@ -376,22 +376,22 @@ function lintifexpr( ex::Expr, ctx::LintContext )
     if ex.args[1] == false
         push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "true branch is unreachable") )
         if length(ex.args) > 2
-            lintexpr( ex.args[3], ctx::LintContext )
+            lintexpr( ex.args[3], ctx )
         end
-    elseif ex.args[2] == true
+    elseif ex.args[1] == true
+        lintexpr( ex.args[2], ctx )
         if length(ex.args) > 2
             push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "false branch is unreachable") )
-            lintexpr( ex.args[2], ctx::LintContext )
         else
             push!( ctx.messages, LintMessage( ctx.file , ctx.scope, ctx.line, 1, "redundant if-true statement") )
         end
     else
         if typeof(ex.args[1]) == Expr
-            lintboolean( ex.args[1], ctx::LintContext )
+            lintboolean( ex.args[1], ctx )
         end
-        lintexpr( ex.args[2], ctx::LintContext )
+        lintexpr( ex.args[2], ctx )
         if length(ex.args) > 2
-            lintexpr( ex.args[3], ctx::LintContext )
+            lintexpr( ex.args[3], ctx )
         end
     end
 end
@@ -702,7 +702,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
 end
 
 function lintfunctioncall( ex::Expr, ctx::LintContext )
-    if ex.args[1]==:include 
+    if ex.args[1]==:include
         if typeof( ex.args[2] ) <: String
             inclfile = string(ex.args[2])
         else
