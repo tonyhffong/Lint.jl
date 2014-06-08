@@ -30,8 +30,17 @@ function lintfile( file::String )
     ctx.file = file
     str = open(readall, file)
     msgs = lintstr( str, ctx )
+    sort!( msgs )
+    delids = Int[]
+    for i in 2:length( msgs )
+        if  msgs[i] == msgs[i-1]
+            push!( delids, i )
+        end
+    end
+    deleteat!( msgs, delids )
     for m in msgs
-        println( m )
+        colors = [ :normal, :yellow, :magenta, :red ]
+        Base.println_with_color( colors[m.level+1], string(m) )
     end
 end
 
@@ -208,8 +217,8 @@ function lintblock( ex::Expr, ctx::LintContext )
             if m2 < m && m-m2 > s/2.5
                 msg( ctx, 1, "The last of a " *
                     string(n) * "-expr block looks different. " *
-                    "\n   Avg similarity score: " * @sprintf( "%.2f", m ) *
-                    "  Last part:            " * @sprintf( "%.2f", m2 ) )
+                    "\nAvg similarity score: " * @sprintf( "%8.2f", m ) *
+                    ";  Last part: " * @sprintf( "%9.2f", m2 ) )
             end
             diffs = Float64[]
             lastexpr = nothing

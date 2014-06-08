@@ -9,12 +9,42 @@ end
 import Base.show
 function Base.show( io::IO, m::LintMessage )
     s = @sprintf( "%20s ", m.file )
-    s = s * @sprintf( "[%20s] ", m.scope )
+    s = s * @sprintf( "[%-20s] ", m.scope )
     s = s * @sprintf( "%4d ", m.line )
     arr = [ "FYI", "WARN", "ERROR", "FATAL" ]
-    s = s * @sprintf( "%-5s ", arr[ m.level+1 ] )
-    s = s * m.message
+    s = s * @sprintf( "%-5s  ", arr[ m.level+1 ] )
+    ident = length(s)
+    lines = split(m.message, "\n")
+    for (i,l) in enumerate(lines)
+        if i==1
+            s = s * l
+        else
+            s = s * "\n" *  (" " ^ ident) * l
+        end
+    end
     print( io, s )
+end
+
+import Base.isless
+function Base.isless( m1::LintMessage, m2::LintMessage )
+    if m1.file != m2.file
+        return isless(m1.file, m2.file)
+    end
+    if m1.level != m2.level
+        return m2.level < m1.level # reverse
+    end
+    if m1.line != m2.line
+        return m1.line < m2.line
+    end
+    return m1.message < m2.message
+end
+
+function ==( m1::LintMessage, m2::LintMessage )
+    m1.file == m2.file &&
+    m1.level == m2.level &&
+    m1.scope == m2.scope &&
+    m1.line == m2.line &&
+    m2.message == m2.message
 end
 
 type LintStack
@@ -69,11 +99,11 @@ type LintContext
     functionLvl:: Int
     macrocallLvl  :: Int
     callstack :: Array{ Any, 1 }
-    messages  :: Array{ Any, 1 }
+    messages  :: Array{ LintMessage, 1 }
     LintContext() = new( "none", 0, 1, "", ".",
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(),
             0,
             0,
-            { LintStack() }, {} )
+            { LintStack() }, LintMessage[] )
 end
 
