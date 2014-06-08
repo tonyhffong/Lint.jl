@@ -85,6 +85,12 @@ function lintexpr( ex::Any, ctx::LintContext )
         return
     end
 
+    for h in values( ctx.callstack[end].linthelpers )
+        if h( ex, ctx ) == true
+            return
+        end
+    end
+
     if ex.head == :block
         lintblock( ex, ctx )
     elseif ex.head == :if
@@ -583,12 +589,14 @@ function lintusing( ex::Expr, ctx::LintContext )
     end
     problem = false
     m = nothing
+    path = ""
     try
         path = string( ex.args[1] )
         for i in 2:length(ex.args)
             path = path * "." * string(ex.args[i])
         end
-        m = eval( path )
+        println( "looking for lint_helper in " * path )
+        m = eval( Main, parse( path ) )
     catch er
         problem = true
         println( er )
@@ -597,7 +605,12 @@ function lintusing( ex::Expr, ctx::LintContext )
     if !problem
         t = typeof( m )
         if t == Module
+            println( "importing names from " * string(m))
             union!( ctx.callstack[end].declglobs, names( m ) )
+            if in( :lint_helper, names(m, true ) )
+                println( "found lint_helper in " * string(m))
+                ctx.callstack[end].linthelpers[ path ] = m.lint_helper
+            end
         end
     end
 end

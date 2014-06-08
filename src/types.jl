@@ -63,6 +63,8 @@ type LintStack
     functions     :: Set{Any}
     modules       :: Set{Any}
     macros        :: Set{Any}
+    linthelpers   :: Dict{ String, Any }
+    data          :: Dict{ Symbol, Any }
     isTop         :: Bool
     LintStack() = begin
         x = new(
@@ -81,6 +83,8 @@ type LintStack
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),
+            Dict{ String, Any }(),
+            Dict{ Symbol, Any }(),
             false,
             )
         x
