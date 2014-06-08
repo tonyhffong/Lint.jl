@@ -18,8 +18,8 @@ function Base.show( io::IO, m::LintMessage )
 end
 
 type LintStack
-    arguments     :: Dict{Symbol, Any}
     declglobs     :: Set{Symbol}
+    localarguments:: Array{ Dict{Symbol, Any}, 1 }
     localvars     :: Array{ Dict{Symbol, Any}, 1 }
     localusedvars :: Array{ Set{Symbol}, 1 }
     usedvars      :: Set{Symbol}
@@ -36,8 +36,8 @@ type LintStack
     isTop         :: Bool
     LintStack() = begin
         x = new(
-            Dict{Symbol, Any}(),
             Set{Symbol}(),
+            [ Dict{Symbol, Any}() ],
             [ Dict{Symbol, Any}() ],
             [ Set{Symbol}() ],
             Set{Symbol}(),

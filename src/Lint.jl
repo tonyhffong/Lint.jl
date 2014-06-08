@@ -6,6 +6,7 @@ export lintfile, lintstr, lintpragma
 export test_similarity_string
 
 const SIMILARITY_THRESHOLD = 10.0
+const ASSIGN_OPS = [ :(=), :(+=), :(-=), :(*=), :(/=), :(&=), :(|=) ]
 
 # Wishlist:
 # setting a value to a datatype instead of an instance of that type
@@ -61,11 +62,16 @@ function msg( ctx, lvl, str )
             ctx.lineabs + ctx.line-1, lvl, str ) )
 end
 
-function lintexpr( ex, ctx::LintContext )
+function lintexpr( ex::Any, ctx::LintContext )
     if typeof(ex) == Symbol
         registersymboluse( ex, ctx )
         return
     end
+
+    if typeof(ex) == QuoteNode && typeof( ex.value ) == Expr
+        lintexpr( ex.value, ctx )
+    end
+
     if typeof(ex)!=Expr
         return
     end
@@ -74,12 +80,10 @@ function lintexpr( ex, ctx::LintContext )
         lintblock( ex, ctx )
     elseif ex.head == :if
         lintifexpr( ex, ctx )
-    elseif ex.head == :(=)
-        if typeof(ex.args[1])==Expr && ex.args[1].head == :call
-            lintfunction( ex, ctx )
-        else
-            lintassignment( ex, ctx )
-        end
+    elseif ex.head == :(=) && typeof(ex.args[1])==Expr && ex.args[1].head == :call
+        lintfunction( ex, ctx )
+    elseif in( ex.head, ASSIGN_OPS )
+        lintassignment( ex, ctx )
     elseif ex.head == :local
         lintlocal( ex, ctx )
     elseif ex.head == :global
@@ -119,6 +123,8 @@ function lintexpr( ex, ctx::LintContext )
         lintabstract( ex, ctx )
     elseif ex.head == :(->)
         lintlambda( ex, ctx )
+    elseif ex.head == :($) # an unquoted node inside a quote node
+        lintexpr( ex.args[1], ctx )
     elseif ex.head == :function
         lintfunction( ex, ctx )
     elseif ex.head == :macro
@@ -287,6 +293,8 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
         end
     end
 
+    #println(sym)
+    #println( stacktop.localvars )
     found = false
     for i in length(stacktop.localvars):-1:1
         if haskey( stacktop.localvars[i], sym )
@@ -296,9 +304,11 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
         end
     end
     if !found
-        found = haskey( stacktop.arguments, sym )
-        if found
-            push!( stacktop.usedvars, sym )
+        for i in length(stacktop.localarguments):-1:1
+            if haskey( stacktop.localarguments[i], sym )
+                found = true
+                break
+            end
         end
     end
 
@@ -455,26 +465,27 @@ end
 function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=false, isGlobal=false ) # is it a local decl & assignment?
     lintexpr( ex.args[2], ctx )
     syms = Symbol[]
-    if typeof( ex.args[1] ) == Symbol
-        syms = [ ex.args[1] ]
-    elseif ex.args[1].head == :(::) && typeof( ex.args[1].args[1] ) == Symbol
-        syms = [ ex.args[1].args[1] ]
-    elseif ex.args[1].head == :tuple
-        for s in ex.args[1].args
-            if typeof( s ) == Symbol
-                push!(syms, s )
-            elseif typeof(s)==Expr && s.head == :(::) && typeof( s.args[1] ) == Symbol
-                push!(syms, s.args[1])
-            else
-                lintexpr( s, ctx ) # it could be (a[idx], b[idx]) = ....
+
+    resolveLHSsymbol = (sube)-> begin
+        if typeof( sube ) == Symbol
+            push!( syms, sube)
+        elseif sube.head == :(::)
+            resolveLHSsymbol( sube.args[1] )
+        elseif sube.head == :tuple
+            for s in sube.args
+                resolveLHSsymbol( s )
             end
+        elseif sube.head == :(.) ||   # a.b = something
+            sube.head == :ref ||      # a[b] = something
+            sube.head == :($)         # :( $(esc(name)) = something )
+            lintexpr( sube.args[1], ctx )
+            return
+        else
+            msg( ctx, 2, "LHS in assignment not understood by Lint. please check: " * string(sube) )
         end
-    elseif ex.args[1].head == :(.) || ex.args[1].head == :ref # a.b = something or a[b] = something
-        lintexpr( ex.args[1], ctx )
-        return
-    else
-        msg( ctx, 2, "LHS in assignment not understood by lint. please check")
     end
+
+    resolveLHSsymbol( ex.args[1] )
     for s in syms
         if islocal
             ctx.callstack[end].localvars[end][ s ] = ctx.line
@@ -504,7 +515,7 @@ function lintglobal( ex::Expr, ctx::LintContext )
     for sym in ex.args
         if typeof(sym) == Symbol
             push!( ctx.callstack[end].declglobs, sym )
-        elseif typeof(sym) == Expr && sym.head == :(=)
+        elseif typeof(sym) == Expr && in( sym.head, ASSIGN_OPS )
             lintassignment( sym, ctx; isGlobal=true )
         else
             msg( ctx, 2, "unknown global pattern " * string(sym))
@@ -537,19 +548,19 @@ function lintmodule( ex::Expr, ctx::LintContext )
     line = ctx.line
     push!( ctx.callstack[end].modules, ex.args[2] )
     push!( ctx.callstack, LintStack() )
-    topstack = ctx.callstack[end]
-    topstack.inModule = true
-    topstack.moduleName = ex.args[2]
-    topstack.isTop = true
+    stacktop = ctx.callstack[end]
+    stacktop.inModule = true
+    stacktop.moduleName = ex.args[2]
+    stacktop.isTop = true
 
     lintexpr( ex.args[3], ctx )
 
-    undefs = setdiff( topstack.exports, topstack.types )
-    undefs = setdiff( undefs, topstack.functions )
-    undefs = setdiff( undefs, topstack.macros )
-    undefs = setdiff( undefs, topstack.declglobs )
-    undefs = setdiff( undefs, keys( topstack.localvars[1] ) )
-    undefs = setdiff( undefs, topstack.imports )
+    undefs = setdiff( stacktop.exports, stacktop.types )
+    undefs = setdiff( undefs, stacktop.functions )
+    undefs = setdiff( undefs, stacktop.macros )
+    undefs = setdiff( undefs, stacktop.declglobs )
+    undefs = setdiff( undefs, keys( stacktop.localvars[1] ) )
+    undefs = setdiff( undefs, stacktop.imports )
 
     for sym in undefs
         msg( ctx, 2, "exporting undefined symbol " * string(sym))
@@ -613,65 +624,47 @@ function lintfunction( ex::Expr, ctx::LintContext )
                 push!( temporaryTypes, adt.args[1] )
             end
         end
+    elseif ex.args[1].args[1].head == :($)
+        lintexpr( ex.args[1].args[1].args[1], ctx )
     end
     ctx.scope = string(fname)
     #println(fname)
 
     if ctx.macrocallLvl == 0 && ctx.functionLvl == 0
         push!( ctx.callstack, LintStack() )
+    else
+        push!( ctx.callstack[end].localarguments, Dict{ Symbol, Any }() )
     end
     ctx.functionLvl = ctx.functionLvl + 1
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
-    topstack = ctx.callstack[end]
-    union!( topstack.types, temporaryTypes )
-    #topstack.arguments
-    for i = 2:length(ex.args[1].args)
-        arg = ex.args[1].args[i]
-        if typeof( arg )==Symbol
-            argsym = symbol( arg )
-            topstack.arguments[ argsym ]= 1
-        elseif arg.head == :parameters
-            for kw in arg.args
-                if typeof(kw.args[1])==Symbol
-                    argsym = kw.args[1]
-                    topstack.arguments[ argsym ] = 1
-                elseif kw.args[1].head == :(::) && length( kw.args[1].args ) > 1 && typeof(kw.args[1].args[1])==Symbol
-                    argsym = kw.args[1].args[1]
-                    topstack.arguments[ argsym ] = 1
-                elseif kw.head == :(...)
-                    argsym = kw.args[1]
-                    topstack.arguments[ argsym ] = 1
-                else
-                    msg( ctx, 2, "Lint does not understand: " *string( kw ))
-                    continue
-                end
+    stacktop = ctx.callstack[end]
+    # temporaryTypes are the type parameters in curly brackets, make them legal in the current scope
+    union!( stacktop.types, temporaryTypes )
+
+    resolveArguments = (sube) -> begin
+        if typeof( sube ) == Symbol
+            stacktop.localarguments[end][sube]=ctx.line
+        elseif sube.head == :parameters
+            for kw in sube.args
+                resolveArguments( kw )
             end
-        elseif arg.head == :(=) || arg.head == :kw
-            lhs = arg.args[1]
-            if typeof(lhs) == Symbol
-                argsym = lhs
-                topstack.arguments[ argsym ] = 1
-            elseif typeof(lhs) == Expr && lhs.head == :(::) && typeof( lhs.args[1] ) == Symbol
-                argsym = lhs.args[1]
-                topstack.arguments[ argsym ] = 1
-            else
-                msg( ctx, 2, "Lint does not understand: " *string( lhs ))
-                continue
+        elseif sube.head == :(=) || sube.head == :kw
+            resolveArguments( sube.args[1] )
+        elseif sube.head == :(::)
+            if length( sube.args ) > 1
+                resolveArguments( sube.args[1] )
             end
-        elseif arg.head == :(::) && length( arg.args ) > 1
-            argsym = arg.args[1]
-            topstack.arguments[ argsym ] = 1
-        elseif arg.head == :(...)
-            if typeof( arg.args[1]) == Symbol
-                argsym =  arg.args[1]
-                topstack.arguments[ argsym ] = 1
-            elseif typeof(arg.args[1])==Expr && arg.args[1].head == :(::)
-                argsym = arg.args[1].args[1]
-                topstack.arguments[ argsym ] = 1
-            else
-                msg( ctx, 2, "Lint does not understand: " *string( arg ))
-            end
+        elseif sube.head == :(...)
+            resolveArguments( sube.args[1])
+        elseif sube.head == :($)
+            lintexpr( sube.args[1], ctx )
+        else
+            msg( ctx, 2, "Lint does not understand: " *string( sube ))
         end
+    end
+
+    for i = 2:length(ex.args[1].args)
+        resolveArguments( ex.args[1].args[i] )
     end
 
     lintexpr( ex.args[2], ctx )
@@ -680,6 +673,8 @@ function lintfunction( ex::Expr, ctx::LintContext )
     # TODO check cyclomatic complexity?
     if ctx.macrocallLvl == 0 && ctx.functionLvl == 0
         pop!( ctx.callstack )
+    else
+        pop!( ctx.callstack[end].localarguments )
     end
     ctx.scope = ""
 end
@@ -694,41 +689,32 @@ function lintmacro( ex::Expr, ctx::LintContext )
 
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
     push!( ctx.callstack, LintStack() )
-    topstack = ctx.callstack[end]
-    #topstack.arguments
-    for i = 2:length(ex.args[1].args)
-        arg = ex.args[1].args[i]
-        if typeof( arg )==Symbol
-            argsym = arg
-        elseif arg.head == :parameters
-            for kw in arg.args
-                if typeof(kw.args[1])==Symbol
-                    argsym = kw.args[1]
-                    topstack.arguments[ argsym ] = 1
-                elseif kw.args[1].head == :(::) && typeof(kw.args[1].args[1])==Symbol
-                    argsym = kw.args[1].args[1]
-                    topstack.arguments[ argsym ] = 1
-                else
-                    msg( ctx, 2, "Lint does not understand: " *string( kw ))
-                    continue
-                end
+    stacktop = ctx.callstack[end]
+
+    resolveArguments = (sube) -> begin
+        if typeof( sube ) == Symbol
+            stacktop.localarguments[end][sube]=ctx.line
+        elseif sube.head == :parameters
+            for kw in sube.args
+                resolveArguments( kw )
             end
-        elseif arg.head == :(=)
-            lhs = arg.args[1]
-            if typeof(lhs) == Symbol
-                argsym = lhs
-            elseif typeof(lhs) == Expr && lhs.head == :(::)
-                argsym = lhs.args[1]
-            else
-                msg( ctx, 2, "Lint does not understand: " *string( lhs ))
-                continue
+        elseif sube.head == :(=) || sube.head == :kw
+            resolveArguments( sube.args[1] )
+        elseif sube.head == :(::)
+            if length( sube.args ) > 1
+                resolveArguments( sube.args[1] )
             end
-        elseif arg.head == :(::)
-            argsym = arg.args[1]
-        elseif arg.head == :(...)
-            argsym = arg.args[1]
+        elseif sube.head == :(...)
+            resolveArguments( sube.args[1])
+        elseif sube.head == :($)
+            lintexpr( sube.args[1], ctx )
+        else
+            msg( ctx, 2, "Lint does not understand: " *string( sube ))
         end
-        topstack.arguments[ argsym ] = 1
+    end
+
+    for i = 2:length(ex.args[1].args)
+        resolveArguments( ex.args[1].args[i])
     end
 
     lintexpr( ex.args[2], ctx )
@@ -824,70 +810,59 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
 end
 
 function lintlambda( ex::Expr, ctx::LintContext )
-    push!( ctx.callstack[ end ].localvars, Dict{Symbol, Any}() )
-    push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
     stacktop = ctx.callstack[end]
+    push!( stacktop.localarguments, Dict{Symbol, Any}() )
+    push!( stacktop.localvars, Dict{Symbol, Any}() )
+    push!( stacktop.localusedvars, Set{Symbol}() )
     # check for conflicts on lambda arguments
     checklambdaarg = (sym)->begin
         for i in length(stacktop.localvars):-1:1
             if haskey( stacktop.localvars[i], sym )
                 msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with a local variable. Best to rename.")
-                return
+                break
             end
         end
-        if haskey( stacktop.arguments, sym )
-            msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an argument. Best to rename.")
-            return
+        for i in length(stacktop.localarguments):-1:1
+            if haskey( stacktop.localarguments[end], sym )
+                msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an argument. Best to rename.")
+                break
+            end
         end
-
         if in( sym, stacktop.declglobs )
             msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an declared global. Best to rename.")
-            return
         end
+        stacktop.localarguments[end][sym] = ctx.line
+    end
 
-        stacktop.localvars[end][sym] = ctx.line
+    resolveArguments = (sube) -> begin
+        if typeof( sube ) == Symbol
+            checklambdaarg( sube )
+            stacktop.localarguments[end][sube]=ctx.line
+        elseif sube.head == :parameters
+            for kw in sube.args
+                resolveArguments( kw )
+            end
+        elseif sube.head == :(=) || sube.head == :kw
+            resolveArguments( sube.args[1] )
+        elseif sube.head == :(::)
+            if length( sube.args ) > 1
+                resolveArguments( sube.args[1] )
+            end
+        elseif sube.head == :(...)
+            resolveArguments( sube.args[1])
+        else
+            msg( ctx, 2, "Lint does not understand: " *string( sube ))
+        end
     end
 
     if typeof( ex.args[1] ) == Symbol
-        checklambdaarg( ex.args[1] )
-    else
+        resolveArguments( ex.args[1] )
+    elseif ex.args[1].head == :tuple
         for i = 1:length(ex.args[1].args)
-            arg = ex.args[1].args[i]
-            if typeof( arg )==Symbol
-                checklambdaarg( arg )
-            elseif arg.head == :parameters
-                for kw in arg.args
-                    if typeof(kw.args[1])==Symbol
-                        checklambdaarg( kw.args[1])
-                    elseif kw.args[1].head == :(::) && typeof(kw.args[1].args[1])==Symbol
-                        checklambdaarg( kw.args[1].args[1] )
-                    else
-                        msg( ctx, 2, "Lint does not understand: " *string( kw ))
-                        continue
-                    end
-                end
-            elseif arg.head == :(=)
-                lhs = arg.args[1]
-                if typeof(lhs) == Symbol
-                    checklambdaarg( lhs )
-                elseif typeof(lhs) == Expr && lhs.head == :(::)
-                    checklambdaarg( lhs.args[1] )
-                else
-                    msg( ctx, 2, "Lint does not understand: " *string( lhs ))
-                    continue
-                end
-            elseif arg.head == :(::)
-                checklambdaarg( arg.args[1] )
-            elseif arg.head == :(...)
-                if typeof( arg.args[1] ) == Symbol
-                    checklambdaarg( arg.args[1])
-                elseif typeof( arg.args[1] )==Expr && arg.args[1].head == :(::)
-                    checklambdaarg( arg.args[1].args[1] )
-                else
-                    msg( ctx, 2, "Lint does not understand: " * string( arg ))
-                end
-            end
+            resolveArguments( ex.args[1].args[i] )
         end
+    else
+        resolveArguments( ex.args[1] )
     end
     lintexpr( ex.args[2], ctx )
 
@@ -897,11 +872,15 @@ function lintlambda( ex::Expr, ctx::LintContext )
         msg( ctx, 1, "Local vars declared but not used: " * string( v) )
     end
     union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
+    pop!( stacktop.localarguments )
     pop!( stacktop.localvars )
     pop!( stacktop.localusedvars )
 end
 
 function linttype( ex::Expr, ctx::LintContext )
+    if typeof( ex.args[2] ) == Expr && ex.args[2].head == :($) && typeof( ex.args[2].args[1] ) == Symbol
+        registersymboluse( ex.args[2].args[1], ctx )
+    end
     if typeof( ex.args[2] ) == Symbol
         push!( ctx.callstack[end].types, ex.args[2] )
     elseif typeof( ex.args[2] ) == Expr && ex.args[2].head == :curly
