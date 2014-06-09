@@ -92,22 +92,22 @@ type LintStack
 end
 
 type LintContext
-    file      :: String
-    line      :: Int
-    lineabs   :: Int
-    scope     :: String
-    path      :: String
-    globals   :: Dict{Symbol,Any}
-    types     :: Dict{Symbol,Any}
-    functions :: Dict{Symbol,Any}
-    functionLvl:: Int
-    macrocallLvl  :: Int
-    callstack :: Array{ Any, 1 }
-    messages  :: Array{ LintMessage, 1 }
+    file         :: String
+    line         :: Int
+    lineabs      :: Int
+    scope        :: String
+    path         :: String
+    globals      :: Dict{Symbol,Any}
+    types        :: Dict{Symbol,Any}
+    functions    :: Dict{Symbol,Any}
+    functionLvl  :: Int
+    macrocallLvl :: Int
+    quoteLvl     :: Int
+    callstack    :: Array{ Any, 1 }
+    messages     :: Array{ LintMessage, 1 }
     LintContext() = new( "none", 0, 1, "", ".",
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(),
-            0,
-            0,
+            0, 0, 0,
             { LintStack() }, LintMessage[] )
 end
 

@@ -73,12 +73,16 @@ end
 
 function lintexpr( ex::Any, ctx::LintContext )
     if typeof(ex) == Symbol
-        registersymboluse( ex, ctx )
+        if ctx.quoteLvl == 0
+            registersymboluse( ex, ctx )
+        end
         return
     end
 
     if typeof(ex) == QuoteNode && typeof( ex.value ) == Expr
+        ctx.quoteLvl += 1
         lintexpr( ex.value, ctx )
+        ctx.quoteLvl -= 1
     end
 
     if typeof(ex)!=Expr
@@ -138,8 +142,10 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintabstract( ex, ctx )
     elseif ex.head == :(->)
         lintlambda( ex, ctx )
-    elseif ex.head == :($) # an unquoted node inside a quote node
+    elseif ex.head == :($) && ctx.quoteLvl > 0 # an unquoted node inside a quote node
+        ctx.quoteLvl -= 1
         lintexpr( ex.args[1], ctx )
+        ctx.quoteLvl += 1
     elseif ex.head == :function
         lintfunction( ex, ctx )
     elseif ex.head == :macro
@@ -177,6 +183,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintdict( ex, ctx; typed=true )
     elseif ex.head == :for
         lintfor( ex, ctx )
+    elseif ex.head == :let
+        lintlet( ex, ctx )
     elseif ex.head == :comprehension
         lintcomprehension( ex, ctx; typed = false )
     elseif ex.head == :typed_comprehension
@@ -1041,6 +1049,36 @@ function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
         elseif typeof( lastpart  ) == Symbol
             push!( ctx.callstack[end].imports, lastpart )
         end
+    end
+end
+
+function lintlet( ex::Expr, ctx::LintContext )
+    if ctx.macrocallLvl == 0
+        push!( ctx.callstack[ end ].localvars, Dict{Symbol, Any}() )
+        push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
+    end
+
+    for i = 2:length(ex.args)
+        if typeof( ex.args[i] ) == Expr && ex.args[i].head == :(=)
+            lintassignment( ex.args[i], ctx; islocal = true )
+        else
+            lintexpr( ex, ctx )
+        end
+    end
+
+    lintexpr( ex.args[1], ctx )
+
+    if ctx.macrocallLvl==0
+        stacktop = ctx.callstack[end]
+        unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
+        for v in unused
+            ctx.line = stacktop.localvars[end][ v ]
+            msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
+        end
+
+        union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
+        pop!( stacktop.localvars )
+        pop!( stacktop.localusedvars )
     end
 end
 
