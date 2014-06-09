@@ -53,8 +53,8 @@ Key info about adding a `lint_helper` function in your module
   so that Lint can give other modules a go at it. Note that
   if you always returning true in your code you will break Lint.
 * `lint_helper` takes two argument, an `Expr` instance and a context.
-** if you find an issue in your expression, call `Lint.msg( ctx, level, "explanation" )`
-** level is 0: FYI, 1:WARN, 2:ERROR, 4:FATAL
+  - if you find an issue in your expression, call `Lint.msg( ctx, level, "explanation" )`
+  - level is 0: FYI, 1:WARN, 2:ERROR, 4:FATAL
 * typical structure looks like this
 ```
 function lint_helper( ex::Expr, ctx )
@@ -70,8 +70,6 @@ function lint_helper( ex::Expr, ctx )
     return false
 end
 ```
-* To run, you must make sure your Julia session already knows about your package by
-having done `using <your package>` first.
 
 ## Advanced lint helper interface information
 * the context argument `ctx` has a field called `data` typed `Dict{Symbol,Any}`.
@@ -97,4 +95,4 @@ push!( ctx.callstack[end].functions, funcsymbol )
 push!( ctx.callstack[end].types, roottypesymbol )
 ```
 You just need to put in the root symbol for a parametric type, for example
-`:A` for `A{T<:Any>}`.
+`:A` for `A{T<:Any}`.

@@ -585,32 +585,25 @@ end
 
 function lintusing( ex::Expr, ctx::LintContext )
     for s in ex.args
-        push!( ctx.callstack[end].declglobs, s )
-    end
-    problem = false
-    m = nothing
-    path = ""
-    try
-        path = string( ex.args[1] )
-        for i in 2:length(ex.args)
-            path = path * "." * string(ex.args[i])
+        if s != :(.)
+            push!( ctx.callstack[end].declglobs, s )
         end
-        println( "looking for lint_helper in " * path )
-        m = eval( Main, parse( path ) )
-    catch er
-        problem = true
-        println( er )
-        println( ex )
     end
-    if !problem
+    if ex.args[1] != :(.)
+        eval( Main, ex )
+        path = join( map( string, ex.args ), "." )
+        m = eval( Main, parse( path ) )
         t = typeof( m )
         if t == Module
-            println( "importing names from " * string(m))
             union!( ctx.callstack[end].declglobs, names( m ) )
             if in( :lint_helper, names(m, true ) )
-                println( "found lint_helper in " * string(m))
+                if !haskey( ctx.callstack[end].linthelpers, path )
+                    println( "found lint_helper in " * string(m))
+                end
                 ctx.callstack[end].linthelpers[ path ] = m.lint_helper
             end
+        else
+            println( path, " doesn't eval into a Module")
         end
     end
 end
