@@ -28,6 +28,7 @@ function lintfile( file::String )
 
     ctx = LintContext()
     ctx.file = file
+    ctx.path = dirname( file )
     str = open(readall, file)
     msgs = lintstr( str, ctx )
     sort!( msgs )
@@ -345,7 +346,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
 
     if !found
         for i in length(ctx.callstack):-1:1
-            found = in( sym, ctx.callstack[i].declglobs ) ||
+            found = haskey( ctx.callstack[i].declglobs, sym ) ||
                 in( sym, ctx.callstack[i].functions ) ||
                 in( sym, ctx.callstack[i].types ) ||
                 in( sym, ctx.callstack[i].modules ) ||
@@ -356,8 +357,8 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
                 # on we treat the variable as if we have had declared "global"
                 # within the scope block
                 if i != length(ctx.callstack) &&
-                    in( sym, ctx.callstack[i].declglobs )
-                    push!( ctx.callstack[end].declglobs, sym )
+                    haskey( ctx.callstack[i].declglobs, sym )
+                    ctx.callstack[end].declglobs[ sym ] = ctx.callstack[i].declglobs[sym]
                 end
                 break
             end
@@ -375,7 +376,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
         end
         found = (t == Function)
         if found
-            push!( ctx.callstack[end].declglobs, sym )
+            ctx.callstack[end].declglobs[ sym ] = { :file => ctx.file, :line => ctx.line }
         end
     end
 
@@ -536,12 +537,12 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 msg( ctx, 0, string(s) * " has been used in a local scope. Improve readability by using 'local' or another name.")
             end
 
-            if !found && !isGlobal && !in( s, ctx.callstack[end].declglobs )
+            if !found && !isGlobal && !haskey( ctx.callstack[end].declglobs, s )
                 for i in length(ctx.callstack)-1:-1:1
-                    if in( s, ctx.callstack[i].declglobs ) &&
+                    if haskey( ctx.callstack[i].declglobs, s ) &&
                         length(string(s)) > 4 &&
                         !in( s, [ :value, :index, :fname, :fargs ] )
-                        msg( ctx, 0, string( s ) * " is also a global variable. Please check." )
+                        msg( ctx, 0, string( s ) * " is also a global, from \n" * string(ctx.callstack[i].declglobs[s] )* "\nPlease check." )
                         break;
                     end
                 end
@@ -551,8 +552,8 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 ctx.callstack[end].localvars[1][ s ] = ctx.line
             end
         end
-        if isGlobal || isConst || (ctx.functionLvl == 0 && ctx.callstack[end].isTop)
-            push!( ctx.callstack[end].declglobs, s )
+        if isGlobal || isConst || (ctx.functionLvl + ctx.macroLvl == 0 && ctx.callstack[end].isTop)
+            ctx.callstack[end].declglobs[ s ] = { :file => ctx.file, :line => ctx.line }
         end
     end
 end
@@ -560,7 +561,9 @@ end
 function lintglobal( ex::Expr, ctx::LintContext )
     for sym in ex.args
         if typeof(sym) == Symbol
-            push!( ctx.callstack[end].declglobs, sym )
+            if !haskey( ctx.callstack[end].declglobs, sym)
+                ctx.callstack[end].declglobs[ sym ] = { :file=>ctx.file, :line=>ctx.line }
+            end
         elseif typeof(sym) == Expr && in( sym.head, ASSIGN_OPS )
             lintassignment( sym, ctx; isGlobal=true )
         else
@@ -602,7 +605,7 @@ function lintmodule( ex::Expr, ctx::LintContext )
     undefs = setdiff( stacktop.exports, stacktop.types )
     undefs = setdiff( undefs, stacktop.functions )
     undefs = setdiff( undefs, stacktop.macros )
-    undefs = setdiff( undefs, stacktop.declglobs )
+    undefs = setdiff( undefs, keys( stacktop.declglobs ) )
     undefs = setdiff( undefs, keys( stacktop.localvars[1] ) )
     undefs = setdiff( undefs, stacktop.imports )
 
@@ -615,7 +618,7 @@ end
 function lintusing( ex::Expr, ctx::LintContext )
     for s in ex.args
         if s != :(.)
-            push!( ctx.callstack[end].declglobs, s )
+            ctx.callstack[end].declglobs[ s ] = { :file => ctx.file, :line => ctx.line }
         end
     end
     if ex.args[1] != :(.)
@@ -624,7 +627,12 @@ function lintusing( ex::Expr, ctx::LintContext )
         m = eval( Main, parse( path ) )
         t = typeof( m )
         if t == Module
-            union!( ctx.callstack[end].declglobs, names( m ) )
+            for n in names( m )
+                if !haskey( ctx.callstack[end].declglobs, n )
+                    ctx.callstack[end].declglobs[ n ] = { :file => ctx.file, :line => ctx.line }
+                end
+            end
+
             if in( :lint_helper, names(m, true ) )
                 if !haskey( ctx.callstack[end].linthelpers, path )
                     println( "found lint_helper in " * string(m))
@@ -874,8 +882,8 @@ function lintlambda( ex::Expr, ctx::LintContext )
                 break
             end
         end
-        if in( sym, stacktop.declglobs )
-            msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an declared global. Best to rename.")
+        if haskey( stacktop.declglobs, sym )
+            msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an declared global from \n" * string(stacktop.declglobs[ sym ])*  "\nBetter to rename.")
         end
         stacktop.localarguments[end][sym] = ctx.line
     end

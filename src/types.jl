@@ -48,7 +48,7 @@ function ==( m1::LintMessage, m2::LintMessage )
 end
 
 type LintStack
-    declglobs     :: Set{Symbol}
+    declglobs     :: Dict{Symbol, Any}
     localarguments:: Array{ Dict{Symbol, Any}, 1 }
     localvars     :: Array{ Dict{Symbol, Any}, 1 }
     localusedvars :: Array{ Set{Symbol}, 1 }
@@ -68,7 +68,7 @@ type LintStack
     isTop         :: Bool
     LintStack() = begin
         x = new(
-            Set{Symbol}(),
+            Dict{Symbol,Any}(),
             [ Dict{Symbol, Any}() ],
             [ Dict{Symbol, Any}() ],
             [ Set{Symbol}() ],
