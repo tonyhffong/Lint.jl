@@ -91,6 +91,12 @@ type LintStack
     end
 end
 
+function LintStack( t::Bool )
+    x = LintStack()
+    x.isTop = t
+    x
+end
+
 type LintContext
     file         :: String
     line         :: Int
@@ -101,13 +107,14 @@ type LintContext
     types        :: Dict{Symbol,Any}
     functions    :: Dict{Symbol,Any}
     functionLvl  :: Int
+    macroLvl     :: Int
     macrocallLvl :: Int
     quoteLvl     :: Int
     callstack    :: Array{ Any, 1 }
     messages     :: Array{ LintMessage, 1 }
     LintContext() = new( "none", 0, 1, "", ".",
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(),
-            0, 0, 0,
-            { LintStack() }, LintMessage[] )
+            0, 0, 0, 0,
+            { LintStack( true ) }, LintMessage[] )
 end
 

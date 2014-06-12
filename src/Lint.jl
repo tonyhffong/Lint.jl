@@ -181,6 +181,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintdict( ex, ctx; typed=false )
     elseif ex.head == :typed_dict # mixed type dictionary
         lintdict( ex, ctx; typed=true )
+    elseif ex.head == :while
+        lintwhile( ex, ctx )
     elseif ex.head == :for
         lintfor( ex, ctx )
     elseif ex.head == :let
@@ -204,12 +206,26 @@ function lintexpr( ex::Any, ctx::LintContext )
     end
 end
 
+function pushVarScope( ctx::LintContext )
+    push!( ctx.callstack[ end ].localvars, Dict{Symbol, Any}() )
+    push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
+end
+
+function popVarScope( ctx::LintContext )
+    stacktop = ctx.callstack[end]
+    unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
+    for v in unused
+        ctx.line = stacktop.localvars[end][ v ]
+        msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
+    end
+
+    union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
+    pop!( stacktop.localvars )
+    pop!( stacktop.localusedvars )
+end
+
 function lintblock( ex::Expr, ctx::LintContext )
     global SIMILARITY_THRESHOLD
-    if ctx.macrocallLvl == 0
-        push!( ctx.callstack[ end ].localvars, Dict{Symbol, Any}() )
-        push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
-    end
     lastexpr = nothing
     similarexprs = Expr[]
     diffs = Float64[]
@@ -228,7 +244,7 @@ function lintblock( ex::Expr, ctx::LintContext )
             local m2 = mean( [diffs[end-1], diffs[end] ] )
             # look for screw up at the end
             #println( diffs, "\nm=", m, " s=", s, " m2=", m2, " m-m2=", m-m2)
-            if m2 < m && m-m2 > s/2.5
+            if m2 < m && m-m2 > s/2.5 && s / m > 0.0001
                 msg( ctx, 1, "The last of a " *
                     string(n) * "-expr block looks different. " *
                     "\nAvg similarity score: " * @sprintf( "%8.2f", m ) *
@@ -282,19 +298,6 @@ function lintblock( ex::Expr, ctx::LintContext )
     end
 
     checksimilarity()
-
-    if ctx.macrocallLvl==0
-        stacktop = ctx.callstack[end]
-        unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
-        for v in unused
-            ctx.line = stacktop.localvars[end][ v ]
-            msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
-        end
-
-        union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
-        pop!( stacktop.localvars )
-        pop!( stacktop.localusedvars )
-    end
 end
 
 function registersymboluse( sym::Symbol, ctx::LintContext )
@@ -335,22 +338,30 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
         end
     end
 
+    # a bunch of whitelist to just grandfather-in
+    if !found && in( sym, knownsyms )
+        return
+    end
+
     if !found
         for i in length(ctx.callstack):-1:1
             found = in( sym, ctx.callstack[i].declglobs ) ||
                 in( sym, ctx.callstack[i].functions ) ||
                 in( sym, ctx.callstack[i].types ) ||
                 in( sym, ctx.callstack[i].modules ) ||
-                in(sym, stacktop.imports )
+                in( sym, stacktop.imports )
+
             if found
+                # if in looking up variables we found global, from then
+                # on we treat the variable as if we have had declared "global"
+                # within the scope block
+                if i != length(ctx.callstack) &&
+                    in( sym, ctx.callstack[i].declglobs )
+                    push!( ctx.callstack[end].declglobs, sym )
+                end
                 break
             end
         end
-    end
-
-    # a bunch of whitelist
-    if in( sym, knownsyms )
-        return
     end
 
     if !found
@@ -524,11 +535,23 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             if !found && in( s, ctx.callstack[end].oosvars )
                 msg( ctx, 0, string(s) * " has been used in a local scope. Improve readability by using 'local' or another name.")
             end
+
+            if !found && !isGlobal && !in( s, ctx.callstack[end].declglobs )
+                for i in length(ctx.callstack)-1:-1:1
+                    if in( s, ctx.callstack[i].declglobs ) &&
+                        length(string(s)) > 4 &&
+                        !in( s, [ :value, :index, :fname, :fargs ] )
+                        msg( ctx, 0, string( s ) * " is also a global variable. Please check." )
+                        break;
+                    end
+                end
+            end
+
             if !found
                 ctx.callstack[end].localvars[1][ s ] = ctx.line
             end
         end
-        if isGlobal || isConst || length( ctx.callstack[end].localvars) == 1 && ctx.callstack[end].isTop
+        if isGlobal || isConst || (ctx.functionLvl == 0 && ctx.callstack[end].isTop)
             push!( ctx.callstack[end].declglobs, s )
         end
     end
@@ -567,8 +590,6 @@ function lintlocal( ex::Expr, ctx::LintContext )
 end
 
 function lintmodule( ex::Expr, ctx::LintContext )
-    file = ctx.file
-    line = ctx.line
     push!( ctx.callstack[end].modules, ex.args[2] )
     push!( ctx.callstack, LintStack() )
     stacktop = ctx.callstack[end]
@@ -653,7 +674,7 @@ function lintfunction( ex::Expr, ctx::LintContext )
     ctx.scope = string(fname)
     #println(fname)
 
-    if ctx.macrocallLvl == 0 && ctx.functionLvl == 0
+    if ctx.macroLvl == 0 && ctx.functionLvl == 0
         push!( ctx.callstack, LintStack() )
     else
         push!( ctx.callstack[end].localarguments, Dict{ Symbol, Any }() )
@@ -690,11 +711,13 @@ function lintfunction( ex::Expr, ctx::LintContext )
         resolveArguments( ex.args[1].args[i] )
     end
 
+    pushVarScope( ctx )
     lintexpr( ex.args[2], ctx )
+    popVarScope( ctx )
 
     ctx.functionLvl = ctx.functionLvl - 1
     # TODO check cyclomatic complexity?
-    if ctx.macrocallLvl == 0 && ctx.functionLvl == 0
+    if ctx.macroLvl == 0 && ctx.functionLvl == 0
         pop!( ctx.callstack )
     else
         pop!( ctx.callstack[end].localarguments )
@@ -709,9 +732,9 @@ function lintmacro( ex::Expr, ctx::LintContext )
 
     fname = ex.args[1].args[1]
     push!( ctx.callstack[end].macros, symbol( "@" * string(fname ) ) )
+    push!( ctx.callstack[end].localarguments, Dict{ Symbol, Any }() )
 
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
-    push!( ctx.callstack, LintStack() )
     stacktop = ctx.callstack[end]
 
     resolveArguments = (sube) -> begin
@@ -740,10 +763,10 @@ function lintmacro( ex::Expr, ctx::LintContext )
         resolveArguments( ex.args[1].args[i])
     end
 
+    ctx.macroLvl += 1
     lintexpr( ex.args[2], ctx )
-
-    # TODO check cyclomatic complexity?
-    pop!( ctx.callstack )
+    ctx.macroLvl -= 1
+    pop!( ctx.callstack[end].localarguments )
 end
 
 function lintfunctioncall( ex::Expr, ctx::LintContext )
@@ -957,17 +980,26 @@ function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
 end
 
 function lintfor( ex::Expr, ctx::LintContext )
-    push!( ctx.callstack[ end ].localvars, Dict{Symbol, Any}() )
-    push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
+    pushVarScope( ctx )
     stacktop = ctx.callstack[end]
 
     if typeof(ex.args[1])==Expr && ex.args[1].head == :(=)
-        lintassignment( ex.args[1], ctx; islocal=true )
+        lintassignment( ex.args[1], ctx )
     end
     lintexpr( ex.args[2], ctx )
 
-    pop!( ctx.callstack[ end ].localvars )
-    pop!( ctx.callstack[ end ].localusedvars )
+    popVarScope( ctx )
+end
+
+function lintwhile( ex::Expr, ctx::LintContext )
+    if ex.args[1] == false
+        msg( ctx, 1, "while false block is unreachable")
+    elseif typeof(ex.args[1]) == Expr
+            lintboolean( ex.args[1], ctx )
+    end
+    pushVarScope( ctx )
+    lintexpr( ex.args[2], ctx )
+    popVarScope( ctx )
 end
 
 function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
@@ -989,24 +1021,18 @@ function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
 end
 
 function linttry( ex::Expr, ctx::LintContext )
-    push!( ctx.callstack[ end ].localvars, Dict{Symbol, Any}() )
-    push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
+    pushVarScope( ctx )
     stacktop = ctx.callstack[end]
     lintexpr( ex.args[1], ctx )
+    popVarScope( ctx )
     if typeof(ex.args[2]) == Symbol
         stacktop.localvars[end][ ex.args[2] ] = ctx.line
     end
     for i in 3:length(ex.args)
+        pushVarScope( ctx )
         lintexpr( ex.args[i], ctx )
+        popVarScope( ctx )
     end
-    unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
-    for v in unused
-        ctx.line = stacktop.localvars[end][ v]
-        msg( ctx, 1, "Local vars declared but not used. " * string( v ) )
-    end
-    union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
-    pop!( stacktop.localvars )
-    pop!( stacktop.localusedvars )
 end
 
 function linttoplevel( ex::Expr, ctx::LintContext )
@@ -1053,9 +1079,8 @@ function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
 end
 
 function lintlet( ex::Expr, ctx::LintContext )
-    if ctx.macrocallLvl == 0
-        push!( ctx.callstack[ end ].localvars, Dict{Symbol, Any}() )
-        push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
+    if ctx.macroLvl == 0
+        pushVarScope( ctx )
     end
 
     for i = 2:length(ex.args)
@@ -1068,17 +1093,8 @@ function lintlet( ex::Expr, ctx::LintContext )
 
     lintexpr( ex.args[1], ctx )
 
-    if ctx.macrocallLvl==0
-        stacktop = ctx.callstack[end]
-        unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
-        for v in unused
-            ctx.line = stacktop.localvars[end][ v ]
-            msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
-        end
-
-        union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
-        pop!( stacktop.localvars )
-        pop!( stacktop.localusedvars )
+    if ctx.macroLvl==0
+        popVarScope( ctx )
     end
 end
 

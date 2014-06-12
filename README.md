@@ -34,8 +34,10 @@ The output is of the following form:
 * Exporting non-existing symbols (not fully done yet)
 * Exporting the same symbol more than once
 * Name overlap between a variable and a lambda argument
+* Implicitly-local (local keyword not provided, but neither is global)
+  variable assignment that looks like it should be a global variable
+  binding, if the name is long enough
 * Assignment in an if-predicate, as a potential confusion with `==`
-* Suggest explicit declaration of globals in functions
 * warn `length()` being used as Bool, suggest `!isempty()`
 * Consecutively similar expressions block and that its last part looks different from the rest (work-in-progress)
 * Out-of-scope local variable name being reused again inside the same code block. (legal but frowned upon)
