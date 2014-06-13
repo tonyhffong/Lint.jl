@@ -5,7 +5,6 @@ notifications:
   email: false
 env:
   matrix:
-    - JULIAVERSION="juliareleases"
     - JULIAVERSION="julianightlies"
 before_install:
   - sudo add-apt-repository ppa:staticfloat/julia-deps -y
@@ -14,3 +13,7 @@ before_install:
   - sudo apt-get install libpcre3-dev julia -y
 script:
   - julia -e 'Pkg.init(); Pkg.clone(pwd()); Pkg.test("Lint")'
+
+# current v0.2 is not supported
+#  matrix:
+#    - JULIAVERSION="juliareleases"
