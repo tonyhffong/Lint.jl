@@ -1,7 +1,7 @@
 # Julia's homoiconicity is crying out for an awesome lint module
 
 module Lint
-export LintMessage
+export LintMessage, LintContext, LintStack
 export lintfile, lintstr, lintpragma
 export test_similarity_string
 
@@ -21,7 +21,7 @@ include( "knownsyms.jl")
 function lintpragma( s::String )
 end
 
-function lintfile( file::String )
+function lintfile( file::String; returnMsgs::Bool = false )
     if !ispath( file )
         throw( "no such file exists")
     end
@@ -43,7 +43,11 @@ function lintfile( file::String )
         colors = [ :normal, :yellow, :magenta, :red ]
         Base.println_with_color( colors[m.level+1], string(m) )
     end
-    msgs
+    if returnMsgs
+        return msgs
+    else
+        return nothing
+    end
 end
 
 function lintstr( str::String, ctx :: LintContext = LintContext() )

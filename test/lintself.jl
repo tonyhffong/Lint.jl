@@ -1,3 +1,3 @@
-msgs = lintfile( "../src/Lint.jl" )
+msgs = lintfile( "../src/Lint.jl"; returnMsgs = true )
 
 @assert( isempty( msgs ) )
