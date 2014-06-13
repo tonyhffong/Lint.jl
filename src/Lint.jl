@@ -43,6 +43,7 @@ function lintfile( file::String )
         colors = [ :normal, :yellow, :magenta, :red ]
         Base.println_with_color( colors[m.level+1], string(m) )
     end
+    msgs
 end
 
 function lintstr( str::String, ctx :: LintContext = LintContext() )
@@ -128,12 +129,7 @@ function lintexpr( ex::Any, ctx::LintContext )
         linttoplevel( ex, ctx )
     elseif ex.head == :comparison # only the odd indices
         for i in 1:2:length(ex.args)
-            a = ex.args[i]
-            if typeof(a)==Symbol
-                registersymboluse( a, ctx )
-            elseif typeof(a)==Expr
-                lintexpr( a, ctx )
-            end
+            lintexpr( ex.args[i], ctx )
         end
     elseif ex.head == :type
         linttype( ex, ctx )
@@ -158,12 +154,7 @@ function lintexpr( ex::Any, ctx::LintContext )
     elseif ex.head == :(::) # type assert/convert
         lintexpr( ex.args[1], ctx )
     elseif ex.head == :(.) # a.b
-        sub1 = ex.args[1]
-        if typeof(sub1) == Symbol
-            registersymboluse( sub1, ctx )
-        else
-            lintexpr( sub1, ctx )
-        end
+        lintexpr( ex.args[1], ctx )
     elseif ex.head == :ref # it could be a ref a[b], or an array Int[1,2]
         sub1 = ex.args[1]
         if typeof(sub1)== Symbol

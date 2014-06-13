@@ -1,5 +1,6 @@
 #Lint.jl
 
+[![Build Status](https://travis-ci.org/tonyhffong/Lint.jl.svg?branch=master)](https://travis-ci.org/tonyhffong/Lint.jl)
 ## Introduction
 
 Lint.jl is a tool to hunt for imperfections and dodgy structures that could be

@@ -36,3 +36,12 @@ end
 """
 msgs = lintstr(s)
 @test( length(msgs)==0 ) # short names are grandfathered to be ok
+s = """
+const y= 1
+function f(x)
+    y= 2
+    x + y
+end
+"""
+msgs = lintstr(s)
+@test( length(msgs)==0 ) # short names are grandfathered to be ok

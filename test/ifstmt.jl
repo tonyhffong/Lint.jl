@@ -19,3 +19,9 @@ f(x) = (x=1)? 1 : 2 # clearly not what we want
 """
 msgs = lintstr(s )
 @test( contains( msgs[1].message, "if-predicate") )
+
+s = """
+f(x,y) = (0 <= x < y = 6)? 1 : 2 # clearly not what we want
+"""
+msgs = lintstr(s )
+@test( contains( msgs[1].message, "if-predicate") )
