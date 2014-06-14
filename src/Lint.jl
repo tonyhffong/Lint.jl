@@ -345,7 +345,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
                 in( sym, ctx.callstack[i].functions ) ||
                 in( sym, ctx.callstack[i].types ) ||
                 in( sym, ctx.callstack[i].modules ) ||
-                in( sym, stacktop.imports )
+                in( sym, ctx.callstack[i].imports )
 
             if found
                 # if in looking up variables we found global, from then
@@ -537,7 +537,11 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                     if haskey( ctx.callstack[i].declglobs, s ) &&
                         length(string(s)) > 4 &&
                         !in( s, [ :value, :index, :fname, :fargs ] )
-                        msg( ctx, 0, string( s ) * " is also a global, from \n" * string(ctx.callstack[i].declglobs[s] )* "\nPlease check." )
+                        src = string(ctx.callstack[i].declglobs[s] )
+                        l = split( src, "\n" )
+                        splice!( l, 1)
+                        src = join( l, "\n" )
+                        msg( ctx, 0, string( s ) * " is also a global, from \n" * src * "\nPlease check." )
                         break;
                     end
                 end
@@ -714,6 +718,9 @@ function lintfunction( ex::Expr, ctx::LintContext )
     end
 
     for i = 2:length(ex.args[1].args)
+        if typeof( ex.args[1].args[i] ) == Expr && ex.args[1].args[i].head == :(...) && i != length(ex.args[1].args)
+            msg( ctx, 2, "Ellipsis ... can only be the last argument")
+        end
         resolveArguments( ex.args[1].args[i] )
     end
 
@@ -1041,6 +1048,7 @@ function linttoplevel( ex::Expr, ctx::LintContext )
 end
 
 function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
+    dump( ex )
     problem = false
     m = nothing
     lastpart = nothing
@@ -1050,11 +1058,11 @@ function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
             for i in 2:length(ex.args)
                 path = path * "." * string(ex.args[i])
             end
-            m = eval( path )
+            m = eval( parse( path ) )
             lastpart = ex.args[end]
         else
             lastpart = ex.args[end]
-            m = eval( ex.args[1] )
+            m = eval( parse( join(ex.args, "." ) ) )
         end
     catch er
         problem = true
@@ -1067,6 +1075,7 @@ function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
             union!( ctx.callstack[end].imports, names( m, all ) )
         elseif typeof( lastpart  ) == Symbol
             push!( ctx.callstack[end].imports, lastpart )
+            #push!( ctx.callstack[end].declglobs, lastport )
         end
     end
 end

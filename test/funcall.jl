@@ -20,3 +20,19 @@ end
 msgs = lintstr(s)
 
 @assert( isempty(msgs) )
+s = """
+function f( x, args...)
+    x + length(args)
+end
+"""
+msgs = lintstr(s)
+
+@assert( isempty(msgs) )
+s = """
+function f( x, args..., bogus...)
+    x + length(args) + length( bogus )
+end
+"""
+msgs = lintstr(s)
+
+@assert( contains( msgs[1].message, "can only be the last argument" ) )

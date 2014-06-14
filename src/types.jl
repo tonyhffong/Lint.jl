@@ -13,7 +13,7 @@ function Base.show( io::IO, m::LintMessage )
     s = s * @sprintf( "%4d ", m.line )
     arr = [ "FYI", "WARN", "ERROR", "FATAL" ]
     s = s * @sprintf( "%-5s  ", arr[ m.level+1 ] )
-    ident = min( 40, length(s) )
+    ident = min( 65, length(s) )
     lines = split(m.message, "\n")
     for (i,l) in enumerate(lines)
         if i==1
