@@ -10,3 +10,13 @@ z = Dict{ Symbol, Any }()
 msgs = lintstr(s)
 
 @assert( isempty(msgs) )
+s = """
+function f{T}( x::T, y::T )
+    a = Array{ T, 1 }()
+    append!( a,[ x, y ] )
+    a
+end
+"""
+msgs = lintstr(s)
+
+@assert( isempty(msgs) )

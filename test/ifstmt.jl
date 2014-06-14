@@ -25,3 +25,22 @@ f(x,y) = (0 <= x < y = 6)? 1 : 2 # clearly not what we want
 """
 msgs = lintstr(s )
 @test( contains( msgs[1].message, "if-predicate") )
+s = """
+function f()
+    if true
+        println( "hello")
+    end
+end
+"""
+msgs = lintstr(s )
+@test( contains( msgs[1].message, "redundant if-true") )
+s = """
+function f()
+    v::Array{Int,1} = [ 1,2,3 ]
+    if length(v)
+        println( "hello")
+    end
+end
+"""
+msgs = lintstr(s )
+@test( contains( msgs[1].message, "Incorrect usage of length") )

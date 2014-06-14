@@ -865,8 +865,7 @@ end
 function lintlambda( ex::Expr, ctx::LintContext )
     stacktop = ctx.callstack[end]
     push!( stacktop.localarguments, Dict{Symbol, Any}() )
-    push!( stacktop.localvars, Dict{Symbol, Any}() )
-    push!( stacktop.localusedvars, Set{Symbol}() )
+    pushVarScope( ctx )
     # check for conflicts on lambda arguments
     checklambdaarg = (sym)->begin
         for i in length(stacktop.localvars):-1:1
@@ -919,15 +918,8 @@ function lintlambda( ex::Expr, ctx::LintContext )
     end
     lintexpr( ex.args[2], ctx )
 
-    unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
-    for v in unused
-        ctx.line = stacktop.localvars[end][v]
-        msg( ctx, 1, "Local vars declared but not used: " * string( v) )
-    end
-    union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
+    popVarScope( ctx )
     pop!( stacktop.localarguments )
-    pop!( stacktop.localvars )
-    pop!( stacktop.localusedvars )
 end
 
 function linttype( ex::Expr, ctx::LintContext )
@@ -1084,15 +1076,15 @@ function lintlet( ex::Expr, ctx::LintContext )
         pushVarScope( ctx )
     end
 
-    for i = 2:length(ex.args)
-        if typeof( ex.args[i] ) == Expr && ex.args[i].head == :(=)
-            lintassignment( ex.args[i], ctx; islocal = true )
+    blk = ex.args[1]
+    @assert( blk.head == :block )
+    for i = 1:length(blk.args)
+        if typeof( blk.args[i] ) == Expr && blk.args[i].head == :(=)
+            lintassignment( blk.args[i], ctx; islocal = true )
         else
-            lintexpr( ex, ctx )
+            lintexpr( blk.args[i], ctx )
         end
     end
-
-    lintexpr( ex.args[1], ctx )
 
     if ctx.macroLvl==0
         popVarScope( ctx )
