@@ -46,7 +46,7 @@ msgs = lintstr(s)
 @assert( contains( msgs[1].message, "non-default argument following default" ) )
 s = """
 function f( x, y; z, q=1)
-    x + length(args) + y
+    x + q + y
 end
 """
 msgs = lintstr(s)
