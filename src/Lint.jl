@@ -617,9 +617,12 @@ function lintusing( ex::Expr, ctx::LintContext )
         end
     end
     if ex.args[1] != :(.)
-        eval( Main, ex )
+        m = nothing
         path = join( map( string, ex.args ), "." )
-        m = eval( Main, parse( path ) )
+        try
+            eval( Main, ex )
+            m = eval( Main, parse( path ) )
+        end
         t = typeof( m )
         if t == Module
             for n in names( m )
@@ -635,7 +638,7 @@ function lintusing( ex::Expr, ctx::LintContext )
                 ctx.callstack[end].linthelpers[ path ] = m.lint_helper
             end
         else
-            println( path, " doesn't eval into a Module")
+            msg( ctx, 1, string(path) * " doesn't eval into a Module")
         end
     end
 end
@@ -808,6 +811,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
     else
         st = 2
         en = length(ex.args)
+        #=
         if ex.args[1] in [ :map, :open ] && typeof( ex.args[2] ) == Symbol
             st = 3
         end
@@ -820,10 +824,10 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             st = 3
         end
 
+        =#
         if typeof( ex.args[1] )== Expr && ex.args[1].head == :curly
-            # Dict{Symbol, Int}()
-            # not much to do there
-            return
+            # Dict{Symbol, Int}
+            lintexpr( ex.args[1], ctx )
         end
 
         for i in st:en
@@ -984,7 +988,6 @@ end
 
 function lintfor( ex::Expr, ctx::LintContext )
     pushVarScope( ctx )
-    stacktop = ctx.callstack[end]
 
     if typeof(ex.args[1])==Expr && ex.args[1].head == :(=)
         lintassignment( ex.args[1], ctx )
@@ -1006,21 +1009,16 @@ function lintwhile( ex::Expr, ctx::LintContext )
 end
 
 function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
-    push!( ctx.callstack[ end ].localvars, Dict{Symbol, Any}() )
-    push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
-    stacktop = ctx.callstack[end]
-
+    pushVarScope( ctx )
     st = typed? 3 :2
     fn = typed? 2 :1
     for i in st:length(ex.args)
         if typeof(ex.args[i])==Expr && ex.args[i].head == :(=)
-            lintassignment( ex.args[i], ctx; islocal=true )
+            lintassignment( ex.args[i], ctx; islocal=true ) # note contrast with for loop
         end
     end
     lintexpr( ex.args[fn], ctx )
-
-    pop!( ctx.callstack[ end ].localvars )
-    pop!( ctx.callstack[ end ].localusedvars )
+    popVarScope( ctx )
 end
 
 function linttry( ex::Expr, ctx::LintContext )
