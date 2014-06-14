@@ -36,3 +36,27 @@ end
 msgs = lintstr(s)
 
 @assert( contains( msgs[1].message, "can only be the last argument" ) )
+s = """
+function f( x=1, y, args...)
+    x + length(args) + y
+end
+"""
+msgs = lintstr(s)
+
+@assert( contains( msgs[1].message, "non-default argument following default" ) )
+s = """
+function f( x, y; z, q=1)
+    x + length(args) + y
+end
+"""
+msgs = lintstr(s)
+
+@assert( contains( msgs[1].message, "must have a default" ) )
+s = """
+function f( x, y; args..., z=1)
+    x + length(args) + y
+end
+"""
+msgs = lintstr(s)
+
+@assert( contains( msgs[1].message, "can only be the last argument" ) )

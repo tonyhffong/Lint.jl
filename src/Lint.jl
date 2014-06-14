@@ -695,21 +695,46 @@ function lintfunction( ex::Expr, ctx::LintContext )
     # temporaryTypes are the type parameters in curly brackets, make them legal in the current scope
     union!( stacktop.types, temporaryTypes )
 
-    resolveArguments = (sube) -> begin
+    argsSeen = Set{ Symbol }()
+    optionalposition = 0
+
+    resolveArguments = (sube, position) -> begin # zero position means it's not called at the top level
         if typeof( sube ) == Symbol
+            if in( sube, argsSeen )
+                msg( ctx, 2, "Duplicate argument: " * string( sube) )
+            end
+            if position != 0 && optionalposition != 0
+                msg( ctx, 2, "You cannot have non-default argument following default arguments")
+            end
             stacktop.localarguments[end][sube]=ctx.line
+            push!( argsSeen, sube )
         elseif sube.head == :parameters
-            for kw in sube.args
-                resolveArguments( kw )
+            for (i,kw) in enumerate(sube.args)
+                if typeof(kw)==Expr && kw.head == :(...)
+                    if i != length(sube.args)
+                        msg( ctx, 2, "Named ellipsis ... can only be the last argument")
+                        return
+                    end
+                elseif typeof( kw ) != Expr || (kw.head != :(=) && kw.head != :kw)
+                    msg( ctx, 2, "Named keyword argument must have a default: " *string(kw))
+                    return
+                end
+                resolveArguments( kw, 0 )
             end
         elseif sube.head == :(=) || sube.head == :kw
-            resolveArguments( sube.args[1] )
+            if position != 0
+                optionalposition = position
+            end
+            resolveArguments( sube.args[1], 0 )
         elseif sube.head == :(::)
             if length( sube.args ) > 1
-                resolveArguments( sube.args[1] )
+                resolveArguments( sube.args[1], 0 )
             end
         elseif sube.head == :(...)
-            resolveArguments( sube.args[1])
+            if position != length(ex.args[1].args)
+                msg( ctx, 2, "Positional ellipsis ... can only be the last argument")
+            end
+            resolveArguments( sube.args[1], 0 )
         elseif sube.head == :($)
             lintexpr( sube.args[1], ctx )
         else
@@ -718,10 +743,7 @@ function lintfunction( ex::Expr, ctx::LintContext )
     end
 
     for i = 2:length(ex.args[1].args)
-        if typeof( ex.args[1].args[i] ) == Expr && ex.args[1].args[i].head == :(...) && i != length(ex.args[1].args)
-            msg( ctx, 2, "Ellipsis ... can only be the last argument")
-        end
-        resolveArguments( ex.args[1].args[i] )
+        resolveArguments( ex.args[1].args[i], i )
     end
 
     pushVarScope( ctx )
