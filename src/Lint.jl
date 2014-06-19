@@ -1059,7 +1059,17 @@ function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
             msg( ctx, 2, "Multiple value types detected. Use {} for mixed type dict")
         end
     else
-        if !in( Any, ktypes ) && length( ktypes ) == 1 && !in( Any, vtypes ) && length( vtypes ) == 1
+        declktype = ex.args[1].args[1]
+        if typeof(declktype) == TopNode
+            declktype = declktype.name
+        end
+        declvtype = ex.args[1].args[2]
+        if typeof(declvtype) == TopNode
+            declvtype = declvtype.name
+        end
+        if declktype == Any && declvtype == Any &&
+            !in( Any, ktypes ) && length( ktypes ) == 1 &&
+            !in( Any, vtypes ) && length( vtypes ) == 1
             msg( ctx, 0, "There is only 1 key type && 1 value type. Use [] for better performances.")
         end
     end
@@ -1175,7 +1185,7 @@ function lintlet( ex::Expr, ctx::LintContext )
     blk = ex.args[1]
     @assert( blk.head == :block )
     for i = 1:length(blk.args)
-        if typeof( blk.args[i] ) == Expr && blk.args[i].head == :(=)
+        if typeof( blk.args[i] ) == Expr && blk.args[i].head == :(=) && ( typeof( blk.args[i].args[1] ) != Expr || blk.args[i].args[1].head != :call )
             lintassignment( blk.args[i], ctx; islocal = true )
         else
             lintexpr( blk.args[i], ctx )
