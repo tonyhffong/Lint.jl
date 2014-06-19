@@ -464,7 +464,7 @@ function lintboolean( ex::Expr, ctx::LintContext )
     if ex.head == :(=)
         msg( ctx, 0, "Assignment in the if-predicate clause.")
     elseif ex.head == :call && ex.args[1] in [ :(&), :(|), :($) ]
-        msg( ctx, 2, "Bit-wise " * string( ex.args[1]) * " in a boolean context?" )
+        msg( ctx, 1, "Bit-wise " * string( ex.args[1]) * " in a boolean context. (&,|) do not have short-circuit behavior." )
     elseif ex.head == :(&&) || ex.head == :(||)
         for a in ex.args
             if typeof(a) == Symbol
@@ -492,30 +492,35 @@ function lintboolean( ex::Expr, ctx::LintContext )
     lintexpr( ex, ctx )
 end
 
-function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=false, isGlobal=false ) # is it a local decl & assignment?
-    lintexpr( ex.args[2], ctx )
-    syms = Symbol[]
-
-    resolveLHSsymbol = (sube)-> begin
-        if typeof( sube ) == Symbol
-            push!( syms, sube)
-        elseif sube.head == :(::)
-            resolveLHSsymbol( sube.args[1] )
-        elseif sube.head == :tuple
-            for s in sube.args
-                resolveLHSsymbol( s )
-            end
-        elseif sube.head == :(.) ||   # a.b = something
-            sube.head == :ref ||      # a[b] = something
-            sube.head == :($)         # :( $(esc(name)) = something )
-            lintexpr( sube.args[1], ctx )
-            return
-        else
-            msg( ctx, 2, "LHS in assignment not understood by Lint. please check: " * string(sube) )
+function resolveLHSsymbol( ex, syms::Array{Symbol,1}, ctx::LintContext )
+    if typeof( ex ) == Symbol
+        push!( syms, ex)
+    elseif ex.head == :(::)
+        resolveLHSsymbol( ex.args[1], syms, ctx )
+    elseif ex.head == :tuple
+        for s in ex.args
+            resolveLHSsymbol( s, syms, ctx )
         end
+    elseif ex.head == :(.) ||   # a.b = something
+        ex.head == :ref ||      # a[b] = something
+        ex.head == :($)         # :( $(esc(name)) = something )
+        lintexpr( ex.args[1], ctx )
+        return
+    else
+        msg( ctx, 2, "LHS in assignment not understood by Lint. please check: " * string(ex) )
+    end
+end
+
+function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false ) # is it a local decl & assignment?
+    lintexpr( ex.args[2], ctx )
+
+    syms = Symbol[]
+    resolveLHSsymbol( ex.args[1], syms, ctx )
+
+    if isForLoop && length(syms)==1 && typeof(ex.args[2])==Expr && in( ex.args[2].head, [:dict, :typed_dict] )
+        msg( ctx, 0, "Typically iteration over dictionary uses a (k,v) tuple. Here only one variable is used." )
     end
 
-    resolveLHSsymbol( ex.args[1] )
     for s in syms
         if islocal
             ctx.callstack[end].localvars[end][ s ] = ctx.line
@@ -657,6 +662,23 @@ function lintexport( ex::Expr, ctx::LintContext )
     end
 end
 
+function lintfuncargtype( ex, ctx::LintContext )
+    if typeof( ex ) <: Expr && ex.head == :curly
+        st = 2
+        en = 1
+        if ex.args[1] == :Array
+            en = 2
+        elseif ex.args[1] == :Dict
+            en = 3
+        end
+        for i in st:en
+            if in( ex.args[i], [ :Number ] )
+                msg( ctx, 2, "Type parameters in Julia are invariant, meaning although Int <: Number is true, Array{Int,1} <: Array{Number,1} is false. Try f{T<:Number}(x::T)...")
+            end
+        end
+    end
+end
+
 function lintfunction( ex::Expr, ctx::LintContext )
     if ex.args[1].args[1]==:eval # extending eval(m,x) = ... in module. don't touch it.
         return
@@ -729,6 +751,9 @@ function lintfunction( ex::Expr, ctx::LintContext )
         elseif sube.head == :(::)
             if length( sube.args ) > 1
                 resolveArguments( sube.args[1], 0 )
+                lintfuncargtype( sube.args[2], ctx )
+            else
+                lintfuncargtype( sube.args[1], ctx )
             end
         elseif sube.head == :(...)
             if position != length(ex.args[1].args)
@@ -838,6 +863,9 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             ctx.lineabs = lineabs
         end
     else
+        if ex.args[1]==:(+)
+            lintplus( ex, ctx )
+        end
         st = 2
         en = length(ex.args)
         #=
@@ -993,6 +1021,8 @@ end
 function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
     st = typed ? 2 : 1
     ks = Set{Any}()
+    ktypes = Set{Any}()
+    vtypes = Set{Any}()
     for i in st:length(ex.args)
         a = ex.args[i]
         if typeof(a)== Expr && a.head == :(=>)
@@ -1002,7 +1032,43 @@ function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
                 end
                 push!( ks, a.args[1] )
             end
+            for (j,s) in [ (1,ktypes), (2,vtypes ) ]
+                if typeof( a.args[j] ) <: QuoteNode && typeof( a.args[j].value ) <: Symbol
+                    push!( s, Symbol )
+                elseif typeof( a.args[j] ) <: Number || typeof( a.args[j] ) <: String
+                    push!( s, typeof( a.args[j] ) )
+                    # we want to add more immutable types such as Date, DateTime, etc.
+                elseif typeof( a.args[j] ) <: Expr && a.args[j].head == :call && in( a.args[j].args[1], [:Date, :DateTime] )
+                    push!( s, a.args[j].args[1] )
+                else
+                    if typed
+                        push!( s, Any )
+                    end
+                end
+            end
+
             lintexpr( a.args[2], ctx )
+        end
+    end
+
+    if !typed
+        if length( ktypes ) > 1
+            msg( ctx, 2, "Multiple key types detected. Use {} for mixed type dict")
+        end
+        if length( vtypes ) > 1
+            msg( ctx, 2, "Multiple value types detected. Use {} for mixed type dict")
+        end
+    else
+        if !in( Any, ktypes ) && length( ktypes ) == 1 && !in( Any, vtypes ) && length( vtypes ) == 1
+            msg( ctx, 0, "There is only 1 key type && 1 value type. Use [] for better performances.")
+        end
+    end
+end
+
+function lintplus( ex::Expr, ctx::LintContext )
+    for i in 2:length(ex.args)
+        if typeof( ex.args[i] ) <: String
+            msg( ctx, 2, "String uses * to concatenate.")
         end
     end
 end
@@ -1011,7 +1077,7 @@ function lintfor( ex::Expr, ctx::LintContext )
     pushVarScope( ctx )
 
     if typeof(ex.args[1])==Expr && ex.args[1].head == :(=)
-        lintassignment( ex.args[1], ctx )
+        lintassignment( ex.args[1], ctx; isForLoop=true )
     end
     lintexpr( ex.args[2], ctx )
 
@@ -1035,7 +1101,7 @@ function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
     fn = typed? 2 :1
     for i in st:length(ex.args)
         if typeof(ex.args[i])==Expr && ex.args[i].head == :(=)
-            lintassignment( ex.args[i], ctx; islocal=true ) # note contrast with for loop
+            lintassignment( ex.args[i], ctx; islocal=true, isForLoop=true ) # note contrast with for loop
         end
     end
     lintexpr( ex.args[fn], ctx )

@@ -60,3 +60,17 @@ end
 msgs = lintstr(s)
 
 @assert( contains( msgs[1].message, "can only be the last argument" ) )
+s = """
+function f( x::Array{Number,1} )
+    length(x)
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Type parameters in Julia are invariant" ) )
+s = """
+function f( x::Dict{Symbol,Number} )
+    length(x)
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Type parameters in Julia are invariant" ) )
