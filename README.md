@@ -64,7 +64,7 @@ Key info about adding a `lint_helper` function in your module
   - if you find an issue in your expression, call `Lint.msg( ctx, level, "explanation" )`
   - level is 0: FYI, 1:WARN, 2:ERROR, 4:FATAL
 * typical structure looks like this
-```
+```julia
 function lint_helper( ex::Expr, ctx )
     if ex.head == :macrocall
         if ex.args[1] == symbol("@fancy_macro1")
@@ -87,19 +87,19 @@ end
  for storing current lint context, such as when a certain macro is only allowed
  inside another macro.
 * If your macro generates new local variables, call this:
-```
+```julia
 ctx.callstack[end].localvars[end][ varsymbol ] = ctx.line
 ```
 * If your macro generates new free variables (not bound to a block scope), call this:
-```
+```julia
 ctx.callstack[end].localvars[1][ varsymbol ] = ctx.line
 ```
 * If your macro generates new functions,
-```
+```julia
 push!( ctx.callstack[end].functions, funcsymbol )
 ```
 * If your macro generates new types,
-```
+```julia
 push!( ctx.callstack[end].types, roottypesymbol )
 ```
 You just need to put in the root symbol for a parametric type, for example
