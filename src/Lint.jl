@@ -731,9 +731,9 @@ function lintfunction( ex::Expr, ctx::LintContext )
             stacktop.localarguments[end][sube]=ctx.line
             push!( argsSeen, sube )
         elseif sube.head == :parameters
-            for (i,kw) in enumerate(sube.args)
+            for (j,kw) in enumerate(sube.args)
                 if typeof(kw)==Expr && kw.head == :(...)
-                    if i != length(sube.args)
+                    if j != length(sube.args)
                         msg( ctx, 2, "Named ellipsis ... can only be the last argument")
                         return
                     end
@@ -756,7 +756,7 @@ function lintfunction( ex::Expr, ctx::LintContext )
                 lintfuncargtype( sube.args[1], ctx )
             end
         elseif sube.head == :(...)
-            if position != length(ex.args[1].args)
+            if position != 0 && position != length(ex.args[1].args)
                 msg( ctx, 2, "Positional ellipsis ... can only be the last argument")
             end
             resolveArguments( sube.args[1], 0 )
@@ -1136,7 +1136,6 @@ function linttoplevel( ex::Expr, ctx::LintContext )
 end
 
 function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
-    dump( ex )
     problem = false
     m = nothing
     lastpart = nothing

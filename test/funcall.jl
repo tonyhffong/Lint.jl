@@ -61,6 +61,13 @@ msgs = lintstr(s)
 
 @assert( contains( msgs[1].message, "can only be the last argument" ) )
 s = """
+function f( x, args...; kwargs...)
+    x + length(args) + length(kwargs)
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
+s = """
 function f( x::Array{Number,1} )
     length(x)
 end
