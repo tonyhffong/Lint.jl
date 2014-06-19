@@ -1059,15 +1059,11 @@ function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
             msg( ctx, 2, "Multiple value types detected. Use {} for mixed type dict")
         end
     else
+        # if the expression is explicitly (Any=>Any)[ :a => 1 ], then it'd be
+        #   :Any=>:Any, not TopNode( :Any )=>TopNode( :Any )
         declktype = ex.args[1].args[1]
-        if typeof(declktype) == TopNode
-            declktype = declktype.name
-        end
         declvtype = ex.args[1].args[2]
-        if typeof(declvtype) == TopNode
-            declvtype = declvtype.name
-        end
-        if declktype == Any && declvtype == Any &&
+        if declktype == TopNode( :Any ) && declvtype == TopNode( :Any ) &&
             !in( Any, ktypes ) && length( ktypes ) == 1 &&
             !in( Any, vtypes ) && length( vtypes ) == 1
             msg( ctx, 0, "There is only 1 key type && 1 value type. Use [] for better performances.")

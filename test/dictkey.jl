@@ -26,3 +26,14 @@ s = """
 msgs = lintstr( s )
 
 @test( contains( msgs[1].message, "Multiple key types detected" ) )
+s = """
+(Symbol=>Int)[ :a=>1, :b=>2 ]
+"""
+msgs = lintstr( s )
+@test( isempty( msgs ) )
+
+s = """
+(Any=>Any)[ :a=>1, :b=>2 ]
+"""
+msgs = lintstr( s )
+@test( isempty( msgs ) )
