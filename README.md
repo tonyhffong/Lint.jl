@@ -32,6 +32,8 @@ The output is of the following form:
 * declared but unused variable
 * Using an undefined variable
 * Duplicate key as in `[:a=>1, :b=>2, :a=>3]`
+* Mixed types in uniform dictionary `[:a=>1, :b=>""]` (ERROR)
+* Uniform types in mixed dictionary `{:a=>1, :b=>2}` (performance FYI)
 * Exporting non-existing symbols (not fully done yet)
 * Exporting the same symbol more than once
 * Name overlap between a variable and a lambda argument
@@ -42,6 +44,9 @@ The output is of the following form:
 * warn `length()` being used as Bool, suggest `!isempty()`
 * Consecutively similar expressions block and that its last part looks different from the rest (work-in-progress)
 * Out-of-scope local variable name being reused again inside the same code block. (legal but frowned upon)
+* Function arguments being Container on abstract e.g. f(x::Array{Number,1}). Suggest f{T<:Number}(x::Array{T,1})
+* Concatenation of strings using `+`
+* Iteration over an apparent dictionary using only one variable instead of (k,v) tuple
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing
