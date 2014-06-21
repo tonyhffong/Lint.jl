@@ -1075,6 +1075,7 @@ function lintplus( ex::Expr, ctx::LintContext )
     for i in 2:length(ex.args)
         if typeof( ex.args[i] ) <: String
             msg( ctx, 2, "String uses * to concatenate.")
+            break
         end
     end
 end
