@@ -2,7 +2,7 @@
 
 module Lint
 export LintMessage, LintContext, LintStack
-export lintfile, lintstr, lintpragma
+export lintfile, lintstr, lintpkg, lintpragma
 export test_similarity_string
 
 const SIMILARITY_THRESHOLD = 10.0
@@ -19,6 +19,14 @@ include( "knownsyms.jl")
 
 # no-op, the presence of this can suppress lint messages locally
 function lintpragma( s::String )
+end
+
+function lintpkg( pkg::String; returnMsgs::Bool = false )
+    p = joinpath( Pkg.dir( pkg ), "src", pkg * ".jl" )
+    if !ispath( p )
+        throw( "cannot find path: " * p )
+    end
+    lintfile( p, returnMsgs = returnMsgs )
 end
 
 function lintfile( file::String; returnMsgs::Bool = false )
