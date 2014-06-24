@@ -998,12 +998,22 @@ function linttype( ex::Expr, ctx::LintContext )
     if typeof( ex.args[2] ) == Symbol
         push!( ctx.callstack[end].types, ex.args[2] )
     elseif typeof( ex.args[2] ) == Expr && ex.args[2].head == :curly
-        push!( ctx.callstack[end].types, ex.args[2].args[1] )
+        adt= ex.args[2].args[2]
+        if typeof( adt )== Symbol && in( adt, knowntypes )
+            msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducting it as a new name for an algebric data type, unrelated to the type " * string(adt))
+        else
+            push!( ctx.callstack[end].types, ex.args[2].args[1] )
+        end
     elseif typeof( ex.args[2] ) == Expr && ex.args[2].head == :(<:)
         if typeof( ex.args[2].args[1] ) == Symbol
             push!( ctx.callstack[end].types, ex.args[2].args[1] )
         elseif typeof( ex.args[2].args[1] )==Expr && ex.args[2].args[1].head == :curly
-            push!( ctx.callstack[end].types, ex.args[2].args[1].args[1] )
+            adt = ex.args[2].args[1].args[2]
+            if typeof( adt )== Symbol && in( adt, knowntypes )
+                msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducting it as a new name for an algebric data type, unrelated to the type " * string(adt))
+            else
+                push!( ctx.callstack[end].types, ex.args[2].args[1].args[1] )
+            end
         end
     end
 end
