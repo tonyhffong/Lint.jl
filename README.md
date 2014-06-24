@@ -25,6 +25,19 @@ The output is of the following form:
 `Line` is the line number relative to the start of the function.
 `CODE` gives an indication of severity, and is one of `FYI`, `WARN`, `ERROR`, or `FATAL`.
 
+To simplify life, there is a convenience function for packages:
+```julia
+using Lint
+lintpkg(“MyPackage”)
+```
+
+If your package always lints clean, you may want to keep it that way in a test:
+```julia
+using Test
+using Lint
+@test isempty(lintpkg(“MyPackage”, returnMsgs=true))
+```
+
 ## What it can find?
 * simple deadcode detection (e.g if true/false)
 * simple premature-return deadcode detection
