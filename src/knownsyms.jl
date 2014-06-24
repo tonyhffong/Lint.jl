@@ -12,3 +12,17 @@ union!( knownsyms, [
  :pointerset,
  :arraysize,
  ] )
+
+ const knowntypes = Set{Symbol}()
+ union!( knowntypes, filter( names( Base ) ) do x
+     ok = false
+     try
+         ok = isa( eval( Base, x ), DataType )
+     end
+ end)
+ union!( knowntypes, filter( names( Core ) ) do x
+     ok = false
+     try
+         ok = isa( eval( Base, x ), DataType )
+     end
+ end)

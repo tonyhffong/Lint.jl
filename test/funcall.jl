@@ -18,8 +18,14 @@ function f{T}( x::T, y::T )
 end
 """
 msgs = lintstr(s)
-
 @assert( isempty(msgs) )
+s = """
+function f{Int64}( x::Int64, y::Int64 )
+    x + y
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "unrelated to the type" ) )
 s = """
 function f( x, args...)
     x + length(args)

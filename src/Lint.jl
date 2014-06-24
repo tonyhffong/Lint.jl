@@ -703,7 +703,11 @@ function lintfunction( ex::Expr, ctx::LintContext )
         for i in 2:length( ex.args[1].args[1].args)
             adt = ex.args[1].args[1].args[i]
             if typeof(adt) == Symbol
-                push!( temporaryTypes, adt )
+                if in(adt, knowntypes )
+                    msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducting it as a new name for an implicit argument to the function, unrelated to the type " * string(adt))
+                else
+                    push!( temporaryTypes, adt )
+                end
             elseif typeof(adt)==Expr && adt.head == :(<:)
                 push!( temporaryTypes, adt.args[1] )
             end
