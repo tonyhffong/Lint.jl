@@ -28,14 +28,14 @@ The output is of the following form:
 To simplify life, there is a convenience function for packages:
 ```julia
 using Lint
-lintpkg(“MyPackage”)
+lintpkg( "MyPackage" )
 ```
 
 If your package always lints clean, you may want to keep it that way in a test:
 ```julia
 using Test
 using Lint
-@test isempty(lintpkg(“MyPackage”, returnMsgs=true))
+@test isempty(lintpkg( "MyPackage", returnMsgs=true))
 ```
 
 ## What it can find?
@@ -60,6 +60,7 @@ using Lint
 * Function arguments being Container on abstract e.g. f(x::Array{Number,1}). Suggest f{T<:Number}(x::Array{T,1})
 * Concatenation of strings using `+`
 * Iteration over an apparent dictionary using only one variable instead of (k,v) tuple
+* Incorrect ADT usage in function definition, e.g. `f{Int}( x::Int )`
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing

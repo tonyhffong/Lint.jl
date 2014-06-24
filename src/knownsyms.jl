@@ -23,6 +23,6 @@ union!( knownsyms, [
  union!( knowntypes, filter( names( Core ) ) do x
      ok = false
      try
-         ok = isa( eval( Base, x ), DataType )
+         ok = isa( eval( Core, x ), DataType )
      end
  end)
