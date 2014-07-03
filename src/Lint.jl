@@ -163,6 +163,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintmacrocall( ex, ctx )
     elseif ex.head == :call
         lintfunctioncall( ex, ctx )
+    elseif ex.head == :(:)
+        lintrange( ex, ctx )
     elseif ex.head == :(::) # type assert/convert
         lintexpr( ex.args[1], ctx )
     elseif ex.head == :(.) # a.b
@@ -1098,6 +1100,16 @@ function lintplus( ex::Expr, ctx::LintContext )
         if typeof( ex.args[i] ) <: String
             msg( ctx, 2, "String uses * to concatenate.")
             break
+        end
+    end
+end
+
+function lintrange( ex::Expr, ctx::LintContext )
+    if length( ex.args ) == 2 && typeof( ex.args[1] ) <: Real && typeof( ex.args[2] ) <: Real && ex.args[2] < ex.args[1]
+        msg( ctx, 2, "For a decreasing range, use a negative step e.g. 10:-1:1")
+    else
+        for a in ex.args
+            lintexpr( a, ctx )
         end
     end
 end
