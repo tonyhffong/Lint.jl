@@ -532,6 +532,10 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     end
 
     for s in syms
+        if in( s, [ :e, :pi, :eu, :catalan, :eulergamma, :golden, :π, :γ, :φ ] )
+            msg( ctx, 1, "You are redefining a mathematical constant " * string(s) )
+        end
+
         if islocal
             ctx.callstack[end].localvars[end][ s ] = ctx.line
         else # it's not explicitly local, but it could be!
