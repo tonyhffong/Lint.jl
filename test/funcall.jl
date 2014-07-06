@@ -27,6 +27,13 @@ end
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "unrelated to the type" ) )
 s = """
+function f{T<:Int64}( x::T, y::T)
+    x + y
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "leaf type" ) )
+s = """
 function f( x, args...)
     x + length(args)
 end
