@@ -896,6 +896,10 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             msg( ctx, 2, "You want symbol(), i.e. symbol conversion, instead of a non-existent constructor" )
             return
         end
+        if ex.args[1] == :String
+            msg( ctx, 2, "You want string(), i.e. string conversion, instead of a non-existent constructor" )
+            return
+        end
         if ex.args[1]==:(+)
             lintplus( ex, ctx )
         end
