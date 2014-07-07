@@ -892,6 +892,10 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             ctx.lineabs = lineabs
         end
     else
+        if ex.args[1] == :Symbol
+            msg( ctx, 2, "You want symbol(), i.e. symbol conversion, instead of a non-existent constructor" )
+            return
+        end
         if ex.args[1]==:(+)
             lintplus( ex, ctx )
         end
