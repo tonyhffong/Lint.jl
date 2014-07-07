@@ -1019,7 +1019,7 @@ function linttype( ex::Expr, ctx::LintContext )
             adt= ex.args[2].args[i]
             if typeof( adt )== Symbol && in( adt, knowntypes )
                 msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducting it as a new name for an algebric data type, unrelated to the type " * string(adt))
-            elseif adt.head == :(<:)
+            elseif typeof(adt)==Expr && adt.head == :(<:)
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
                 if in( temptype, knowntypes )
@@ -1031,7 +1031,7 @@ function linttype( ex::Expr, ctx::LintContext )
                         msg( ctx, 2, string( dt )* " is a leaf type. As a type constraint it makes no sense in " * string(adt) )
                     end
                 end
-                push!( ctx.callstack[end].types, ex.args[2].args[1] )
+                push!( ctx.callstack[end].types, ex.args[2].args[i] )
             end
         end
     elseif typeof( ex.args[2] ) == Expr && ex.args[2].head == :(<:)
@@ -1039,8 +1039,12 @@ function linttype( ex::Expr, ctx::LintContext )
             push!( ctx.callstack[end].types, ex.args[2].args[1] )
         elseif typeof( ex.args[2].args[1] )==Expr && ex.args[2].args[1].head == :curly
             adt = ex.args[2].args[1].args[2]
-            if typeof( adt )== Symbol && in( adt, knowntypes )
-                msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducting it as a new name for an algebric data type, unrelated to the type " * string(adt))
+            if typeof( adt )== Symbol
+                if in( adt, knowntypes )
+                    msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducting it as a new name for an algebric data type, unrelated to the type " * string(adt))
+                else
+                    push!( ctx.callstack[end].types, adt )
+                end
             elseif adt.head == :(<:)
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
