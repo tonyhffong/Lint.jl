@@ -60,7 +60,10 @@ using Lint
 * Function arguments being Container on abstract e.g. f(x::Array{Number,1}). Suggest f{T<:Number}(x::Array{T,1})
 * Concatenation of strings using `+`
 * Iteration over an apparent dictionary using only one variable instead of (k,v) tuple
-* Incorrect ADT usage in function definition, e.g. `f{Int}( x::Int )`
+* Incorrect ADT usage in function definition, e.g. `f{Int}( x::Int )` or `f{T<:Int64}( x::T )`
+* Suspicious range literals e.g. 10:1
+* Understandable but actually non-existent constructors e.g. String(), Symbol()
+* Redefining mathematical constants, such as `e = 2.718`
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing
