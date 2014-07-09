@@ -60,7 +60,7 @@ function linttype( ex::Expr, ctx::LintContext )
         elseif def.head == :line
             ctx.line = def.args[1]
         elseif def.head == :(::)
-        elseif def.head == :(=) && typeof( def.args[1] == Expr && def.args[1].head == :call )
+        elseif def.head == :(=) && typeof( def.args[1]) == Expr && def.args[1].head == :call
             lintfunction( def, ctx )
         elseif def.head == :function
             lintfunction( def, ctx )
