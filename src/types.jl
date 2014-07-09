@@ -1,3 +1,5 @@
+# type definition lint code
+
 function linttype( ex::Expr, ctx::LintContext )
     if typeof( ex.args[2] ) == Expr && ex.args[2].head == :($) && typeof( ex.args[2].args[1] ) == Symbol
         registersymboluse( ex.args[2].args[1], ctx )
@@ -49,6 +51,19 @@ function linttype( ex::Expr, ctx::LintContext )
                 end
                 push!( ctx.callstack[end].types, ex.args[2].args[1].args[1] )
             end
+        end
+    end
+
+    for def in ex.args[3].args
+        if typeof( def ) == LineNumberNode
+            ctx.line = def.line
+        elseif def.head == :line
+            ctx.line = def.args[1]
+        elseif def.head == :(::)
+        elseif def.head == :(=) && typeof( def.args[1] == Expr && def.args[1].head == :call )
+            lintfunction( def, ctx )
+        elseif def.head == :function
+            lintfunction( def, ctx )
         end
     end
 end
