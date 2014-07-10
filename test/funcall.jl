@@ -94,3 +94,11 @@ end
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "Type parameters in Julia are invariant" ) )
+s = """
+function f( x, y )
+    using Base.Meta
+    isexpr(x, :call) ? y : 0
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "using is not allowed inside function" ) )
