@@ -24,3 +24,9 @@ end
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "leaf type" ) )
 @assert( contains( msgs[2].message, "parametric data type" ) )
+s = """
+type MyType{Int<:Real}
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "instead of a known type" ) )
