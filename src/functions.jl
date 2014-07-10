@@ -36,7 +36,7 @@ function lintfunction( ex::Expr, ctx::LintContext )
                 else
                     push!( temporaryTypes, adt )
                 end
-            elseif typeof(adt)==Expr && adt.head == :(<:)
+            elseif isexpr( adt, :(<:) )
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
                 if in( temptype, knowntypes )
@@ -239,29 +239,16 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
         end
         st = 2
         en = length(ex.args)
-        #=
-        if ex.args[1] in [ :map, :open ] && typeof( ex.args[2] ) == Symbol
-            st = 3
-        end
 
-        if ex.args[1] == :finalizer && typeof(ex.args[3]) == Symbol
-            en = min(2,en)
-        end
-
-        if ex.args[1] == :Array
-            st = 3
-        end
-
-        =#
-        if typeof( ex.args[1] )== Expr && ex.args[1].head == :curly
+        if isexpr( ex.args[1], :curly )
             # Dict{Symbol, Int}
             lintexpr( ex.args[1], ctx )
         end
 
         for i in st:en
-            if typeof(ex.args[i]) == Expr && ex.args[i].head == :parameters
+            if isexpr( ex.args[i ], :parameters )
                 for kw in ex.args[i].args
-                    if typeof(kw)==Expr && kw.head == :(...)
+                    if isexpr( kw, :(...) )
                         lintexpr( kw.args[1], ctx )
                     elseif length(kw.args) != 2
                         msg( ctx, 2, "unknown keyword pattern " * string(kw))
@@ -269,7 +256,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                         lintexpr( kw.args[2], ctx )
                     end
                 end
-            elseif typeof(ex.args[i])== Expr && ex.args[i].head == :kw
+            elseif isexpr( ex.args[i], :kw )
                 lintexpr( ex.args[i].args[2], ctx )
             else
                 lintexpr( ex.args[i], ctx )
@@ -280,7 +267,12 @@ end
 
 function lintplus( ex::Expr, ctx::LintContext )
     for i in 2:length(ex.args)
-        if typeof( ex.args[i] ) <: String
+        if typeof( ex.args[i] ) <: String ||
+            isexpr( ex.args[i], :macrocall ) && ex.args[i].args[1] == symbol( "@sprintf" ) ||
+            isexpr( ex.args[i], :call ) && in( ex.args[i].args[1], [
+                :replace, :string, :utf8, :utf16, :utf32, :repr, :normalize_string, :join, :chop, :chomp,
+                :lpad, :rpad, :strip, :lstrip, :rstrip, :uppercase, :lowercase, :ucfirst, :lcfirst,
+                :escape_string, :unescape_string ] )
             msg( ctx, 2, "String uses * to concatenate.")
             break
         end
