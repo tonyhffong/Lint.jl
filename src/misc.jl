@@ -1,3 +1,5 @@
+# misc easy to make mistakes
+
 function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
     st = typed ? 2 : 1
     ks = Set{Any}()
@@ -18,7 +20,7 @@ function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
                 elseif typeof( a.args[j] ) <: Number || typeof( a.args[j] ) <: String
                     push!( s, typeof( a.args[j] ) )
                     # we want to add more immutable types such as Date, DateTime, etc.
-                elseif typeof( a.args[j] ) <: Expr && a.args[j].head == :call && in( a.args[j].args[1], [:Date, :DateTime] )
+                elseif isexpr( a.args[j], :call ) && in( a.args[j].args[1], [:Date, :DateTime] )
                     push!( s, a.args[j].args[1] )
                 else
                     if typed

@@ -1,8 +1,4 @@
 function lintmacro( ex::Expr, ctx::LintContext )
-    if ex.args[1].args[1]==:eval # extending eval(m,x) = ... in module. don't touch it.
-        return
-    end
-
     fname = ex.args[1].args[1]
     push!( ctx.callstack[end].macros, symbol( "@" * string(fname ) ) )
     push!( ctx.callstack[end].localarguments, Dict{ Symbol, Any }() )

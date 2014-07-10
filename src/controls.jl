@@ -57,7 +57,7 @@ end
 function lintfor( ex::Expr, ctx::LintContext )
     pushVarScope( ctx )
 
-    if typeof(ex.args[1])==Expr && ex.args[1].head == :(=)
+    if isexpr( ex.args[1], :(=) )
         lintassignment( ex.args[1], ctx; isForLoop=true )
     end
     lintexpr( ex.args[2], ctx )
@@ -81,7 +81,7 @@ function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
     st = typed? 3 :2
     fn = typed? 2 :1
     for i in st:length(ex.args)
-        if typeof(ex.args[i])==Expr && ex.args[i].head == :(=)
+        if isexpr( ex.args[i], :(=) )
             lintassignment( ex.args[i], ctx; islocal=true, isForLoop=true ) # note contrast with for loop
         end
     end

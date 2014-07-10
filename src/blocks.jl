@@ -153,7 +153,8 @@ function lintlet( ex::Expr, ctx::LintContext )
     blk = ex.args[1]
     @assert( blk.head == :block )
     for i = 1:length(blk.args)
-        if typeof( blk.args[i] ) == Expr && blk.args[i].head == :(=) && ( typeof( blk.args[i].args[1] ) != Expr || blk.args[i].args[1].head != :call )
+
+        if isexpr( blk.args[i], :(=) ) && !isexpr( blk.args[i].args[1], :call )
             lintassignment( blk.args[i], ctx; islocal = true )
         else
             lintexpr( blk.args[i], ctx )

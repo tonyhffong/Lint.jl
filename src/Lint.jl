@@ -1,6 +1,9 @@
 # Julia's homoiconicity is crying out for an awesome lint module
 
 module Lint
+
+using Base.Meta
+
 export LintMessage, LintContext, LintStack
 export lintfile, lintstr, lintpkg, lintpragma
 export test_similarity_string

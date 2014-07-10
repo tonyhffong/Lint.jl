@@ -106,7 +106,7 @@ function lintglobal( ex::Expr, ctx::LintContext )
             if !haskey( ctx.callstack[end].declglobs, sym)
                 ctx.callstack[end].declglobs[ sym ] = { :file=>ctx.file, :line=>ctx.line }
             end
-        elseif typeof(sym) == Expr && in( sym.head, ASSIGN_OPS )
+        elseif isexpr( sym, ASSIGN_OPS )
             lintassignment( sym, ctx; isGlobal=true )
         else
             msg( ctx, 2, "unknown global pattern " * string(sym))
@@ -159,7 +159,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     syms = Symbol[]
     resolveLHSsymbol( ex.args[1], syms, ctx )
 
-    if isForLoop && length(syms)==1 && typeof(ex.args[2])==Expr && in( ex.args[2].head, [:dict, :typed_dict] )
+    if isForLoop && length(syms)==1 && isexpr( ex.args[2], [:dict, :typed_dict] )
         msg( ctx, 0, "Typically iteration over dictionary uses a (k,v) tuple. Here only one variable is used." )
     end
 
