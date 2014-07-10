@@ -1,3 +1,5 @@
+# module, using, import, export
+
 function lintmodule( ex::Expr, ctx::LintContext )
     push!( ctx.callstack[end].modules, ex.args[2] )
     push!( ctx.callstack, LintStack() )
@@ -22,6 +24,9 @@ function lintmodule( ex::Expr, ctx::LintContext )
 end
 
 function lintusing( ex::Expr, ctx::LintContext )
+    if ctx.functionLvl > 0
+        msg( ctx, 2, "using is not allowed inside function definitions.")
+    end
     for s in ex.args
         if s != :(.)
             ctx.callstack[end].declglobs[ s ] = { :file => ctx.file, :line => ctx.line }
@@ -55,6 +60,9 @@ function lintusing( ex::Expr, ctx::LintContext )
 end
 
 function lintexport( ex::Expr, ctx::LintContext )
+    if ctx.functionLvl > 0
+        msg( ctx, 2, "export is not allowed inside function definitions.")
+    end
     for sym in ex.args
         if in(sym, ctx.callstack[end].exports )
             msg( ctx, 2, "duplicate exports of symbol " * string( sym ))
@@ -67,6 +75,9 @@ end
 function linttoplevel( ex::Expr, ctx::LintContext )
     for a in ex.args
         if typeof(a)==Expr && a.head == :import
+            if ctx.functionLvl > 0
+                msg( ctx, 2, "import is not allowed inside function definitions.")
+            end
             if length(a.args) == 1 # just the module name
                 union!( ctx.callstack[end].imports, names( eval( a.args[1] )))
             else
@@ -77,6 +88,9 @@ function linttoplevel( ex::Expr, ctx::LintContext )
 end
 
 function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
+    if ctx.functionLvl > 0
+        msg( ctx, 2, "import is not allowed inside function definitions.")
+    end
     problem = false
     m = nothing
     lastpart = nothing
