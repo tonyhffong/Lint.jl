@@ -58,12 +58,13 @@ using Lint
 * Consecutively similar expressions block and that its last part looks different from the rest (work-in-progress)
 * Out-of-scope local variable name being reused again inside the same code block. (legal but frowned upon)
 * Function arguments being Container on abstract e.g. f(x::Array{Number,1}). Suggest f{T<:Number}(x::Array{T,1})
-* Concatenation of strings using `+`
+* Concatenation of strings using `+`. It also catches common string functions, e.g. `string(...) + replace( ... )`
 * Iteration over an apparent dictionary using only one variable instead of (k,v) tuple
-* Incorrect ADT usage in function definition, e.g. `f{Int}( x::Int )` or `f{T<:Int64}( x::T )`
+* Incorrect ADT usage in function definition, e.g. `f{Int}( x::Int )`, `f{T<:Int64}( x::T )`, `f{Int<:Real}( x::Int)`
 * Suspicious range literals e.g. 10:1
 * Understandable but actually non-existent constructors e.g. String(), Symbol()
 * Redefining mathematical constants, such as `e = 2.718`
+* Illegal `using` statement inside a function definition
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing
