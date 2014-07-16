@@ -25,6 +25,7 @@ include( "modules.jl" )
 include( "blocks.jl" )
 include( "controls.jl" )
 include( "macros.jl" )
+include( "knowndeprec.jl" )
 include( "misc.jl")
 
 # no-op, the presence of this can suppress lint messages locally

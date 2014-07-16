@@ -55,7 +55,10 @@ function lintfunction( ex::Expr, ctx::LintContext )
         lintexpr( ex.args[1].args[1].args[1], ctx )
     end
     ctx.scope = string(fname)
-    #println(fname)
+    isDeprecated = functionIsDeprecated( ex.args[1] )
+    if isDeprecated != nothing
+        msg( ctx, 2, isDeprecated.message * "\nSee: deprecated.jl " * string( isDeprecated.line ) )
+    end
 
     if ctx.macroLvl == 0 && ctx.functionLvl == 0
         push!( ctx.callstack, LintStack() )

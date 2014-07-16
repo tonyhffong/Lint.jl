@@ -3,6 +3,7 @@ using Base.Test
 
 include( "bitopbool.jl" )
 include( "deadcode.jl" )
+include( "deprecate.jl" )
 include( "dictkey.jl" )
 include( "dupexport.jl" )
 include( "forloop.jl")
