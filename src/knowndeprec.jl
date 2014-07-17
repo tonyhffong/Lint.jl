@@ -131,7 +131,7 @@ function parseDeprecate( ex, lineabs )
     end
 end
 
-function getFuncNameAndSig( callex::Expr )
+function getFuncNameAndSig( callex::Expr, strict::Bool=true )
     typeHints = Dict{ Symbol, Any }()
     if typeof( callex.args[1] )==Symbol || Meta.isexpr( callex.args[1], :(.) )
         funcname = callex.args[1]
@@ -146,7 +146,11 @@ function getFuncNameAndSig( callex::Expr )
             end
         end
     else
-        error("invalid function format " * string( callex ) )
+        if strict
+            error("invalid function format " * string( callex ) )
+        else
+            return ( nothing, nothing )
+        end
     end
     sig = {}
     for i in 2:length( callex.args )
@@ -180,7 +184,10 @@ end
 function functionIsDeprecated( callex::Expr )
     global deprecates
     @assert( Meta.isexpr( callex, :call ) )
-    funcname, sig = getFuncNameAndSig( callex )
+    funcname, sig = getFuncNameAndSig( callex, false )
+    if funcname == nothing
+        return nothing
+    end
     if Meta.isexpr( funcname, :(.) )
         funcname = funcname.args[2]
     end
