@@ -231,12 +231,21 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             ctx.lineabs = lineabs
         end
     else
+        skiplist = Int[]
         if ex.args[1] == :Symbol
             msg( ctx, 2, "You want symbol(), i.e. symbol conversion, instead of a non-existent constructor" )
         elseif ex.args[1] == :String
             msg( ctx, 2, "You want string(), i.e. string conversion, instead of a non-existent constructor" )
         elseif ex.args[1]==:(+)
             lintplus( ex, ctx )
+        end
+
+        #splice! allows empty range such as 3:2, it means inserting an array
+        # between position 2 and 3, without taking out any value.
+        if ex.args[1] == symbol( "splice!" ) && Meta.isexpr( ex.args[3], :(:) ) &&
+            length( ex.args[3].args ) == 2 && typeof( ex.args[3].args[1] ) <: Real &&
+            typeof( ex.args[3].args[2] ) <: Real && ex.args[3].args[2] < ex.args[3].args[1]
+            push!( skiplist, 3 )
         end
         st = 2
         en = length(ex.args)
@@ -247,7 +256,9 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
         end
 
         for i in st:en
-            if isexpr( ex.args[i ], :parameters )
+            if in( i, skiplist )
+                continue
+            elseif isexpr( ex.args[i ], :parameters )
                 for kw in ex.args[i].args
                     if isexpr( kw, :(...) )
                         lintexpr( kw.args[1], ctx )
