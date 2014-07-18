@@ -62,10 +62,10 @@ function processOneSig( s, typeHints )
         ditype = determineType( s.args[end] )
         return (:normal, ditype )
     elseif Meta.isexpr( s, [ :(...), :kw ] ) && Meta.isexpr(s.args[1], :(::) )
-        ditype = determineType( s.args[1].args[2] )
+        ditype = determineType( s.args[1].args[end] )
         return ( s.head, ditype )
     else
-        throw( "Lint doesn't understand " * string( s ) )
+        println( "Lint doesn't understand " * string( s ) * " as an argument." )
     end
 end
 
@@ -183,7 +183,9 @@ end
 # returns nothing, or DeprecateInfo
 function functionIsDeprecated( callex::Expr )
     global deprecates
-    @assert( Meta.isexpr( callex, :call ) )
+    if !Meta.isexpr( callex, :call )
+        throw( string( callex ) )
+    end
     funcname, sig = getFuncNameAndSig( callex, false )
     if funcname == nothing
         return nothing
@@ -237,7 +239,7 @@ function funcMatchesDeprecateInfo( sig, di::DeprecateInfo )
     for (i,si) in enumerate(sig)
         if i <= length( di.sig )
             ditype = di.sig[i][2]
-        elseif di.sig[end][1] == :(...)
+        elseif !isempty( di.sig ) && di.sig[end][1] == :(...)
             ditype = di.sig[end][2]
         else # too many arguments
             return false
