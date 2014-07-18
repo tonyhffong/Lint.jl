@@ -59,6 +59,12 @@ function lintfor( ex::Expr, ctx::LintContext )
 
     if isexpr( ex.args[1], :(=) )
         lintassignment( ex.args[1], ctx; isForLoop=true )
+    elseif isexpr( ex.args[1], :block )
+        for a in ex.args[1].args
+            if isexpr( a, :(=) )
+                lintassignment( a, ctx; isForLoop=true )
+            end
+        end
     end
     lintexpr( ex.args[2], ctx )
 
