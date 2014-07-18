@@ -22,7 +22,12 @@ function lintfunction( ex::Expr, ctx::LintContext )
 
     temporaryTypes = {}
     fname = symbol("")
-    if typeof(ex.args[1].args[1]) == Symbol
+    if ex.args[1].head == :tuple # anonymous
+        # do nothing
+    elseif isexpr( ex.args[1].args[1], :(.) )
+        fname = ex.args[1].args[1]
+        push!( ctx.callstack[end].functions, fname.args[end] )
+    elseif typeof(ex.args[1].args[1]) == Symbol
         fname = ex.args[1].args[1]
         push!( ctx.callstack[end].functions, fname )
     elseif ex.args[1].args[1].head == :curly
@@ -55,9 +60,11 @@ function lintfunction( ex::Expr, ctx::LintContext )
         lintexpr( ex.args[1].args[1].args[1], ctx )
     end
     ctx.scope = string(fname)
-    isDeprecated = functionIsDeprecated( ex.args[1] )
-    if isDeprecated != nothing
-        msg( ctx, 2, isDeprecated.message * "\nSee: deprecated.jl " * string( isDeprecated.line ) )
+    if fname != symbol( "" ) && !contains( ctx.file, "deprecate" )
+        isDeprecated = functionIsDeprecated( ex.args[1] )
+        if isDeprecated != nothing
+            msg( ctx, 2, isDeprecated.message * "\nSee: deprecated.jl " * string( isDeprecated.line ) )
+        end
     end
 
     if ctx.macroLvl == 0 && ctx.functionLvl == 0
@@ -117,11 +124,11 @@ function lintfunction( ex::Expr, ctx::LintContext )
         elseif sube.head == :($)
             lintexpr( sube.args[1], ctx )
         else
-            msg( ctx, 2, "Lint does not understand: " *string( sube ))
+            msg( ctx, 2, "Lint does not understand: " *string( sube ) * " as an argument " * string( position ) )
         end
     end
 
-    for i = 2:length(ex.args[1].args)
+    for i = (fname == symbol("") ? 1 : 2 ):length(ex.args[1].args)
         resolveArguments( ex.args[1].args[i], i )
     end
 
@@ -180,7 +187,7 @@ function lintlambda( ex::Expr, ctx::LintContext )
         elseif sube.head == :(...)
             resolveArguments( sube.args[1])
         else
-            msg( ctx, 2, "Lint does not understand: " *string( sube ))
+            msg( ctx, 2, "Lint does not understand: " *string( sube ) * " as an argument.")
         end
     end
 
