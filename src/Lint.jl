@@ -152,7 +152,14 @@ function lintexpr( ex::Any, ctx::LintContext )
         linttoplevel( ex, ctx )
     elseif ex.head == :comparison # only the odd indices
         for i in 1:2:length(ex.args)
-            lintexpr( ex.args[i], ctx )
+            # comparison like match != 0:-1 is allowed, and shouldn't trigger lint warnings
+            if Meta.isexpr( ex.args[i], :(:) ) && length( ex.args[i].args ) == 2 &&
+                typeof( ex.args[i].args[1] ) <: Real &&
+                typeof( ex.args[i].args[2] ) <: Real
+                continue
+            else
+                lintexpr( ex.args[i], ctx )
+            end
         end
     elseif ex.head == :type
         linttype( ex, ctx )
