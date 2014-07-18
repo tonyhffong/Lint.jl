@@ -9,7 +9,8 @@ function lintfuncargtype( ex, ctx::LintContext )
         end
         for i in st:en
             if in( ex.args[i], [ :Number ] )
-                msg( ctx, 2, "Type parameters in Julia are invariant, meaning although Int <: Number is true, Array{Int,1} <: Array{Number,1} is false. Try f{T<:Number}(x::T)...")
+                msg( ctx, 2, "Type parameters in Julia are invariant, meaning " *
+                    string(ex) * " may not do what you want. Try f{T<:Number}(x::T)... " )
             end
         end
     end
