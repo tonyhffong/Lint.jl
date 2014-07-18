@@ -56,6 +56,7 @@ function linttype( ex::Expr, ctx::LintContext )
     for def in ex.args[3].args
         if typeof( def ) == LineNumberNode
             ctx.line = def.line
+        elseif typeof( def ) == Symbol
         elseif def.head == :line
             ctx.line = def.args[1]
         elseif def.head == :(::)
