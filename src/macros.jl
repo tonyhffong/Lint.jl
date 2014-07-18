@@ -43,9 +43,23 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
+    if ex.args[1] == symbol( "@mustimplement" )
+        lintexpr( Expr( :(=), ex.args[2], :( nothing ) ), ctx )
+    end
+
     ctx.macrocallLvl = ctx.macrocallLvl + 1
-    for i = 2:length(ex.args)
-        lintexpr( ex.args[i], ctx )
+
+    # AST for things like
+    # @windows ? x : y
+    # is very weird. This handles that.
+    if length(ex.args) == 3 && ex.args[2] == :(?) && isexpr( ex.args[3], :(:) )
+        for a in ex.args[3].args
+            lintexpr( a, ctx )
+        end
+    else
+        for i = 2:length(ex.args)
+            lintexpr( ex.args[i], ctx )
+        end
     end
     ctx.macrocallLvl = ctx.macrocallLvl - 1
 end
