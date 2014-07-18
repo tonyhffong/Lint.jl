@@ -39,12 +39,13 @@ function lintmacro( ex::Expr, ctx::LintContext )
 end
 
 function lintmacrocall( ex::Expr, ctx::LintContext )
-    if ex.args[1] == symbol("@deprecate")
+    if ex.args[1] == symbol("@deprecate") || ex.args[1] == Expr( :(.), :Base, QuoteNode( symbol( "@deprecate" )))
         return
     end
 
     if ex.args[1] == symbol( "@mustimplement" )
         lintexpr( Expr( :(=), ex.args[2], :( nothing ) ), ctx )
+        return
     end
 
     ctx.macrocallLvl = ctx.macrocallLvl + 1
