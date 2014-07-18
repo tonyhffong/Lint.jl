@@ -1,6 +1,8 @@
 #Lint.jl
 
+[![Lint](http://pkg.julialang.org/badges/Lint_0.3.svg)](http://pkg.julialang.org/?pkg=Lint&ver=0.3)
 [![Build Status](https://travis-ci.org/tonyhffong/Lint.jl.svg?branch=master)](https://travis-ci.org/tonyhffong/Lint.jl)
+
 ## Introduction
 
 Lint.jl is a tool to hunt for imperfections and dodgy structures that could be
@@ -65,6 +67,7 @@ using Lint
 * Understandable but actually non-existent constructors e.g. String(), Symbol()
 * Redefining mathematical constants, such as `e = 2.718`
 * Illegal `using` statement inside a function definition
+* Code extending deprecated functions, as defined in deprecated.jl (Base)
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing
