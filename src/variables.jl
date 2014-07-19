@@ -109,7 +109,7 @@ function lintglobal( ex::Expr, ctx::LintContext )
         elseif isexpr( sym, ASSIGN_OPS )
             lintassignment( sym, ctx; isGlobal=true )
         else
-            msg( ctx, 2, "unknown global pattern " * string(sym))
+            msg( ctx, 0, "unknown global pattern " * string(sym))
         end
     end
 end
@@ -149,7 +149,7 @@ function resolveLHSsymbol( ex, syms::Array{Symbol,1}, ctx::LintContext )
         lintexpr( ex.args[1], ctx )
         return
     else
-        msg( ctx, 2, "LHS in assignment not understood by Lint. please check: " * string(ex) )
+        msg( ctx, 0, "LHS in assignment not understood by Lint. please check: " * string(ex) )
     end
 end
 
