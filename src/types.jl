@@ -1,15 +1,19 @@
 # type definition lint code
 
 function linttype( ex::Expr, ctx::LintContext )
-    if typeof( ex.args[2] ) == Symbol
-        push!( ctx.callstack[end].types, ex.args[2] )
-    elseif isexpr( ex.args[2], :($) ) && typeof( ex.args[2].args[1] ) == Symbol
-        registersymboluse( ex.args[2].args[1], ctx )
-    elseif isexpr( ex.args[2], :curly )
-        for i in 2:length(ex.args[2].args)
-            adt= ex.args[2].args[i]
-            if typeof( adt )== Symbol && in( adt, knowntypes )
-                msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducing it as a new name for an algebric data type, unrelated to the type " * string(adt))
+    if ctx.macroLvl ==0 && ctx.functionLvl == 0
+        push!( ctx.callstack, LintStack() )
+    end
+
+    processCurly = (sube)->begin
+        for i in 2:length(sube.args)
+            adt= sube.args[i]
+            if typeof( adt )== Symbol
+                if in( adt, knowntypes )
+                    msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducing it as a new name for an algebric data type, unrelated to the type " * string(adt))
+                else
+                    push!( ctx.callstack[end].types, adt )
+                end
             elseif isexpr( adt, :(<:) )
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
@@ -22,34 +26,24 @@ function linttype( ex::Expr, ctx::LintContext )
                         msg( ctx, 2, string( dt )* " is a leaf type. As a type constraint it makes no sense in " * string(adt) )
                     end
                 end
-                push!( ctx.callstack[end].types, ex.args[2].args[i] )
+                push!( ctx.callstack[end].types, temptype )
             end
         end
+    end
+
+    if typeof( ex.args[2] ) == Symbol
+        push!( ctx.callstack[end-1].types, ex.args[2] )
+    elseif isexpr( ex.args[2], :($) ) && typeof( ex.args[2].args[1] ) == Symbol
+        registersymboluse( ex.args[2].args[1], ctx )
+    elseif isexpr( ex.args[2], :curly )
+        push!( ctx.callstack[end-1].types, ex.args[2].args[1] )
+        processCurly( ex.args[2] )
     elseif isexpr( ex.args[2], :(<:) )
         if typeof( ex.args[2].args[1] ) == Symbol
-            push!( ctx.callstack[end].types, ex.args[2].args[1] )
+            push!( ctx.callstack[end-1].types, ex.args[2].args[1] )
         elseif isexpr( ex.args[2].args[1], :curly )
-            adt = ex.args[2].args[1].args[2]
-            if typeof( adt )== Symbol
-                if in( adt, knowntypes )
-                    msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducing it as a new name for an algebric data type, unrelated to the type " * string(adt))
-                else
-                    push!( ctx.callstack[end].types, adt )
-                end
-            elseif adt.head == :(<:)
-                temptype = adt.args[1]
-                typeconstraint = adt.args[2]
-                if in( temptype, knowntypes )
-                    msg( ctx, 2, "You should use {T<:...} instead of a known type " * string(temptype) * " in parametric data type")
-                end
-                if in( typeconstraint, knowntypes )
-                    dt = eval( typeconstraint )
-                    if typeof( dt ) == DataType && isleaftype( dt )
-                        msg( ctx, 2, string( dt )* " is a leaf type. As a type constraint it makes no sense in " * string(adt) )
-                    end
-                end
-                push!( ctx.callstack[end].types, ex.args[2].args[1].args[1] )
-            end
+            push!( ctx.callstack[end-1].types, ex.args[2].args[1].args[1] )
+            processCurly( ex.args[2].args[1] )
         end
     end
 
@@ -65,6 +59,9 @@ function linttype( ex::Expr, ctx::LintContext )
         elseif def.head == :function
             lintfunction( def, ctx )
         end
+    end
+    if ctx.macroLvl ==0 && ctx.functionLvl == 0
+        pop!( ctx.callstack )
     end
 end
 
