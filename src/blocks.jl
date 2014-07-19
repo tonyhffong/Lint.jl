@@ -150,6 +150,10 @@ function lintlet( ex::Expr, ctx::LintContext )
         pushVarScope( ctx )
     end
 
+    ctx.functionLvl += 1
+    for j = 2:length(ex.args)
+        lintexpr( ex.args[2], ctx )
+    end
     blk = ex.args[1]
     @assert( blk.head == :block )
     for i = 1:length(blk.args)
@@ -160,6 +164,7 @@ function lintlet( ex::Expr, ctx::LintContext )
             lintexpr( blk.args[i], ctx )
         end
     end
+    ctx.functionLvl -= 1
 
     if ctx.macroLvl==0
         popVarScope( ctx )

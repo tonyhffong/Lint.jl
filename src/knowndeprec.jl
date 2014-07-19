@@ -46,9 +46,11 @@ end
 function processOneSig( s, typeHints )
     determineType = (tex) -> begin
         if typeof( tex ) == Expr
+            tmp = deepcopy( tex )
             for (k,v) in typeHints
-                argReplace!( tex, k, v )
+                argReplace!( tmp, k, v )
             end
+            return tmp
         end
 
         return tex
