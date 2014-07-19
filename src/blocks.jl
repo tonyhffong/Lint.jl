@@ -3,30 +3,33 @@ function lintblock( ex::Expr, ctx::LintContext )
     lastexpr = nothing
     similarexprs = Expr[]
     diffs = Float64[]
+    checksimilarityflag = (!haskey( ctx.ignoreState.ignore, :similarity ) || !ctx.ignoreState.ignore[ :similarity ])
 
-    checksimilarity = ()->begin
-        if length( similarexprs ) <= 2 # not much I can do
-            diffs = Float64[]
-            lastexpr = nothing
-            similarexprs = Expr[]
-        else
-            # cyclic diffs, so now we have at least 3 similarity scores
-            push!( diffs, expr_similar_score( similarexprs[1], similarexprs[end] ) )
-            local n = length(diffs)
-            local m = mean(diffs)
-            local s = std( diffs )
-            local m2 = mean( [diffs[end-1], diffs[end] ] )
-            # look for screw up at the end
-            #println( diffs, "\nm=", m, " s=", s, " m2=", m2, " m-m2=", m-m2)
-            if m2 < m && m-m2 > s/2.5 && s / m > 0.0001
-                msg( ctx, 1, "The last of a " *
-                    string(n) * "-expr block looks different. " *
-                    "\nAvg similarity score: " * @sprintf( "%8.2f", m ) *
-                    ";  Last part: " * @sprintf( "%9.2f", m2 ) )
+    if checksimilarityflag
+        checksimilarity = ()->begin
+            if length( similarexprs ) <= 2 # not much I can do
+                diffs = Float64[]
+                lastexpr = nothing
+                similarexprs = Expr[]
+            else
+                # cyclic diffs, so now we have at least 3 similarity scores
+                push!( diffs, expr_similar_score( similarexprs[1], similarexprs[end] ) )
+                local n = length(diffs)
+                local m = mean(diffs)
+                local s = std( diffs )
+                local m2 = mean( [diffs[end-1], diffs[end] ] )
+                # look for screw up at the end
+                #println( diffs, "\nm=", m, " s=", s, " m2=", m2, " m-m2=", m-m2)
+                if m2 < m && m-m2 > s/2.5 && s / m > 0.0001
+                    msg( ctx, 1, "The last of a " *
+                        string(n) * "-expr block looks different. " *
+                        "\nAvg similarity score: " * @sprintf( "%8.2f", m ) *
+                        ";  Last part: " * @sprintf( "%9.2f", m2 ) )
+                end
+                diffs = Float64[]
+                lastexpr = nothing
+                similarexprs = Expr[]
             end
-            diffs = Float64[]
-            lastexpr = nothing
-            similarexprs = Expr[]
         end
     end
 
@@ -46,17 +49,19 @@ function lintblock( ex::Expr, ctx::LintContext )
                 lintexpr( sube, ctx )
                 break
             else
-                if lastexpr != nothing
-                    local dif = expr_similar_score( lastexpr, sube )
-                    if dif > SIMILARITY_THRESHOLD
-                        if !isempty(similarexprs)
-                            append!( similarexprs, [lastexpr, sube ] )
+                if checksimilarityflag
+                    if lastexpr != nothing
+                        local dif = expr_similar_score( lastexpr, sube )
+                        if dif > SIMILARITY_THRESHOLD
+                            if !isempty(similarexprs)
+                                append!( similarexprs, [lastexpr, sube ] )
+                            else
+                                push!( similarexprs, sube )
+                            end
+                            push!( diffs, dif )
                         else
-                            push!( similarexprs, sube )
+                            checksimilarity()
                         end
-                        push!( diffs, dif )
-                    else
-                        checksimilarity()
                     end
                 end
                 lintexpr( sube, ctx )
@@ -67,11 +72,15 @@ function lintblock( ex::Expr, ctx::LintContext )
             continue
         elseif typeof(sube) == Symbol
             registersymboluse( sube, ctx )
-            checksimilarity()
+            if checksimilarityflag
+                checksimilarity()
+            end
         end
     end
 
-    checksimilarity()
+    if checksimilarityflag
+        checksimilarity()
+    end
 end
 
 function expr_similar_score( e1::Expr, e2::Expr, base::Float64 = 1.0 )

@@ -97,6 +97,18 @@ function LintStack( t::Bool )
     x
 end
 
+type LintIgnoreState
+    ignoreUnused::Set{Symbol}
+    ignoreUndeclared::Set{Symbol}
+    ignore::Dict{Symbol, Bool}
+end
+
+function LintIgnoreState()
+    x = LintIgnoreState( Set{Symbol}(), Set{Symbol}(), Dict{Symbol,Bool}() )
+    x.ignore[ :similarity ] = true
+    x
+end
+
 type LintContext
     file         :: String
     line         :: Int
@@ -112,9 +124,10 @@ type LintContext
     quoteLvl     :: Int
     callstack    :: Array{ Any, 1 }
     messages     :: Array{ LintMessage, 1 }
+    ignoreState  :: LintIgnoreState
     LintContext() = new( "none", 0, 1, "", ".",
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(),
             0, 0, 0, 0,
-            { LintStack( true ) }, LintMessage[] )
+            { LintStack( true ) }, LintMessage[], LintIgnoreState() )
 end
 
