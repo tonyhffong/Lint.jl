@@ -8,6 +8,7 @@ else
     throw( "doesn't know where I am." )
 end
 
+println( "Linting Lint itself")
 msgs = lintfile( path; returnMsgs = true )
 
 @assert( isempty( msgs ) )
