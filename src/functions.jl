@@ -256,6 +256,10 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             push!( skiplist, 3 )
         end
         st = 2
+        if ex.args[1] == :ifelse && typeof( ex.args[2] ) == Expr
+            lintboolean( ex.args[2], ctx )
+            st = 3
+        end
         en = length(ex.args)
 
         if isexpr( ex.args[1], :curly )
