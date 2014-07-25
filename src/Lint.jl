@@ -211,9 +211,9 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintfor( ex, ctx )
     elseif ex.head == :let
         lintlet( ex, ctx )
-    elseif ex.head == :comprehension
+    elseif ex.head == :comprehension || ex.head == :dict_comprehension
         lintcomprehension( ex, ctx; typed = false )
-    elseif ex.head == :typed_comprehension
+    elseif ex.head == :typed_comprehension || ex.head == :typed_dit_comprehension
         lintcomprehension( ex, ctx; typed = true )
     elseif ex.head == :try
         linttry( ex, ctx )

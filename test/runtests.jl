@@ -2,6 +2,7 @@ using Lint
 using Base.Test
 
 include( "bitopbool.jl" )
+include( "comprehensions.jl")
 include( "deadcode.jl" )
 include( "deprecate.jl" )
 include( "dictkey.jl" )
