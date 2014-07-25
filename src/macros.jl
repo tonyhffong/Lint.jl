@@ -48,6 +48,11 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
+    if in( ex.args[1], [ symbol( "@goto" ), symbol( "@label" ) ] )
+        msg( ctx, 1, string( ex.args[1] ) * " is an experimental feature" )
+        return
+    end
+
     ctx.macrocallLvl = ctx.macrocallLvl + 1
 
     # AST for things like
