@@ -23,6 +23,5 @@ end
 ctx = LintContext()
 ctx.ignoreState.ignore[ :similarity ] = false
 msgs = lintstr( s, ctx )
-println( msgs )
 @test( length(msgs)==1 )
 @test( contains( msgs[1].message, "looks different" ) )
