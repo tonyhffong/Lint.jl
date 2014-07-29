@@ -55,6 +55,7 @@ type LintStack
     usedvars      :: Set{Symbol}
     oosvars       :: Set{Symbol}
     pragmas       :: Set{Symbol}
+    calledfuncs   :: Set{Symbol}
     inModule      :: Bool
     moduleName    :: Any
     types         :: Set{Any}
@@ -72,6 +73,7 @@ type LintStack
             [ Dict{Symbol, Any}() ],
             [ Dict{Symbol, Any}() ],
             [ Set{Symbol}() ],
+            Set{Symbol}(),
             Set{Symbol}(),
             Set{Symbol}(),
             Set{Symbol}(),

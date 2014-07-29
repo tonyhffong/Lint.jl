@@ -31,20 +31,24 @@ function linttype( ex::Expr, ctx::LintContext )
         end
     end
 
+    typename = symbol( "" )
     if typeof( ex.args[2] ) == Symbol
-        push!( ctx.callstack[end-1].types, ex.args[2] )
+        typename = ex.args[2]
     elseif isexpr( ex.args[2], :($) ) && typeof( ex.args[2].args[1] ) == Symbol
         registersymboluse( ex.args[2].args[1], ctx )
     elseif isexpr( ex.args[2], :curly )
-        push!( ctx.callstack[end-1].types, ex.args[2].args[1] )
+        typename = ex.args[2].args[1]
         processCurly( ex.args[2] )
     elseif isexpr( ex.args[2], :(<:) )
         if typeof( ex.args[2].args[1] ) == Symbol
-            push!( ctx.callstack[end-1].types, ex.args[2].args[1] )
+            typename = ex.args[2].args[1]
         elseif isexpr( ex.args[2].args[1], :curly )
-            push!( ctx.callstack[end-1].types, ex.args[2].args[1].args[1] )
+            typename = ex.args[2].args[1].args[1]
             processCurly( ex.args[2].args[1] )
         end
+    end
+    if typename != symbol( "" )
+        push!( ctx.callstack[end-1].types, typename )
     end
 
     for def in ex.args[3].args
@@ -55,9 +59,9 @@ function linttype( ex::Expr, ctx::LintContext )
             ctx.line = def.args[1]
         elseif def.head == :(::)
         elseif def.head == :(=) && isexpr( def.args[1], :call )
-            lintfunction( def, ctx )
+            lintfunction( def, ctx; ctorType = typename )
         elseif def.head == :function
-            lintfunction( def, ctx )
+            lintfunction( def, ctx; ctorType = typename )
         end
     end
     if ctx.macroLvl ==0 && ctx.functionLvl == 0

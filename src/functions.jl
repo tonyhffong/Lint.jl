@@ -16,7 +16,10 @@ function lintfuncargtype( ex, ctx::LintContext )
     end
 end
 
-function lintfunction( ex::Expr, ctx::LintContext )
+# if ctorType isn't symbol( "" ) then we are in the context of
+# a constructor for a type. We would check
+# * if the function name matches the type name
+function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
     if ex.args[1].args[1]==:eval # extending eval(m,x) = ... in module. don't touch it.
         return
     end
@@ -135,6 +138,10 @@ function lintfunction( ex::Expr, ctx::LintContext )
 
     pushVarScope( ctx )
     lintexpr( ex.args[2], ctx )
+
+    if ctorType != symbol( "" ) && fname != ctorType && in( :new, ctx.callstack[end].calledfuncs )
+        msg( ctx, 2, "Constructor-like function " * string( fname ) * " within type " * string( ctorType ) * ". Shouldn't they match?" )
+    end
     popVarScope( ctx )
 
     ctx.functionLvl = ctx.functionLvl - 1
@@ -265,6 +272,8 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
         if isexpr( ex.args[1], :curly )
             # Dict{Symbol, Int}
             lintexpr( ex.args[1], ctx )
+        elseif typeof( ex.args[1] ) == Symbol
+            push!( ctx.callstack[end].calledfuncs, ex.args[1] )
         end
 
         for i in st:en

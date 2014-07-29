@@ -38,3 +38,19 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+s = """
+type MyType
+    t::Int
+    MyTypo() = new( 1 )
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Constructor-like function" ) )
+s = """
+type MyType
+    t::Int
+    NotATypo() = 1
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
