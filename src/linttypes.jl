@@ -2,7 +2,7 @@ type LintMessage
     file    :: String
     scope   :: String
     line    :: Int
-    level   :: Int # 0: FYI, 1: WARNING, 2: ERROR, 3:FATAL (probably dangerous)
+    level   :: Int # 0: INFO, 1: WARNING, 2: ERROR, 3:FATAL (probably dangerous)
     message :: String
 end
 
@@ -11,7 +11,7 @@ function Base.show( io::IO, m::LintMessage )
     s = @sprintf( "%20s ", m.file )
     s = s * @sprintf( "[%-20s] ", m.scope )
     s = s * @sprintf( "%4d ", m.line )
-    arr = [ "FYI", "WARN", "ERROR", "FATAL" ]
+    arr = [ "INFO", "WARN", "ERROR", "FATAL" ]
     s = s * @sprintf( "%-5s  ", arr[ m.level+1 ] )
     ident = min( 65, length(s) )
     lines = split(m.message, "\n")

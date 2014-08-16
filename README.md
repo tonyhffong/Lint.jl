@@ -25,7 +25,7 @@ The output is of the following form:
          filename.jl [       function name] Line CODE  Explanation
 ```
 `Line` is the line number relative to the start of the function.
-`CODE` gives an indication of severity, and is one of `FYI`, `WARN`, `ERROR`, or `FATAL`.
+`CODE` gives an indication of severity, and is one of `INFO`, `WARN`, `ERROR`, or `FATAL`.
 
 To simplify life, there is a convenience function for packages:
 ```julia
@@ -48,7 +48,7 @@ using Lint
 * Using an undefined variable
 * Duplicate key as in `[:a=>1, :b=>2, :a=>3]`
 * Mixed types in uniform dictionary `[:a=>1, :b=>""]` (ERROR)
-* Uniform types in mixed dictionary `{:a=>1, :b=>2}` (performance FYI)
+* Uniform types in mixed dictionary `{:a=>1, :b=>2}` (performance INFO)
 * Exporting non-existing symbols (not fully done yet)
 * Exporting the same symbol more than once
 * Name overlap between a variable and a lambda argument
@@ -83,7 +83,7 @@ Key info about adding a `lint_helper` function in your module
   if you always returning true in your code you will break Lint.
 * `lint_helper` takes two argument, an `Expr` instance and a context.
   - if you find an issue in your expression, call `Lint.msg( ctx, level, "explanation" )`
-  - level is 0: FYI, 1:WARN, 2:ERROR, 4:FATAL
+  - level is 0: INFO, 1:WARN, 2:ERROR, 4:FATAL
 * typical structure looks like this
 ```julia
 function lint_helper( ex::Expr, ctx )
