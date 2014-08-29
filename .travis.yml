@@ -5,6 +5,7 @@ notifications:
   email: false
 env:
   matrix:
+    - JULIAVERSION="juliareleases"
     - JULIAVERSION="julianightlies"
 before_install:
   - sudo add-apt-repository ppa:staticfloat/julia-deps -y
@@ -12,8 +13,9 @@ before_install:
   - sudo apt-get update -qq -y
   - sudo apt-get install libpcre3-dev julia -y
 script:
-  - julia -e 'Pkg.init(); Pkg.clone(pwd()); Pkg.test("Lint")'
-
-# current v0.2 is not supported
-#  matrix:
-#    - JULIAVERSION="juliareleases"
+  - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("Lint"))`); Pkg.pin("Lint"); Pkg.resolve()'
+  - cd ./test
+#  - julia --code-coverage runtests.jl
+  - julia runtests.jl
+#after_success:
+#- julia -e 'cd(Pkg.dir("Lint")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
