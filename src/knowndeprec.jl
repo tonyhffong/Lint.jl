@@ -12,7 +12,12 @@ deprecates = Dict{ Symbol, Vector{ DeprecateInfo } }()
 function initDeprecateInfo()
     str = open( readall, Base.find_source_file( "deprecated.jl" ) )
 
-    linecharc = cumsum( map( x->length(x)+1, split( str, "\n", keep=true ) ) )
+    if VERSION <= v"0.3"
+        linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
+    else
+        linecharc = cumsum( map( x->length(x)+1, split( str, "\n", keep=true ) ) )
+    end
+
     i = start( str )
     lineabs = 1
     while !done( str,i )

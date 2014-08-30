@@ -70,7 +70,11 @@ function lintfile( file::String; returnMsgs::Bool = false )
 end
 
 function lintstr( str::String, ctx :: LintContext = LintContext() )
-    linecharc = cumsum( map( x->length(x)+1, split( str, "\n", keep=true ) ) )
+    if VERSION <= v"0.3"
+        linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
+    else
+        linecharc = cumsum( map( x->length(x)+1, split( str, "\n", keep=true ) ) )
+    end
     i = start(str)
     while !done(str,i)
         problem = false
