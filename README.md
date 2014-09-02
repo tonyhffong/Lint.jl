@@ -2,6 +2,7 @@
 
 [![Lint](http://pkg.julialang.org/badges/Lint_0.3.svg)](http://pkg.julialang.org/?pkg=Lint&ver=0.3)
 [![Build Status](https://travis-ci.org/tonyhffong/Lint.jl.svg?branch=master)](https://travis-ci.org/tonyhffong/Lint.jl)
+[![Coverage Status](https://img.shields.io/coveralls/tonyhffong/Lint.jl.svg)](https://coveralls.io/r/tonyhffong/Lint.jl)
 
 ## Introduction
 

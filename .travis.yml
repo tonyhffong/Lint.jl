@@ -15,7 +15,6 @@ before_install:
 script:
   - julia -e 'Pkg.init(); run(`ln -s $(pwd()) $(Pkg.dir("Lint"))`); Pkg.pin("Lint"); Pkg.resolve()'
   - cd ./test
-#  - julia --code-coverage runtests.jl
-  - julia runtests.jl
-#after_success:
-#- julia -e 'cd(Pkg.dir("Lint")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
+  - julia --code-coverage runtests.jl
+after_success:
+  - julia -e 'cd(Pkg.dir("Lint")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(Coveralls.process_folder())'
