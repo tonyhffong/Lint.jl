@@ -70,7 +70,7 @@ function lintfile( file::String; returnMsgs::Bool = false )
 end
 
 function lintstr( str::String, ctx :: LintContext = LintContext() )
-    if VERSION <= v"0.3"
+    if VERSION < v"0.4-"
         linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
     else
         linecharc = cumsum( map( x->length(x)+1, split( str, "\n", keep=true ) ) )
