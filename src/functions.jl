@@ -215,7 +215,13 @@ function lintlambda( ex::Expr, ctx::LintContext )
 end
 
 function lintfunctioncall( ex::Expr, ctx::LintContext )
-    if ex.args[1]==:include
+    if ex.args[1] == :lintpragma
+        if typeof( ex.args[2] ) <: String
+            push!( ctx.callstack[end].pragmas, ex.args[2] )
+        else
+            msg( ctx, 2, "lintpragma must be called using only string literals.")
+        end
+    elseif ex.args[1]==:include
         if typeof( ex.args[2] ) <: String
             inclfile = string(ex.args[2])
         else

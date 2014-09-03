@@ -54,7 +54,7 @@ type LintStack
     localusedvars :: Array{ Set{Symbol}, 1 }
     usedvars      :: Set{Symbol}
     oosvars       :: Set{Symbol}
-    pragmas       :: Set{Symbol}
+    pragmas       :: Set{String}
     calledfuncs   :: Set{Symbol}
     inModule      :: Bool
     moduleName    :: Any
@@ -75,7 +75,7 @@ type LintStack
             [ Set{Symbol}() ],
             Set{Symbol}(),
             Set{Symbol}(),
-            Set{Symbol}(),
+            Set{String}(),
             Set{Symbol}(),
             false,
             symbol(""),

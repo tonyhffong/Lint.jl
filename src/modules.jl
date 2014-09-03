@@ -54,7 +54,9 @@ function lintusing( ex::Expr, ctx::LintContext )
                 ctx.callstack[end].linthelpers[ path ] = m.lint_helper
             end
         else
-            msg( ctx, 1, string(path) * " doesn't eval into a Module")
+            if !in( "Ignore undefined module " * string( path ), ctx.callstack[end].pragmas )
+                msg( ctx, 1, string(path) * " doesn't eval into a Module")
+            end
         end
     end
 end
