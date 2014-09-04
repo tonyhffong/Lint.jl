@@ -20,6 +20,13 @@ end
 msgs = lintstr(s)
 @assert( isempty(msgs) )
 s = """
+function f( x, y, x )
+    x + y
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Duplicate argument" ) )
+s = """
 function f{Int64}( x::Int64, y::Int64 )
     x + y
 end
@@ -33,6 +40,13 @@ end
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "leaf type" ) )
+s = """
+function f{Int<:Real}( x::Int, y::Int)
+    x + y
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "known type" ) )
 s = """
 function f( x, args...)
     x + length(args)

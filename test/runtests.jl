@@ -1,6 +1,9 @@
 using Lint
 using Base.Test
 
+println( "test basic printing and sorting of lint messages")
+include( "show.jl" )
+println( "test core lint functionalities" )
 include( "bitopbool.jl" )
 include( "comprehensions.jl")
 include( "deadcode.jl" )
@@ -12,9 +15,10 @@ include( "funcall.jl")
 include( "globals.jl")
 include( "ifstmt.jl")
 include( "lambda.jl")
-include( "lintself.jl")
 include( "mathconst.jl")
+include( "module.jl" )
 include( "meta.jl" )
+include( "pragma.jl" )
 include( "range.jl")
 include( "similarity.jl" )
 include( "strings.jl")
@@ -23,3 +27,5 @@ include( "type.jl")
 include( "undeclare.jl" )
 include( "unusedvar.jl")
 include( "using.jl")
+
+include( "lintself.jl")

@@ -167,13 +167,15 @@ function lintlambda( ex::Expr, ctx::LintContext )
             end
         end
         for i in length(stacktop.localarguments):-1:1
-            if haskey( stacktop.localarguments[end], sym )
+            if haskey( stacktop.localarguments[i], sym )
                 msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an argument. Best to rename.")
                 break
             end
         end
-        if haskey( stacktop.declglobs, sym )
-            msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an declared global from \n" * string(stacktop.declglobs[ sym ])*  "\nBetter to rename.")
+        for i in length( ctx.callstack ):-1:1
+            if haskey( ctx.callstack[i].declglobs, sym )
+                msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an declared global from \n" * string(ctx.callstack[i].declglobs[ sym ])*  "\nBetter to rename.")
+            end
         end
         stacktop.localarguments[end][sym] = ctx.line
     end

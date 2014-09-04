@@ -2,8 +2,10 @@ function popVarScope( ctx::LintContext )
     stacktop = ctx.callstack[end]
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
     for v in unused
-        ctx.line = stacktop.localvars[end][ v ]
-        msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
+        if !in( "Ignore unused " * string( v ), stacktop.pragmas )
+            ctx.line = stacktop.localvars[end][ v ]
+            msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
+        end
     end
 
     union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
