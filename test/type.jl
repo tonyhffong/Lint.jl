@@ -39,9 +39,11 @@ end
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
 s = """
-type MyType
+type MyType <: Integer
     t::Int
-    MyTypo() = new( 1 )
+    function MyTypo()
+        new( 1 )
+    end
 end
 """
 msgs = lintstr(s)
@@ -56,6 +58,8 @@ msgs = lintstr(s)
 @assert( isempty( msgs ) )
 s = """
 typealias T Int64
+typealias SharedVector{T} SharedArray{T,1}
+
 type MyType{T}
     t::T
     MyType( x ) = new( convert( T, x ) )
@@ -66,7 +70,9 @@ msgs = lintstr(s)
 s = """
 abstract SomeAbsType
 abstract SomeAbsNum <: Number
-abstract SomeAbsVec{T} <: Array{T,1}
+abstract SomeAbsVec1{T} <: Array{T,1}
+abstract SomeAbsVec2{T}
+
 type MyType{T<:SomeAbsType}
     t::T
     MyType( x ) = new( convert( T, x ) )
