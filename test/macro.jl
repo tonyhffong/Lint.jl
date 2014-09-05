@@ -34,3 +34,10 @@ s = """
 """
 msgs = lintstr( s )
 @assert( isempty( msgs ) )
+
+s = """
+@deprecate put put!
+@deprecate readsfrom(cmd, args...)      open(cmd, "r", args...)
+"""
+msgs = lintstr( s )
+@assert( isempty( msgs ) )
