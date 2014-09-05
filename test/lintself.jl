@@ -9,6 +9,7 @@ else
 end
 
 println( "Linting Lint itself")
+println( "Path = ", path )
 msgs = lintfile( path; returnMsgs = true )
 
 @assert( isempty( msgs ) )
