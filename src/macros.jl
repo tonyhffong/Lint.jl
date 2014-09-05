@@ -23,8 +23,10 @@ function lintmacro( ex::Expr, ctx::LintContext )
         =#
         elseif sube.head == :(...)
             resolveArguments( sube.args[1])
+        #= # macro definition inside another macro? highly unlikely
         elseif sube.head == :($)
             lintexpr( sube.args[1], ctx )
+        =#
         else
             msg( ctx, 2, "Lint does not understand: " *string( sube ))
         end
