@@ -184,10 +184,12 @@ function lintlambda( ex::Expr, ctx::LintContext )
         if typeof( sube ) == Symbol
             checklambdaarg( sube )
             stacktop.localarguments[end][sube]=ctx.line
+        #= # until lambda supports named args, keep this commented
         elseif sube.head == :parameters
             for kw in sube.args
                 resolveArguments( kw )
             end
+        =#
         elseif sube.head == :(=) || sube.head == :kw
             resolveArguments( sube.args[1] )
         elseif sube.head == :(::)
