@@ -9,7 +9,16 @@ function linttype( ex::Expr, ctx::LintContext )
         for i in 2:length(sube.args)
             adt= sube.args[i]
             if typeof( adt )== Symbol
-                if in( adt, knowntypes )
+                typefound = in( adt, knowntypes )
+                if !typefound
+                    for j in 1:length(ctx.callstack)
+                        if in( adt, ctx.callstack[j].types )
+                            typefound = true
+                            break
+                        end
+                    end
+                end
+                if typefound
                     msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducing it as a new name for an algebric data type, unrelated to the type " * string(adt))
                 else
                     push!( ctx.callstack[end].types, adt )
@@ -17,7 +26,17 @@ function linttype( ex::Expr, ctx::LintContext )
             elseif isexpr( adt, :(<:) )
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
-                if in( temptype, knowntypes )
+
+                typefound = in( temptype, knowntypes )
+                if !typefound
+                    for j in 1:length(ctx.callstack)
+                        if in( adt, ctx.callstack[j].types )
+                            typefound = true
+                            break
+                        end
+                    end
+                end
+                if typefound
                     msg( ctx, 2, "You should use {T<:...} instead of a known type " * string(temptype) * " in parametric data type")
                 end
                 if in( typeconstraint, knowntypes )

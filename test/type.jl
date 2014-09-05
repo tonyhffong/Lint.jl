@@ -54,3 +54,23 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+s = """
+typealias T Int64
+type MyType{T}
+    t::T
+    MyType( x ) = new( convert( T, x ) )
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "unrelated to the type" ) )
+s = """
+abstract SomeAbsType
+abstract SomeAbsNum <: Number
+abstract SomeAbsVec{T} <: Array{T,1}
+type MyType{T<:SomeAbsType}
+    t::T
+    MyType( x ) = new( convert( T, x ) )
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
