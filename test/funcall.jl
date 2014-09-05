@@ -20,6 +20,13 @@ end
 msgs = lintstr(s)
 @assert( isempty(msgs) )
 s = """
+function f( ::Type{Int}, x, y )
+    x + y
+end
+"""
+msgs = lintstr(s)
+@assert( isempty(msgs) )
+s = """
 function f( x, y, x )
     x + y
 end
