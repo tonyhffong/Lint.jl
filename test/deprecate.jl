@@ -17,6 +17,21 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+s = """
+function testDep2( x::Complex{Int} )
+    x
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
+s = """
+function testDep2( x::Int... )
+    x
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
+# END OF NON-MATCHING SIGNATURES
 
 s = """
 function testDep2( x::Int )
@@ -49,3 +64,11 @@ end
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "generic deprecate message" ) )
+
+s = """
+function testDep5{T <: String}( x::Array{T,1} )
+    x
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )

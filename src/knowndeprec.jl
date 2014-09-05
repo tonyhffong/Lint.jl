@@ -187,6 +187,8 @@ function addDummyDeprecates()
     mypush!( :testDep3, { ( :normal, :( Array{Any, 1} ) ) } )
     deprecates[ :testDep4 ] = DeprecateInfo[]
     mypush!( :testDep4, { ( :normal, :Integer ), ( :(...), :Integer ) } )
+    deprecates[ :testDep5 ] = DeprecateInfo[]
+    mypush!( :testDep5, { ( :normal, :( Array{Real, 1} ) ) } )
 end
 
 # returns nothing, or DeprecateInfo
