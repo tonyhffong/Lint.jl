@@ -2,7 +2,19 @@ using Lint
 using Base.Test
 
 println( "test basic printing and sorting of lint messages")
-include( "show.jl" )
+
+if basename( pwd() ) == "Lint"
+    path =  "test/DEMOFILE.jl"
+elseif basename( pwd() ) == "src"
+    path = "../test/DEMOFILE.jl"
+elseif basename( pwd() ) == "test"
+    path = "DEMOFILE.jl"
+else
+    throw( "doesn't know where I am." )
+end
+
+lintfile( path )
+
 println( "test core lint functionalities" )
 include( "bitopbool.jl" )
 include( "comprehensions.jl")
@@ -14,6 +26,7 @@ include( "forloop.jl")
 include( "funcall.jl")
 include( "globals.jl")
 include( "ifstmt.jl")
+include( "import.jl")
 include( "lambda.jl")
 include( "macro.jl" )
 include( "mathconst.jl")
