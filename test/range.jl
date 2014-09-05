@@ -10,3 +10,11 @@ splice!(x, 3:2, y)
 """
 msgs = lintstr( s )
 @test( isempty( msgs ) )
+
+s = """
+function f( r::UnitRange )
+    return r == 0:-1
+end
+"""
+msgs = lintstr( s )
+@test( isempty( msgs ) )
