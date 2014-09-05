@@ -82,8 +82,10 @@ function lintstr( str::String, ctx :: LintContext = LintContext() )
         ctx.lineabs = searchsorted( linecharc, i ).start
         try
             (ex, i) = parse(str,i)
-        catch
-            #println( y )
+        catch y
+            if typeof( y ) != ParseError || y.msg != "end of input"
+                println( y )
+            end
             problem = true
         end
         if !problem
