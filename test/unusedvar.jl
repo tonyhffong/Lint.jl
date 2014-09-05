@@ -31,7 +31,7 @@ msgs = lintstr(s)
 s = """
 function f(x)
     local a
-    local b = 2
+    local b = 2::Int # type assertion/conversion
     return x+b
 end
 """
