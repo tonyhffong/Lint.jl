@@ -1,5 +1,6 @@
 s = """
 import Base: show
+import Base.Math
 """
 msgs = lintstr( s )
 @assert( isempty( msgs ) )

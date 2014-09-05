@@ -123,3 +123,19 @@ end
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "using is not allowed inside function" ) )
+s = """
+function f( x, y )
+    import Lint
+    isexpr(x, :call) ? y : 0
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "import is not allowed inside function" ) )
+s = """
+function f( x, y )
+    export f
+    isexpr(x, :call) ? y : 0
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "export is not allowed inside function" ) )
