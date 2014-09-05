@@ -1,7 +1,7 @@
 s = """
 function f(x)
     local a = 1
-    local b = 2
+    local b::Int = 2
     return x+b
 end
 """
@@ -28,3 +28,12 @@ end
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "declared but not used" ))
 @test( contains( msgs[2].message, "declared but not used" ))
+s = """
+function f(x)
+    local a
+    local b = 2
+    return x+b
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "declared but not used" ))
