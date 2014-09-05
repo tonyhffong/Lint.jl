@@ -192,13 +192,7 @@ end
 # returns nothing, or DeprecateInfo
 function functionIsDeprecated( callex::Expr )
     global deprecates
-    if !Meta.isexpr( callex, :call )
-        throw( string( callex ) )
-    end
     funcname, sig = getFuncNameAndSig( callex, false )
-    if funcname == nothing
-        return nothing
-    end
     if Meta.isexpr( funcname, :(.) )
         funcname = funcname.args[2]
     end
