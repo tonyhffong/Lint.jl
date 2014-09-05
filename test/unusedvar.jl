@@ -22,12 +22,12 @@ function f(x)
     let
         (a,b) = (1,2)
         y = x+b
+        println( y )
     end
 end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "declared but not used" ))
-@test( contains( msgs[2].message, "declared but not used" ))
 s = """
 function f(x)
     local a
