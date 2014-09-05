@@ -9,6 +9,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
     resolveArguments = (sube) -> begin
         if typeof( sube ) == Symbol
             stacktop.localarguments[end][sube]=ctx.line
+        #= # I don't think macro arguments use any of these
         elseif sube.head == :parameters
             for kw in sube.args
                 resolveArguments( kw )
@@ -19,6 +20,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
             if length( sube.args ) > 1
                 resolveArguments( sube.args[1] )
             end
+        =#
         elseif sube.head == :(...)
             resolveArguments( sube.args[1])
         elseif sube.head == :($)
