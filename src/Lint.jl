@@ -211,6 +211,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintdict( ex, ctx; typed=false )
     elseif ex.head == :typed_dict # mixed type dictionary
         lintdict( ex, ctx; typed=true )
+    elseif ex.head == :vcat
+        lintvcat( ex, ctx )
     elseif ex.head == :while
         lintwhile( ex, ctx )
     elseif ex.head == :for

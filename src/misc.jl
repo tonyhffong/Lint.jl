@@ -62,3 +62,12 @@ function lintrange( ex::Expr, ctx::LintContext )
         end
     end
 end
+
+function lintvcat( ex::Expr, ctx::LintContext )
+    for a in ex.args
+        if isexpr( a, :vcat )
+            msg( ctx, 1, "Nested vcat is treated as a 1-dimensional array." )
+        end
+        lintexpr( a, ctx )
+    end
+end
