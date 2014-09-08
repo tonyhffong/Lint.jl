@@ -27,3 +27,14 @@ end
 """
 msgs = lintstr(s)
 @test( isempty( msgs ) )
+
+s = """
+function f(x)
+    for i in 1
+        println( i )
+    end
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "Iteration works for a single number" ) )

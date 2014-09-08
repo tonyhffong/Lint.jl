@@ -161,8 +161,13 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     syms = Symbol[]
     resolveLHSsymbol( ex.args[1], syms, ctx )
 
-    if isForLoop && length(syms)==1 && isexpr( ex.args[2], [:dict, :typed_dict] )
-        msg( ctx, 0, "Typically iteration over dictionary uses a (k,v) tuple. Here only one variable is used." )
+    if isForLoop
+        if length(syms)==1 && isexpr( ex.args[2], [:dict, :typed_dict] )
+            msg( ctx, 0, "Typically iteration over dictionary uses a (k,v) tuple. Here only one variable is used." )
+        end
+        if typeof( ex.args[2] ) <: Number
+            msg( ctx, 0, "Iteration works for a single number but it may be a typo." )
+        end
     end
 
     for s in syms
