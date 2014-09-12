@@ -146,4 +146,4 @@ function f( x; y = 1, z::Int = 0.1)
 end
 """
 msgs = lintstr(s)
-@assert( contains(msgs[1].message, "type assert and default") )
+@assert( contains(msgs[1].message, "type assertion and default") )
