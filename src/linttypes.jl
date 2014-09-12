@@ -47,6 +47,17 @@ function ==( m1::LintMessage, m2::LintMessage )
     m2.message == m2.message
 end
 
+type VarInfo
+    line::Int
+    typeactual::DataType # We know the type
+    typeexpr::Expr # We may know that it is Array{ T, 1 }, though we do not know T, for example
+    VarInfo() = new( -1, Any, :() )
+    VarInfo( l::Int ) = new( l, Any, :() )
+    VarInfo( l::Int, t::DataType ) = new( l, t, :() )
+    VarInfo( l::Int, ex::Expr ) = new( l, Any, ex )
+    VarInfo( ex::Expr ) = new( -1, Any, ex )
+end
+
 type LintStack
     declglobs     :: Dict{Symbol, Any}
     localarguments:: Array{ Dict{Symbol, Any}, 1 }

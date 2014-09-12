@@ -139,3 +139,11 @@ end
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "export is not allowed inside function" ) )
+
+s = """
+function f( x; y = 1, z::Int = 0.1)
+    x + y
+end
+"""
+msgs = lintstr(s)
+@assert( contains(msgs[1].message, "type assert and default") )

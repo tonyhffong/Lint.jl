@@ -29,12 +29,33 @@ msgs = lintstr(s)
 @test( isempty( msgs ) )
 
 s = """
-function f(x)
-    for i in 1
+function f(x::Int)
+    for i in x
         println( i )
     end
     return x
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "Iteration works for a single number" ) )
+@test( contains( msgs[1].message, "Iteration works for a number" ) )
+s = """
+function f(x=1)
+    for i in x
+        println( i )
+    end
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "Iteration works for a number" ) )
+s = """
+function f(x::Int8=int8(1))
+    for i in x
+        println( i )
+    end
+    return x
+end
+"""
+msgs = lintstr(s)
+println( msgs )
+@test( contains( msgs[1].message, "Iteration works for a number" ) )

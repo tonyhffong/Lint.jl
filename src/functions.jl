@@ -84,6 +84,8 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
 
     argsSeen = Set{ Symbol }()
     optionalposition = 0
+    typeRHShints = Dict{ Symbol, Any }() # x = 1
+    typeassert = Dict{Symbol, Any}() # e.g. x::Int
 
     resolveArguments = (sube, position) -> begin # zero position means it's not called at the top level
         if typeof( sube ) == Symbol
@@ -93,8 +95,8 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
             if position != 0 && optionalposition != 0
                 msg( ctx, 2, "You cannot have non-default argument following default arguments")
             end
-            stacktop.localarguments[end][sube]=ctx.line
             push!( argsSeen, sube )
+            return sube
         elseif sube.head == :parameters
             for (j,kw) in enumerate(sube.args)
                 if typeof(kw)==Expr && kw.head == :(...)
@@ -112,11 +114,15 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
             if position != 0
                 optionalposition = position
             end
-            resolveArguments( sube.args[1], 0 )
+            sym = resolveArguments( sube.args[1], 0 )
+            RHStype = guesstype( sube.args[2], ctx )
+            typeRHShints[ sym ] = RHStype
         elseif sube.head == :(::)
             if length( sube.args ) > 1
-                resolveArguments( sube.args[1], 0 )
+                sym = resolveArguments( sube.args[1], 0 )
+                typeassert[ sym ] = sube.args[2]
                 lintfuncargtype( sube.args[2], ctx )
+                return sym
             else
                 lintfuncargtype( sube.args[1], ctx )
             end
@@ -130,10 +136,30 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
         else
             msg( ctx, 2, "Lint does not understand: " *string( sube ) * " as an argument " * string( position ) )
         end
+        return nothing
     end
 
     for i = (fname == symbol("") ? 1 : 2 ):length(ex.args[1].args)
         resolveArguments( ex.args[1].args[i], i )
+    end
+
+    for s in argsSeen
+        vi = VarInfo( ctx.line )
+        try
+            if haskey( typeassert, s )
+                dt = eval( typeassert[ s ] )
+                if typeof(dt ) == DataType
+                    vi.typeactual = dt
+                    if dt != Any && haskey( typeRHShints, s ) && typeRHShints[s] != Any &&
+                        !( typeRHShints[s] <: dt )
+                        msg( ctx, 2, string( s ) * " type assertion and default seem inconsistent" )
+                    end
+                end
+            elseif haskey( typeRHShints, s )
+                vi.typeactual = typeRHShints[s]
+            end
+        end
+        stacktop.localarguments[end][s] = vi
     end
 
     pushVarScope( ctx )
@@ -177,13 +203,13 @@ function lintlambda( ex::Expr, ctx::LintContext )
                 msg( ctx, 1, "Lambda argument " * string( sym ) * " conflicts with an declared global from \n" * string(ctx.callstack[i].declglobs[ sym ])*  "\nBetter to rename.")
             end
         end
-        stacktop.localarguments[end][sym] = ctx.line
+        stacktop.localarguments[end][sym] = VarInfo( ctx.line )
     end
 
     resolveArguments = (sube) -> begin
         if typeof( sube ) == Symbol
             checklambdaarg( sube )
-            stacktop.localarguments[end][sube]=ctx.line
+            stacktop.localarguments[end][sube]=VarInfo(ctx.line)
         #= # until lambda supports named args, keep this commented
         elseif sube.head == :parameters
             for kw in sube.args
@@ -310,12 +336,7 @@ end
 
 function lintplus( ex::Expr, ctx::LintContext )
     for i in 2:length(ex.args)
-        if typeof( ex.args[i] ) <: String ||
-            isexpr( ex.args[i], :macrocall ) && ex.args[i].args[1] == symbol( "@sprintf" ) ||
-            isexpr( ex.args[i], :call ) && in( ex.args[i].args[1], [
-                :replace, :string, :utf8, :utf16, :utf32, :repr, :normalize_string, :join, :chop, :chomp,
-                :lpad, :rpad, :strip, :lstrip, :rstrip, :uppercase, :lowercase, :ucfirst, :lcfirst,
-                :escape_string, :unescape_string ] )
+        if guesstype( ex.args[i], ctx ) <: String
             msg( ctx, 2, "String uses * to concatenate.")
             break
         end

@@ -145,7 +145,7 @@ function linttry( ex::Expr, ctx::LintContext )
     lintexpr( ex.args[1], ctx )
     popVarScope( ctx )
     if typeof(ex.args[2]) == Symbol
-        stacktop.localvars[end][ ex.args[2] ] = ctx.line
+        stacktop.localvars[end][ ex.args[2] ] = VarInfo( ctx.line )
     end
     for i in 3:length(ex.args)
         pushVarScope( ctx )
