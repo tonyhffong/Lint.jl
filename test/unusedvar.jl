@@ -37,3 +37,12 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "declared but not used" ))
+s = """
+function f(x)
+    local a
+    local b = 2::Int # type assertion/conversion
+    return x+b
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "declared but not used" ))

@@ -1,3 +1,35 @@
+commoncollections = DataType[ Array, AbstractArray, BitArray, Set, Associative ]
+commoncollmethods = Dict{ Symbol, Set{ DataType }} ()
+
+function initcommoncollfuncs()
+    global commoncollmethods, commoncollections
+    for t in commoncollections
+        ms = methodswith( t )
+        for m in ms
+            str = string(m)
+            mtch = match( r"^[a-zA-Z_][a-zA-Z0-9_]*(!)?", str )
+            if mtch != nothing
+                if in( mtch.match, [ "hash", "show", "rand",
+                    "isequal", "convert", "serialize", "isless",
+                    "writemime", "write", "Dict" ] )
+                    continue
+                end
+                s = symbol( mtch.match )
+                if !haskey( commoncollmethods, s )
+                    commoncollmethods[s] = Set{ DataType }()
+                end
+                push!( commoncollmethods[s], t )
+            end
+        end
+    end
+    for (k,v) in  commoncollmethods
+        if length( v ) < 2
+            delete!( commoncollmethods, k )
+        end
+    end
+    commoncollmethods[ :(append!) ] = Set{DataType}()
+end
+
 function lintfuncargtype( ex, ctx::LintContext )
     if typeof( ex ) <: Expr && ex.head == :curly
         st = 2
@@ -289,6 +321,26 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             msg( ctx, 2, "You want string(), i.e. string conversion, instead of a non-existent constructor" )
         elseif ex.args[1]==:(+)
             lintplus( ex, ctx )
+        end
+
+        global commoncollmethods
+
+        if typeof( ex.args[1] ) == Symbol && haskey( commoncollmethods, ex.args[1] )
+            s = ex.args[1]
+            typesig = Any[]
+            for i in 2:length( ex.args )
+                push!( typesig, guesstype( ex.args[i], ctx ) )
+            end
+            try
+                lintpragma( "Ignore deprecated which" )
+                which( getfield( Base, s ),  tuple( typesig... ) )
+            catch er
+                if typeof( er ) == ErrorException
+                    msg( ctx, 2, string(s) * ": " * er.msg * " " * string( typesig ) )
+                else
+                    msg( ctx, 2, string(s) * ": " * string( er ) * " " * string( typesig ) )
+                end
+            end
         end
 
         #splice! allows empty range such as 3:2, it means inserting an array

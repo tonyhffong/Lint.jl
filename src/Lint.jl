@@ -240,3 +240,4 @@ end
 
 end
 
+Lint.initcommoncollfuncs()
