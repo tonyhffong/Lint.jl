@@ -80,3 +80,26 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+s = """
+type MyType{T<:Integer}
+    t::T
+    function MyType( x, someFunc::Function )
+        o = new( convert( T, x ) )
+        finalizer( o, someFunc ) # forgot to return o
+    end
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Constructor doesn't seem to return the constructed object"))
+s = """
+type MyType{T<:Integer}
+    t::T
+    function MyType( x, someFunc::Function )
+        o = new( convert( T, x ) )
+        finalizer( o, someFunc ) # didn't forget to return o
+        return o
+    end
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )

@@ -201,6 +201,12 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
     if ctorType != symbol( "" ) && fname != ctorType && in( :new, ctx.callstack[end].calledfuncs )
         msg( ctx, 2, "Constructor-like function " * string( fname ) * " within type " * string( ctorType ) * ". Shouldn't they match?" )
     end
+    if ctorType != symbol( "" ) && fname == ctorType
+        t = guesstype( ex.args[2], ctx )
+        if t != ctorType
+            msg( ctx, 2, "Constructor doesn't seem to return the constructed object. " )
+        end
+    end
     popVarScope( ctx )
 
     ctx.functionLvl = ctx.functionLvl - 1

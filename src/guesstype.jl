@@ -65,12 +65,26 @@ function guesstype( ex::Any, ctx::LintContext )
         return tuple( ts... )
     end
 
+    if isexpr( ex, :block )
+        return guesstype( ex.args[end], ctx )
+    end
+
     if isexpr( ex, :call ) && ex.args[1] == :convert && typeof( ex.args[2] ) == Symbol
         ret = Any
         try
             ret = eval( ex.args[2] )
         end
         return ret
+    end
+
+    # this is hackish because the return type is a Symbol, not a DataType
+    if isexpr( ex, :call ) && ex.args[1] == :new
+        return symbol( ctx.scope )
+    end
+
+    if isexpr( ex, :return )
+        tmp = guesstype( ex.args[1], ctx )
+        return tmp
     end
 
     if isexpr( ex, :call ) && ex.args[1] == :enumerate

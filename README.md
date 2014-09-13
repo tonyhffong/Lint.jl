@@ -75,6 +75,8 @@ using Lint
 * Named arguments without default value e.g. `f(x; y, q=1)`
 * Non-leaf type in a container's eltype in an argument e.g. `f( x::Array{Number,1} )`
 * Code extending deprecated functions, as defined in deprecated.jl (Base)
+* Mispelled constructor function name (when it calls new() inside)
+* Constructor forgetting to return the constructed object
 * Rudimentary type instability warnings e.g. `a = 1` then followed by `a = 2.0`. Overruled using a no-op statement
   `lintpragma( "Ignore unstable type variable [variable name]" )` just before the warning.
 * Incompatible type assertion and assignment e.g. `a::Int = 1.0`
