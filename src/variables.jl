@@ -171,8 +171,11 @@ end
 
 function guesstype( ex::Any, ctx::LintContext )
     t = typeof( ex )
-    if t <: Number || t <: String
+    if t <: Number
         return t
+    end
+    if t <: String
+        return String # don't try to make it more specific, e.g. ASCIIString
     end
     if t==Symbol # check if we have seen it
         stacktop = ctx.callstack[end]
@@ -330,7 +333,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 else
                     vi.typeexpr = typeassert[ s ]
                 end
-            elseif RHStype != Any
+            elseif RHStype != Any && !isForLoop
                 vi.typeactual = RHStype
             end
         catch
