@@ -18,6 +18,7 @@ const ASSIGN_OPS = [ :(=), :(+=), :(-=), :(*=), :(/=), :(&=), :(|=) ]
 
 include( "linttypes.jl" )
 include( "knownsyms.jl")
+include( "guesstype.jl" )
 include( "variables.jl" )
 include( "functions.jl" )
 include( "types.jl" )
