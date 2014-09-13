@@ -25,6 +25,29 @@ end
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "but now assigned" ) )
 @test( contains( msgs[end].message, "Iteration works for a number" ) )
+
+s = """
+function f()
+    x = rand()
+    for i in x
+        println( i )
+    end
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "Iteration works for a number" ) )
+s = """
+function f()
+    x = rand(3)
+    for i in x
+        println( i )
+    end
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( isempty( msgs ) )
 s = """
 function f(x::Int)
     push!( x, 1)
@@ -42,4 +65,24 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "iteration over dictionary uses a (k,v) tuple" ))
+@test( contains( msgs[1].message, "Iteration generates tuples of" ))
+s = """
+function f(x)
+    d = (Symbol=>Int)[:a=>1, :b=>2 ]
+    x = d[:a]
+    x = 1.0
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "but now assigned Float64" ))
+s = """
+function f()
+    a = 1
+    d = (Symbol=>Int)[:a=>1, :b=>2 ]
+    x = d[a]
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "Key type expects" ))

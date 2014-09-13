@@ -7,7 +7,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "iteration over dictionary uses a (k,v) tuple" ))
+@test( contains( msgs[1].message, "Iteration generates tuples of" ))
 s = """
 function f(x)
     while false
@@ -71,3 +71,12 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "Iteration works for a number" ) )
+s = """
+function f(a::Array{Int,1})
+    for i in enumerate( a )
+        println( i )
+    end
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "Iteration generates tuples of" ) )
