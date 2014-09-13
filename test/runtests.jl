@@ -1,7 +1,7 @@
 using Lint
 using Base.Test
 
-println( "test basic printing and sorting of lint messages")
+println( "Test basic printing and sorting of lint messages")
 
 if basename( pwd() ) == "Lint"
     path =  "test/DEMOFILE.jl"
@@ -15,7 +15,7 @@ end
 
 lintfile( path )
 
-println( "test core lint functionalities" )
+println( "...OK\n\nTest core lint functionalities..." )
 include( "array.jl")
 include( "bitopbool.jl" )
 include( "comprehensions.jl")
@@ -44,4 +44,6 @@ include( "undeclare.jl" )
 include( "unusedvar.jl")
 include( "using.jl")
 
+println( "...OK\n")
 include( "lintself.jl")
+println( "...OK")
