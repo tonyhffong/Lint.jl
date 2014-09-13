@@ -50,3 +50,23 @@ end
 """
 msgs = lintstr(s )
 @test( contains( msgs[1].message, "Incorrect usage of length") )
+s = """
+function f(b::Boolean, x::Int, y::Int)
+    a = b ? x : y
+    for i in a
+        println( i )
+    end
+end
+"""
+msgs = lintstr(s )
+@test( contains( msgs[1].message, "Iteration works for a number") )
+s = """
+function f(b::Boolean, x::Int, y::Any)
+    a = b ? x : y
+    for i in a
+        println( i )
+    end
+end
+"""
+msgs = lintstr(s )
+@test( isempty( msgs ) )
