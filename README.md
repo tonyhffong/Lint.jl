@@ -69,6 +69,13 @@ using Lint
 * Redefining mathematical constants, such as `e = 2.718`
 * Illegal `using` statement inside a function definition
 * Code extending deprecated functions, as defined in deprecated.jl (Base)
+* Rudimentary type instability warnings e.g. `a = 1` then followed by `a = 2.0`
+* Incompatible type assertion and assignment e.g. `a::Int = 1.0`
+* Incompatible tuple assignment sizes e.g. `(a,b) = (1,2,3)`
+* Flatten behavior of nest vcat e.g. `[[1,2],[3,4]]`
+* Loop over a single number
+* More indices than dimensions in an array lookup
+* Look up a dictionary with the wrong key type
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing
