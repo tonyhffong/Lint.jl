@@ -196,6 +196,7 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintexpr( ex.args[1], ctx )
     elseif ex.head == :ref # it could be a ref a[b], or an array Int[1,2]
         sub1 = ex.args[1]
+        guesstype( ex, ctx ) # tickle the type checks on the expression
         if typeof(sub1)== Symbol
             # check to see if it's a type
             str = string( sub1)
