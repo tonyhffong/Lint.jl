@@ -169,140 +169,6 @@ function resolveLHSsymbol( ex, syms::Array{Symbol,1}, ctx::LintContext, typeasse
     end
 end
 
-function guesstype( ex::Any, ctx::LintContext )
-    t = typeof( ex )
-    if t <: Number
-        return t
-    end
-    if t <: String
-        return String # don't try to make it more specific, e.g. ASCIIString
-    end
-    if t==Symbol # check if we have seen it
-        stacktop = ctx.callstack[end]
-        sym = ex
-        for i in length(stacktop.localvars):-1:1
-            if haskey( stacktop.localvars[i], sym )
-                return stacktop.localvars[i][sym].typeactual
-            end
-        end
-        for i in length(stacktop.localarguments):-1:1
-            if haskey( stacktop.localarguments[i], sym )
-                return stacktop.localarguments[i][sym].typeactual
-            end
-        end
-        return Any
-    end
-
-    if t == QuoteNode
-        return typeof( ex.value )
-    end
-
-    if t != Expr
-        return Any
-    end
-
-    if isexpr( ex, :call ) && ex.args[1] == :convert && typeof( ex.args[2] ) == Symbol
-        ret = Any
-        try
-            ret = eval( ex.args[2] )
-        end
-        return ret
-    end
-
-    if isexpr( ex, :call )
-        fn = ex.args[1]
-        if fn == :int
-            return Int
-        elseif fn == :int8
-            return Int8
-        elseif fn == :int16
-            return Int16
-        elseif fn == :int32
-            return Int32
-        elseif fn == :int64
-            return Int64
-        elseif fn == :float
-            return Float64
-        elseif fn == :Complex
-            return Complex
-        elseif fn == :Rational
-            return Rational
-        end
-    end
-
-    if isexpr( ex, :macrocall ) && ex.args[1] == symbol( "@sprintf" ) ||
-        isexpr( ex, :call ) && in( ex.args[1], [:replace, :string, :utf8, :utf16, :utf32, :repr, :normalize_string, :join, :chop, :chomp,
-            :lpad, :rpad, :strip, :lstrip, :rstrip, :uppercase, :lowercase, :ucfirst, :lcfirst,
-            :escape_string, :unescape_string ] )
-        return String
-    end
-
-    if isexpr( ex, :(:) )
-        return Range
-    end
-
-    if isexpr( ex, :call ) && isexpr( ex.args[1], :curly )
-        ret=Any
-        try
-            ret = eval( ex.args[1] )
-        end
-        return ret
-    end
-
-    if isexpr( ex, :call ) && ex.args[1] == :Array
-        ret = Array
-        try
-            ret = Array{ eval( ex.args[2] ), length(ex.args)-2 }
-        end
-        return ret
-    end
-
-    if isexpr( ex, :ref ) # it could be a ref a[b] or an array Int[1,2,3]
-        if typeof( ex.args[1] ) == Symbol && isupper( string( ex.args[1] )[1] ) # assume an array
-            elt = Any
-            try
-                elt = eval( ex.args[1] )
-            end
-            if typeof( elt ) == DataType
-                return Array{ elt, 1 }
-            end
-        end
-    end
-
-    if isexpr( ex, :typed_dict ) && isexpr( ex.args[1], :(=>) ) &&
-        typeof( ex.args[1].args[1] ) == Symbol && typeof( ex.args[1].args[2] ) == Symbol
-        ret = Dict
-        try
-            ret = Dict{ eval( ex.args[1].args[1] ), eval( ex.args[1].args[2] ) }
-        end
-        return ret
-    end
-    if isexpr( ex, :dict )
-        return Dict
-    end
-    if isexpr( ex, :comparison )
-        return Bool
-    end
-
-
-    # simple if statement e.g. test ? 0 : 1
-    if isexpr( ex, :if ) && length( ex.args ) == 3
-        tt = guesstype( ex.args[2], ctx )
-        ft = guesstype( ex.args[3], ctx )
-        if tt == ft
-            return tt
-        else
-            return Any
-        end
-    end
-
-    if isexpr( ex, :(->))
-        return Function
-    end
-
-    return Any
-end
-
 function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false ) # is it a local decl & assignment?
     lintexpr( ex.args[2], ctx )
 
@@ -312,16 +178,37 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     RHStype = guesstype( ex.args[2], ctx )
 
     if isForLoop
-        if length(syms)==1 && RHStype <: Dict
-            msg( ctx, 0, "Typically iteration over dictionary uses a (k,v) tuple. Here only one variable is used." )
-        end
         if RHStype <: Number
             msg( ctx, 0, "Iteration works for a number but it may be a typo." )
         end
+
+        if RHStype <: Set || RHStype <: Array || RHStype <: Range || RHStype <: Enumerate
+            RHStype = eltype( RHStype )
+        elseif RHStype <: Associative
+            RHStype = ( keytype( RHStype ), valuetype( RHStype ) )
+        end
+
+        if RHStype <: Tuple && length( RHStype ) != length(syms)
+            msg( ctx, 0, "Iteration generates tuples of "*string(RHStype)*". N of variables used: "* string( length(syms) ) )
+        end
     end
 
-    for s in syms
+    if RHStype <: Tuple && length( RHStype ) != length( syms ) && !isForLoop
+        if length( syms ) != 1
+            msg( ctx, 2, "RHS is a tuple of "*string(RHStype)*". N of variables used: "* string( length(syms) ) )
+        end
+    end
+
+    lintpragma( "Ignore unstable type variable rhst")
+    for (symidx, s) in enumerate( syms )
         vi = VarInfo( ctx.line )
+        if RHStype == Any || length( syms ) == 1
+            rhst = RHStype
+        elseif RHStype <: Tuple && length( RHStype ) == length( syms )
+            rhst = RHStype[ symidx ]
+        else
+            rhst = Any
+        end
         try
             if haskey( typeassert, s )
                 dt = eval( typeassert[ s ] )
@@ -333,11 +220,14 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 else
                     vi.typeexpr = typeassert[ s ]
                 end
-            elseif RHStype != Any && !isForLoop
-                vi.typeactual = RHStype
+            elseif rhst != Any && !isForLoop
+                vi.typeactual = rhst
             end
-        catch
-            vi.typeexpr = typeassert[s]
+        catch er
+            msg( ctx, 1, string( er )* " \n"* string( ex )* "\n Symbol=" * string( s ) * "\n RHStype="* string( rhst ) )
+            if haskey( typeassert, s )
+                vi.typeexpr = typeassert[s]
+            end
         end
 
         if in( s, [ :e, :pi, :eu, :catalan, :eulergamma, :golden, :π, :γ, :φ ] )
@@ -354,7 +244,8 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 if haskey( ctx.callstack[end].localvars[i], s )
                     found = true
                     prevvi = ctx.callstack[end].localvars[i][s]
-                    if vi.typeactual != Any && !( vi.typeactual <: prevvi.typeactual )
+                    if vi.typeactual != Any && !( vi.typeactual <: prevvi.typeactual ) &&
+                        !in( "Ignore unstable type variable " * string( s ), ctx.callstack[end].pragmas )
                         msg( ctx, 1, "Previously used " * string( s ) * " has apparent type " * string( prevvi.typeactual ) * ", but now assigned " * string( vi.typeactual ) )
                     end
                     ctx.callstack[end].localvars[i][ s] = vi
