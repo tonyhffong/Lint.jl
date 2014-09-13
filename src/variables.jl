@@ -188,12 +188,12 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             RHStype = ( keytype( RHStype ), valuetype( RHStype ) )
         end
 
-        if RHStype <: Tuple && length( RHStype ) != length(syms)
+        if typeof( RHStype ) <: Tuple && length( RHStype ) != length(syms)
             msg( ctx, 0, "Iteration generates tuples of "*string(RHStype)*". N of variables used: "* string( length(syms) ) )
         end
     end
 
-    if typeof( RHStype ) == DataType && RHStype <: Tuple && length( RHStype ) != length( syms ) && !isForLoop
+    if typeof( RHStype ) <: Tuple && length( RHStype ) != length( syms ) && !isForLoop
         if length( syms ) != 1
             msg( ctx, 2, "RHS is a tuple of "*string(RHStype)*". N of variables used: "* string( length(syms) ) )
         end
@@ -204,7 +204,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         vi = VarInfo( ctx.line )
         if RHStype == Any || length( syms ) == 1
             rhst = RHStype
-        elseif typeof( RHStype ) == DataType && RHStype <: Tuple && length( RHStype ) == length( syms )
+        elseif typeof( RHStype ) == Tuple && length( RHStype ) == length( syms )
             rhst = RHStype[ symidx ]
         else
             rhst = Any
