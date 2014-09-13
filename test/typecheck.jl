@@ -32,3 +32,14 @@ end
 """
 msgs = lintstr( s )
 @test( contains( msgs[1].message, "no method found") )
+
+s = """
+function f(x)
+    d = (Symbol=>Int)[:a=>1, :b=>2 ]
+    for i in d
+    end
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "iteration over dictionary uses a (k,v) tuple" ))
