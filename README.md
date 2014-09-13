@@ -45,7 +45,8 @@ using Lint
 * simple deadcode detection (e.g if true/false)
 * simple premature-return deadcode detection
 * Bitwise `&`, `|` being used in a Bool context. Suggest `&&` and `||`
-* declared but unused variable
+* Declared but unused variable. Overruled by adding the no-op statement `lintpragma( "Ignore Unused [variable name]" )`
+  just before the warning line.
 * Using an undefined variable
 * Duplicate key as in `[:a=>1, :b=>2, :a=>3]`
 * Mixed types in uniform dictionary `[:a=>1, :b=>""]` (ERROR)
@@ -64,18 +65,24 @@ using Lint
 * Concatenation of strings using `+`. It also catches common string functions, e.g. `string(...) + replace( ... )`
 * Iteration over an apparent dictionary using only one variable instead of (k,v) tuple
 * Incorrect ADT usage in function definition, e.g. `f{Int}( x::Int )`, `f{T<:Int64}( x::T )`, `f{Int<:Real}( x::Int)`
-* Suspicious range literals e.g. 10:1
+* Suspicious range literals e.g. `10:1` when it probably should be `10:-1:1`
 * Understandable but actually non-existent constructors e.g. String(), Symbol()
 * Redefining mathematical constants, such as `e = 2.718`
 * Illegal `using` statement inside a function definition
+* Repeated function arguments e.g. `f(x,y,x)`
+* Wrong usage of ellipsis in function arguments e.g. `f(x, y... , z...)`
+* Wrong usage of default value in function arguments e.g. `f(x=1, y)`
+* Named arguments without default value e.g. `f(x; y, q=1)`
+* Non-leaf type in a container's eltype in an argument e.g. `f( x::Array{Number,1} )`
 * Code extending deprecated functions, as defined in deprecated.jl (Base)
-* Rudimentary type instability warnings e.g. `a = 1` then followed by `a = 2.0`
+* Rudimentary type instability warnings e.g. `a = 1` then followed by `a = 2.0`. Overruled using a no-op statement
+  `lintpragma( "Ignore unstable type variable [variable name]" )` just before the warning.
 * Incompatible type assertion and assignment e.g. `a::Int = 1.0`
 * Incompatible tuple assignment sizes e.g. `(a,b) = (1,2,3)`
-* Flatten behavior of nest vcat e.g. `[[1,2],[3,4]]`
-* Loop over a single number
+* Flatten behavior of nested vcat e.g. `[[1,2],[3,4]]`
+* Loop over a single number. e.g. `for i=1 end`
 * More indices than dimensions in an array lookup
-* Look up a dictionary with the wrong key type
+* Look up a dictionary with the wrong key type, if the key's type can be inferred.
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing
