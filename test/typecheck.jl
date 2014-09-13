@@ -25,3 +25,10 @@ end
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "but now assigned" ) )
 @test( contains( msgs[end].message, "Iteration works for a number" ) )
+s = """
+function f(x::Int)
+    push!( x, 1)
+end
+"""
+msgs = lintstr( s )
+@test( contains( msgs[1].message, "no method found") )
