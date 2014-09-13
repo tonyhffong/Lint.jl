@@ -27,6 +27,7 @@ function initcommoncollfuncs()
             delete!( commoncollmethods, k )
         end
     end
+    # ADD COMMON FUNCTIONS WITH EASILY-MISTAKEN SIGNATURES HERE
     commoncollmethods[ :(append!) ] = Set{DataType}()
 end
 
