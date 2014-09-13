@@ -206,7 +206,7 @@ function guesstype( ex::Any, ctx::LintContext )
         return ret
     end
 
-    if isexpr( ex, :call ) 
+    if isexpr( ex, :call )
         fn = ex.args[1]
         if fn == :int
             return Int
@@ -266,7 +266,7 @@ function guesstype( ex::Any, ctx::LintContext )
         end
     end
 
-    if isexpr( ex, :typed_dict ) && isexpr( ex.args[1], :(=>) ) && 
+    if isexpr( ex, :typed_dict ) && isexpr( ex.args[1], :(=>) ) &&
         typeof( ex.args[1].args[1] ) == Symbol && typeof( ex.args[1].args[2] ) == Symbol
         ret = Dict
         try
@@ -330,6 +330,8 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 else
                     vi.typeexpr = typeassert[ s ]
                 end
+            elseif RHStype != Any
+                vi.typeactual = RHStype
             end
         catch
             vi.typeexpr = typeassert[s]
@@ -349,7 +351,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 if haskey( ctx.callstack[end].localvars[i], s )
                     found = true
                     prevvi = ctx.callstack[end].localvars[i][s]
-                    if !( vi.typeactual <: prevvi.typeactual )
+                    if vi.typeactual != Any && !( vi.typeactual <: prevvi.typeactual )
                         msg( ctx, 1, "Previously used " * string( s ) * " has apparent type " * string( prevvi.typeactual ) * ", but now assigned " * string( vi.typeactual ) )
                     end
                     ctx.callstack[end].localvars[i][ s] = vi
