@@ -98,11 +98,11 @@ function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
     lastpart = nothing
     try
         if ex.args[1] == :(.)
-            path = string( ctx.callstack[end].moduleName )
+            path = string( ctx.callstack[end-1].moduleName )
             for i in 2:length(ex.args)
                 path = path * "." * string(ex.args[i])
             end
-            m = eval( parse( path ) )
+            m = eval( Main, parse( path ) )
             lastpart = ex.args[end]
         else
             lastpart = ex.args[end]
