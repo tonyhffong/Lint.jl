@@ -194,7 +194,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     end
 
     if typeof( RHStype ) <: Tuple && length( RHStype ) != length( syms ) && !isForLoop
-        if length( syms ) != 1
+        if length( syms ) > 1
             msg( ctx, 2, "RHS is a tuple of "*string(RHStype)*". N of variables used: "* string( length(syms) ) )
         end
     end
@@ -214,7 +214,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 dt = eval( typeassert[ s ] )
                 if typeof( dt ) == DataType
                     vi.typeactual = dt
-                    if dt !=Any && RHStype != Any && !( RHStype <: dt )
+                    if !isAnyOrTupleAny( dt ) && !isAnyOrTupleAny( RHStype ) && !( RHStype <: dt )
                         msg( ctx, 0, "Assert " * string(s) * " type= " * string( dt ) * " but assign a value of " * string( RHStype ) )
                     end
                 else
@@ -244,7 +244,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 if haskey( ctx.callstack[end].localvars[i], s )
                     found = true
                     prevvi = ctx.callstack[end].localvars[i][s]
-                    if vi.typeactual != Any && !( vi.typeactual <: prevvi.typeactual ) &&
+                    if !isAnyOrTupleAny( vi.typeactual ) && !( vi.typeactual <: prevvi.typeactual ) &&
                         !in( "Ignore unstable type variable " * string( s ), ctx.callstack[end].pragmas )
                         msg( ctx, 1, "Previously used " * string( s ) * " has apparent type " * string( prevvi.typeactual ) * ", but now assigned " * string( vi.typeactual ) )
                     end

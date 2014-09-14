@@ -25,6 +25,15 @@ function eltype{T}( ::Type{Enumerate{T}})
     (Int, eltype( T ) )
 end
 
+function isAnyOrTupleAny( x )
+    if x == Any
+        return true
+    elseif typeof( x ) <: Tuple
+        return all( y->y==Any, x )
+    end
+    return false
+end
+
 function guesstype( ex::Any, ctx::LintContext )
     t = typeof( ex )
     if t <: Number
