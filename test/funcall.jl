@@ -149,8 +149,17 @@ msgs = lintstr(s)
 @assert( contains(msgs[1].message, "type assertion and default") )
 
 s = """
+g( x ) = -x
 function f( arr::Array )
-    map( +, arr )
+    map( g, arr )
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
+s = """
+g( ;x=0, y=1 ) = x+y
+function f()
+    g(; [ :x=>6, :y=>4 ]... )
 end
 """
 msgs = lintstr(s)
