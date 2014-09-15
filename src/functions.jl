@@ -364,17 +364,15 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             s = ex.args[1]
             typesig = Any[]
             for i in 2:length( ex.args )
-                push!( typesig, guesstype( ex.args[i], ctx ) )
+                if !isexpr( ex.args[i], :kw )
+                    push!( typesig, guesstype( ex.args[i], ctx ) )
+                end
             end
             try
                 lintpragma( "Ignore deprecated which" )
                 which( getfield( Base, s ),  tuple( typesig... ) )
             catch er
-                if typeof( er ) == ErrorException
-                    msg( ctx, 2, string(s) * ": " * er.msg * " " * string( typesig ) )
-                else
-                    msg( ctx, 2, string(s) * ": " * string( er ) * " " * string( typesig ) )
-                end
+                msg( ctx, 2, string(s) * ": " * string( er ) * "\nSignature: " * string( typesig ) )
             end
         end
 
