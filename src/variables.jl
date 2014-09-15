@@ -204,7 +204,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         vi = VarInfo( ctx.line )
         if RHStype == Any || length( syms ) == 1
             rhst = RHStype
-        elseif typeof( RHStype ) == Tuple && length( RHStype ) == length( syms )
+        elseif typeof( RHStype ) <: Tuple && length( RHStype ) == length( syms )
             rhst = RHStype[ symidx ]
         else
             rhst = Any
