@@ -1,2 +1,4 @@
-@test_throws( ErrorException, lintfile( "non_existing_file" ) )
-@test_throws( ErrorException, lintpkg( "non_existing_pkg" ) )
+p = "non_existing_1234_4321"
+@test !ispath( p )
+@test_throws( ErrorException, lintfile( p ) )
+@test_throws( ErrorException, lintpkg( p ) )
