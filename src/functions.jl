@@ -364,7 +364,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             s = ex.args[1]
             typesig = Any[]
             for i in 2:length( ex.args )
-                if !isexpr( ex.args[i], :kw )
+                if !isexpr( ex.args[i], :kw ) && !isexpr( ex.args[i], :parameters )
                     push!( typesig, guesstype( ex.args[i], ctx ) )
                 end
             end
