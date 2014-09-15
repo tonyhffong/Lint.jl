@@ -139,8 +139,7 @@ type LintContext
     messages     :: Array{ LintMessage, 1 }
     ignoreState  :: LintIgnoreState
     LintContext() = new( "none", 0, 1, "", ".",
-            Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(),
-            0, 0, 0, 0,
+            Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0, 0,
             { LintStack( true ) }, LintMessage[], LintIgnoreState() )
 end
 
