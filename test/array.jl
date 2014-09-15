@@ -37,10 +37,8 @@ msgs = lintstr( s )
 s = """
 function f( x::Array{Float64,2} )
     y = x[1,1]
-    for i in y
-        println( i )
-    end
+    lintpragma( "Info type y")
 end
 """
 msgs = lintstr( s )
-@test( contains( msgs[1].message, "Iteration works for a number" ) )
+@test( contains( msgs[1].message, "typeof( y ) == Float64" ) )

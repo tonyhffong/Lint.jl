@@ -16,38 +16,32 @@ function f(c::Char)
     x = Rational(x)
     x = float(x)
     x = Complex(x)
-    for i in x
-        println( i )
-    end
+    lintpragma( "Info type x")
     return x
 end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "but now assigned" ) )
-@test( contains( msgs[end].message, "Iteration works for a number" ) )
+@test( contains( msgs[end].message, "typeof( x ) == Complex" ) )
 
 s = """
 function f()
     x = rand()
-    for i in x
-        println( i )
-    end
+    lintpragma( "Info type x")
     return x
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "Iteration works for a number" ) )
+@test( contains( msgs[1].message, "typeof( x ) == Float64" ) )
 s = """
 function f()
     x = rand(3)
-    for i in x
-        println( i )
-    end
+    lintpragma( "Info type x")
     return x
 end
 """
 msgs = lintstr(s)
-@test( isempty( msgs ) )
+@test( contains( msgs[1].message, "typeof( x ) == Array{Float64,1}" ) )
 s = """
 function f(x::Int)
     push!( x, 1)
@@ -86,3 +80,12 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "Key type expects" ))
+s = """
+function f( arr::Array{Any,1})
+    x = arr[1]::Int64
+    lintpragma( "Info type x")
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "typeof( x ) == Int" ) )

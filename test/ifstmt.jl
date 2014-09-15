@@ -53,20 +53,18 @@ msgs = lintstr(s )
 s = """
 function f(b::Boolean, x::Int, y::Int)
     a = b ? x : y
-    for i in a
-        println( i )
-    end
+    lintpragma( "Info type a")
+    a
 end
 """
 msgs = lintstr(s )
-@test( contains( msgs[1].message, "Iteration works for a number") )
+@test( contains( msgs[1].message, "typeof( a ) == Int") )
 s = """
 function f(b::Boolean, x::Int, y::Any)
     a = b ? x : y
-    for i in a
-        println( i )
-    end
+    lintpragma( "Info type a")
+    a
 end
 """
 msgs = lintstr(s )
-@test( isempty( msgs ) )
+@test( contains( msgs[1].message, "typeof( a ) == Any") )
