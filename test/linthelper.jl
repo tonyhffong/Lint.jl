@@ -4,3 +4,6 @@ include( "DEMOMODULE2.jl") # this uses the first module's macro. It would export
 
 msgs = lintfile( "DEMOMODULE2.jl"; returnMsgs = true )
 @assert( isempty( msgs ) )
+
+msgs = lintfile( "DEMOMODULE3.jl"; returnMsgs = true )
+@assert( contains( msgs[1].message, "cannot find include file: " ) )
