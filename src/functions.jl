@@ -286,7 +286,7 @@ end
 function lintfunctioncall( ex::Expr, ctx::LintContext )
     if ex.args[1] == :lintpragma
         if typeof( ex.args[2] ) <: String
-            m = match( r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)) +(.+)", ex.args[2] )
+            m = match( r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)) +(.+)"s, ex.args[2] )
             if m != nothing
                 action = m.captures[1]
                 infotype = m.captures[6]
