@@ -155,8 +155,6 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintimport( ex, ctx )
     elseif ex.head == :importall
         lintimport( ex, ctx; all=true )
-    elseif ex.head == :toplevel # import Base: foo, bar, ..., or import Core,Base
-        linttoplevel( ex, ctx )
     elseif ex.head == :comparison # only the odd indices
         for i in 1:2:length(ex.args)
             # comparison like match != 0:-1 is allowed, and shouldn't trigger lint warnings

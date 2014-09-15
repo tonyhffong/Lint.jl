@@ -74,21 +74,6 @@ function lintexport( ex::Expr, ctx::LintContext )
     end
 end
 
-function linttoplevel( ex::Expr, ctx::LintContext )
-    for a in ex.args
-        if typeof(a)==Expr && a.head == :import
-            if ctx.functionLvl > 0
-                msg( ctx, 2, "import is not allowed inside function definitions.")
-            end
-            if length(a.args) == 1 # just the module name
-                union!( ctx.callstack[end].imports, names( eval( a.args[1] )))
-            else
-                push!( ctx.callstack[end].imports, a.args[2] )
-            end
-        end
-    end
-end
-
 function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
     if ctx.functionLvl > 0
         msg( ctx, 2, "import is not allowed inside function definitions.")
