@@ -74,6 +74,14 @@ function guesstype( ex::Any, ctx::LintContext )
         return tuple( ts... )
     end
 
+    if isexpr( ex, :(::) ) && length( ex.args ) == 2
+        t = Any
+        try
+            t = eval( ex.args[2] )
+        end
+        return t
+    end
+
     if isexpr( ex, :block )
         return guesstype( ex.args[end], ctx )
     end
