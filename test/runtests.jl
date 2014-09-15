@@ -16,6 +16,7 @@ end
 lintfile( path )
 
 println( "...OK\n\nTest core lint functionalities..." )
+include( "basics.jl" )
 include( "array.jl")
 include( "bitopbool.jl" )
 include( "comprehensions.jl")
