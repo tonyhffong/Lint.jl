@@ -70,7 +70,7 @@ function lintfile( file::String; returnMsgs::Bool = false )
     end
 end
 
-function lintstr( str::String, ctx :: LintContext = LintContext() )
+function lintstr( str::String, ctx :: LintContext = LintContext(), lineoffset = 0 )
     if VERSION < v"0.4-"
         linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
     else
@@ -80,7 +80,7 @@ function lintstr( str::String, ctx :: LintContext = LintContext() )
     while !done(str,i)
         problem = false
         ex = nothing
-        ctx.lineabs = searchsorted( linecharc, i ).start
+        ctx.lineabs = searchsorted( linecharc, i ).start + lineoffset
         try
             (ex, i) = parse(str,i)
         catch y
