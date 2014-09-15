@@ -147,3 +147,11 @@ end
 """
 msgs = lintstr(s)
 @assert( contains(msgs[1].message, "type assertion and default") )
+
+s = """
+function f( arr::Array )
+    map( +, arr )
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
