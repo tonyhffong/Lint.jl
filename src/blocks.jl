@@ -161,12 +161,15 @@ function lintlet( ex::Expr, ctx::LintContext )
 
     ctx.functionLvl += 1
     for j = 2:length(ex.args)
-        lintexpr( ex.args[2], ctx )
+        if isexpr( ex.args[j], :(=) ) && !isexpr( ex.args[j].args[1], :call )
+            lintassignment( ex.args[j], ctx; islocal = true )
+        else
+            lintexpr( ex.args[2], ctx )
+        end
     end
     blk = ex.args[1]
     @assert( blk.head == :block )
     for i = 1:length(blk.args)
-
         if isexpr( blk.args[i], :(=) ) && !isexpr( blk.args[i].args[1], :call )
             lintassignment( blk.args[i], ctx; islocal = true )
         else
