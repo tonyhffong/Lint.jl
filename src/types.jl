@@ -75,9 +75,17 @@ function linttype( ex::Expr, ctx::LintContext )
             ctx.line = def.line
         elseif typeof( def ) == Symbol
             # it means Any, probably not a very efficient choice
-            msg( ctx, 0, "A type is not given to the field " * string( def ) * ", which can be slow." )
+            if !in( "Ignore untyped field " * string( def ), ctx.callstack[end].pragmas )
+                msg( ctx, 0, "A type is not given to the field " * string( def ) * ", which can be slow." )
+            end
+        elseif isexpr( def, :macrocall ) && def.args[1] == symbol( "@lintpragma" )
+            lintlintpragma( def, ctx )
+        elseif isexpr( def, :call ) && def.args[1] == symbol( "lintpragma" )
+            lintlintpragma( def, ctx )
+            msg( ctx,2, "Use @lintpragma macro inside type declaration" )
         elseif def.head == :(::)
-            if isexpr( def.args[2], :curly ) && def.args[2].args[1] == :Array && length( def.args[2].args ) <= 2 
+            if isexpr( def.args[2], :curly ) && def.args[2].args[1] == :Array && length( def.args[2].args ) <= 2 &&
+                !in( "Ignore dimensionless array field " * string( def.args[1] ), ctx.callstack[end].pragmas )
                 msg( ctx, 0, "Array field " * string( def.args[1] ) * " has no dimension, which can be slow" )
             end
         elseif def.head == :(=) && isexpr( def.args[1], :call )

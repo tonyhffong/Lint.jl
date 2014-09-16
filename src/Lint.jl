@@ -5,7 +5,7 @@ module Lint
 using Base.Meta
 
 export LintMessage, LintContext, LintStack
-export lintfile, lintstr, lintpkg, lintpragma
+export lintfile, lintstr, lintpkg, lintpragma, @lintpragma
 export test_similarity_string
 
 const SIMILARITY_THRESHOLD = 10.0
@@ -20,6 +20,7 @@ include( "linttypes.jl" )
 include( "knownsyms.jl")
 include( "guesstype.jl" )
 include( "variables.jl" )
+include( "pragma.jl" )
 include( "functions.jl" )
 include( "types.jl" )
 include( "modules.jl" )
@@ -31,6 +32,10 @@ include( "misc.jl")
 
 # no-op, the presence of this can suppress lint messages locally
 function lintpragma( s::String )
+end
+
+# also no-op. We have to use macro inside type declaration as it disallows actual function calls
+macro lintpragma( s )
 end
 
 function lintpkg( pkg::String; returnMsgs::Bool = false )

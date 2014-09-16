@@ -128,8 +128,32 @@ msgs = lintstr(s)
 @assert( contains( msgs[1].message, "A type is not given to the field a" ) )
 s = """
 type MyType
+    @lintpragma( "Ignore untyped field a")
+    a
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
+s = """
+type MyType
     a::Array{Float64}
 end
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "Array field a has no dimension" ) )
+s = """
+type MyType
+    @lintpragma( "Ignore dimensionless array field a" )
+    a::Array{Float64}
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
+s = """
+type MyType
+    lintpragma( "Ignore dimensionless array field a" )
+    a::Array{Float64}
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Use @lintpragma macro inside type declaration" ) )
