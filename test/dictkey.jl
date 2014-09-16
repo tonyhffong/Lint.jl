@@ -14,6 +14,13 @@ msgs = lintstr( s )
 @test( contains( msgs[2].message, "Use [] for better performances" ) )
 
 s = """
+{ :a=>Date( 2014,1,1 ), :b=>Date( 2015,1,1 ) }
+"""
+msgs = lintstr( s )
+
+@test( contains( msgs[1].message, "Use [] for better performances" ) )
+
+s = """
 [ :a=>1, :b=>"" ]
 """
 msgs = lintstr( s )

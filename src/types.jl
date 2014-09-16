@@ -74,8 +74,6 @@ function linttype( ex::Expr, ctx::LintContext )
         if typeof( def ) == LineNumberNode
             ctx.line = def.line
         elseif typeof( def ) == Symbol
-        elseif def.head == :line
-            ctx.line = def.args[1]
         elseif def.head == :(::)
         elseif def.head == :(=) && isexpr( def.args[1], :call )
             lintfunction( def, ctx; ctorType = typename )
