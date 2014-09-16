@@ -161,10 +161,9 @@ function lintlet( ex::Expr, ctx::LintContext )
 
     ctx.functionLvl += 1
     for j = 2:length(ex.args)
+        # it's always assignment, or the parser would have thrown at the very start
         if isexpr( ex.args[j], :(=) ) && !isexpr( ex.args[j].args[1], :call )
             lintassignment( ex.args[j], ctx; islocal = true )
-        else
-            lintexpr( ex.args[2], ctx )
         end
     end
     blk = ex.args[1]
