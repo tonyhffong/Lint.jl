@@ -85,7 +85,7 @@ function lintstr( str::String, ctx :: LintContext = LintContext(), lineoffset = 
             (ex, i) = parse(str,i)
         catch y
             if typeof( y ) != ParseError || y.msg != "end of input"
-                println( y )
+                msg( ctx, 2, string(y) )
             end
             problem = true
         end
@@ -142,8 +142,6 @@ function lintexpr( ex::Any, ctx::LintContext )
     elseif ex.head == :const
         if typeof( ex.args[1] ) == Expr && ex.args[1].head == :(=)
             lintassignment( ex.args[1], ctx; isConst = true )
-        else
-            lintexpr( ex.args[1], ctx )
         end
     elseif ex.head == :module
         lintmodule( ex, ctx )
