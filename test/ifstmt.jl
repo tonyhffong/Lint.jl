@@ -68,3 +68,16 @@ end
 """
 msgs = lintstr(s )
 @test( contains( msgs[1].message, "typeof( a ) == Any") )
+
+s = """
+function f()
+    if :a && !:b
+        1
+    else
+        2
+    end
+end
+"""
+msgs = lintstr(s )
+@test( contains( msgs[1].message, "Lint doesn't understand :a in a boolean context") )
+@test( contains( msgs[2].message, "Lint doesn't understand :b in a boolean context") )
