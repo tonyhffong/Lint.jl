@@ -39,6 +39,14 @@ end
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "instead of a known type" ) )
 s = """
+type SomeType
+end
+type MyType{SomeType<:Real}
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "instead of a known type" ) )
+s = """
 type MyType{T<:Integer}
     t::T
     MyType( x ) = new( convert( T, x ) )

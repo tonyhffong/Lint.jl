@@ -30,7 +30,7 @@ function linttype( ex::Expr, ctx::LintContext )
                 typefound = in( temptype, knowntypes )
                 if !typefound
                     for j in 1:length(ctx.callstack)
-                        if in( adt, ctx.callstack[j].types )
+                        if in( temptype, ctx.callstack[j].types )
                             typefound = true
                             break
                         end
