@@ -1,3 +1,11 @@
+s = """
+type MyType{T}
+    t::T
+    MyType( x::T ) = new( x )
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
 
 s = """
 type MyType{Int64}
