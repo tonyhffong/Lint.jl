@@ -119,3 +119,17 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+s = """
+type MyType
+    a
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "A type is not given to the field a" ) )
+s = """
+type MyType
+    a::Array{Float64}
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Array field a has no dimension" ) )

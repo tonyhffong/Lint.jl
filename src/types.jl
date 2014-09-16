@@ -74,7 +74,12 @@ function linttype( ex::Expr, ctx::LintContext )
         if typeof( def ) == LineNumberNode
             ctx.line = def.line
         elseif typeof( def ) == Symbol
+            # it means Any, probably not a very efficient choice
+            msg( ctx, 0, "A type is not given to the field " * string( def ) * ", which can be slow." )
         elseif def.head == :(::)
+            if isexpr( def.args[2], :curly ) && def.args[2].args[1] == :Array && length( def.args[2].args ) <= 2 
+                msg( ctx, 0, "Array field " * string( def.args[1] ) * " has no dimension, which can be slow" )
+            end
         elseif def.head == :(=) && isexpr( def.args[1], :call )
             lintfunction( def, ctx; ctorType = typename )
         elseif def.head == :function
