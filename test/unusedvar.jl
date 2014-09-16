@@ -19,8 +19,8 @@ msgs = lintstr(s)
 @test( msgs[1].line == 2 )
 s = """
 function f(x)
-    let
-        (a,b) = (1,2)
+    let a = 1
+        b = 2
         y = x+b
         println( y )
     end
