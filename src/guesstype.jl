@@ -178,9 +178,9 @@ function guesstype( ex::Any, ctx::LintContext )
     end
 
     if isexpr( ex, :call ) && ex.args[1] == :zeros
-        sig = []
+        sig = Any[]
         for i = 2:length(ex.args)
-            push!( sig, guesstype( ex.args, ctx ) )
+            push!( sig, guesstype( ex.args[i], ctx ) )
         end
         if length( sig ) == 1
             return sig[1] # assume it's the same type, as in zeros{T}( A::AbstractArray{T,N} )
@@ -193,6 +193,8 @@ function guesstype( ex::Any, ctx::LintContext )
                 ret = Array{ Any, length(ex.args)-2 }
             end
             return ret
+        elseif all( y->y <: Integer, sig )
+            return Array{ Float64, length( sig ) }
         else
             return Array
         end
