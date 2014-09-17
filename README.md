@@ -112,6 +112,10 @@ Lint message generation (do not include the square brackets)
 * `@lintpragma( "Warn me [any text]")`. Remind yourself this code isn't done yet.
 * `@lintpragma( "Error me [any text]")`. Remind yourself this code is wrong.
 
+The macro also supports lint-time terminal output that generates no Lint message:
+* `@lintpragma( "Print type [expression]")`. Just print out the type
+* `@lintpragma( "Print me [any text]")`. Lint-time printing
+
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing
 with that. To help Lint and to reduce noise, module designers can add a
