@@ -16,3 +16,12 @@ s = "a" + b
 """
 msgs = lintstr( s )
 @test( contains( msgs[1].message, "String uses * to concat"))
+s = """
+function f()
+    b = repeat( " ", 10 )
+    lintpragma( "Info type b")
+    b
+end
+"""
+msgs = lintstr( s )
+@test( contains( msgs[1].message, "typeof( b ) == ASCIIString" ) )

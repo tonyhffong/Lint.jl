@@ -40,7 +40,7 @@ function guesstype( ex::Any, ctx::LintContext )
         return t
     end
     if t <: String
-        return String # don't try to make it more specific, e.g. ASCIIString
+        return t
     end
     if t==Symbol # check if we have seen it
         stacktop = ctx.callstack[end]
@@ -201,6 +201,44 @@ function guesstype( ex::Any, ctx::LintContext )
             return Array{ Float64, length( sig ) }
         else
             return Array
+        end
+    end
+
+    if isexpr( ex, :call ) && ex.args[1]==:slicedim
+        fst = guesstype( ex.args[2], ctx )
+        return fst
+    end
+
+    if isexpr( ex, :call ) && in( ex.args[1], [ :length, :sizeof ] )
+        return Int
+    end
+
+    if isexpr( ex, :call ) && ex.args[1] == :reshape
+        sig = Any[]
+        for i = 2:length(ex.args)
+            push!( sig, guesstype( ex.args[i], ctx ) )
+        end
+        if !( sig[1] <: AbstractArray )
+            return Any
+        end
+        eletyp = eltype( sig[1] )
+        if length(sig)==2
+            if sig[2] <: Number
+                return Array{ eletyp, 1 }
+            elseif sig[2] <: Tuple
+                return Array{ eletyp, length( sig[2] ) }
+            else
+                return Array{ eletyp }
+            end
+        else
+            return Array{ eletyp, length( sig ) - 1 }
+        end
+    end
+
+    if isexpr( ex, :call ) && ex.args[1] == :repeat
+        ret = guesstype( ex.args[2], ctx )
+        if ret <: String
+            return ret
         end
     end
 

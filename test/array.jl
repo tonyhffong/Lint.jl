@@ -56,3 +56,25 @@ msgs = lintstr( s )
 @test( contains( msgs[1].message, "typeof( x ) == Array{Float64,2}" ) )
 @test( contains( msgs[2].message, "typeof( y ) == Array{Int64,2}" ) )
 @test( contains( msgs[3].message, "typeof( z ) == Array{T,N}" ) )
+
+# more array function
+s = """
+function f(t::Array{Int64,2}, m, n )
+    x1 = slicedim( t, 2, 1 )
+    x2 = reshape( t, 1 )
+    x3 = reshape( t, (1,2) )
+    x4 = reshape( m, (1,2) )
+    x5 = reshape( t, n )
+    lintpragma( "Info type x1")
+    lintpragma( "Info type x2")
+    lintpragma( "Info type x3")
+    lintpragma( "Info type x4")
+    lintpragma( "Info type x5")
+end
+"""
+msgs = lintstr( s )
+@test( contains( msgs[1].message, "typeof( x1 ) == Array{Int64,2}" ) )
+@test( contains( msgs[2].message, "typeof( x2 ) == Array{Int64,1}" ) )
+@test( contains( msgs[3].message, "typeof( x3 ) == Array{Int64,2}" ) )
+@test( contains( msgs[4].message, "typeof( x4 ) == Any" ) )
+@test( contains( msgs[5].message, "typeof( x5 ) == Array{Int64,N}" ) )
