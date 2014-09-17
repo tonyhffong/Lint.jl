@@ -174,4 +174,5 @@ function f{T}( a::Array{T,1}  )
 end
 """
 msgs = lintstr(s)
-@assert( contains( msgs[1].message, "typeof( T ) == DataType" ) )
+@assert( contains( msgs[1].message, "typeof( tmp ) == Array{Any,1}" ) )
+@assert( contains( msgs[2].message, "typeof( T ) == DataType" ) )

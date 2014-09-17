@@ -55,8 +55,16 @@ function guesstype( ex::Any, ctx::LintContext )
                 return stacktop.localarguments[i][sym].typeactual
             end
         end
-        if in( sym, stacktop.types )
-            return DataType
+        for i in length( ctx.callstack):-1:1
+            if in( sym, ctx.callstack[i].types )
+                return DataType
+            end
+            if in( sym, ctx.callstack[i].functions )
+                return Function
+            end
+            if in( sym, ctx.callstack[i].modules )
+                return Module
+            end
         end
         return Any
     end
