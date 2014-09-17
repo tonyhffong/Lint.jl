@@ -42,3 +42,17 @@ end
 """
 msgs = lintstr( s )
 @test( contains( msgs[1].message, "typeof( y ) == Float64" ) )
+s = """
+function f(t)
+    x = zeros( 1,2 )
+    y = zeros( Int64,2,2 )
+    z = zeros( t, 2, 2 )
+    lintpragma( "Info type x")
+    lintpragma( "Info type y")
+    lintpragma( "Info type z")
+end
+"""
+msgs = lintstr( s )
+@test( contains( msgs[1].message, "typeof( x ) == Array{Float,2}" ) )
+@test( contains( msgs[2].message, "typeof( y ) == Array{Int64,2}" ) )
+@test( contains( msgs[3].message, "typeof( z ) == Array{T,N}" ) )

@@ -66,6 +66,10 @@ function guesstype( ex::Any, ctx::LintContext )
                 return Module
             end
         end
+        try
+            tmp = eval( Main, ex )
+            return typeof( tmp )
+        end
         return Any
     end
 
@@ -88,7 +92,7 @@ function guesstype( ex::Any, ctx::LintContext )
     if isexpr( ex, :(::) ) && length( ex.args ) == 2
         t = Any
         try
-            t = eval( ex.args[2] )
+            t = eval( Main, ex.args[2] )
         end
         return t
     end
@@ -100,7 +104,7 @@ function guesstype( ex::Any, ctx::LintContext )
     if isexpr( ex, :call ) && ex.args[1] == :convert && typeof( ex.args[2] ) == Symbol
         ret = Any
         try
-            ret = eval( ex.args[2] )
+            ret = eval( Main, ex.args[2] )
         end
         return ret
     end
@@ -154,7 +158,7 @@ function guesstype( ex::Any, ctx::LintContext )
     if isexpr( ex, :call ) && isexpr( ex.args[1], :curly )
         ret=Any
         try
-            ret = eval( ex.args[1] )
+            ret = eval( Main, ex.args[1] )
         end
         return ret
     end
@@ -170,14 +174,14 @@ function guesstype( ex::Any, ctx::LintContext )
     if isexpr( ex, :call ) && ex.args[1] == :Array
         ret = Array
         try
-            ret = Array{ eval( ex.args[2] ), length(ex.args)-2 }
+            ret = Array{ eval( Main, ex.args[2] ), length(ex.args)-2 }
         catch
             ret = Array{ Any, length(ex.args)-2 }
         end
         return ret
     end
 
-    if isexpr( ex, :call ) && ex.args[1] == :zeros
+    if isexpr( ex, :call ) && in( ex.args[1], [ :zeros, :ones ] )
         sig = Any[]
         for i = 2:length(ex.args)
             push!( sig, guesstype( ex.args[i], ctx ) )
@@ -188,7 +192,7 @@ function guesstype( ex::Any, ctx::LintContext )
         if sig[1] == DataType
             ret = Array
             try
-                ret = Array{ eval( ex.args[2] ), length(ex.args)-2 }
+                ret = Array{ eval( Main, ex.args[2] ), length(ex.args)-2 }
             catch
                 ret = Array{ Any, length(ex.args)-2 }
             end
@@ -204,7 +208,7 @@ function guesstype( ex::Any, ctx::LintContext )
         if typeof( ex.args[1] ) == Symbol && isupper( string( ex.args[1] )[1] ) # assume an array
             elt = Any
             try
-                elt = eval( ex.args[1] )
+                elt = eval( Main, ex.args[1] )
             end
             if typeof( elt ) == DataType
                 return Array{ elt, 1 }
@@ -250,7 +254,7 @@ function guesstype( ex::Any, ctx::LintContext )
         typeof( ex.args[1].args[1] ) == Symbol && typeof( ex.args[1].args[2] ) == Symbol
         ret = Dict
         try
-            ret = Dict{ eval( ex.args[1].args[1] ), eval( ex.args[1].args[2] ) }
+            ret = Dict{ eval( Main, ex.args[1].args[1] ), eval( Main, ex.args[1].args[2] ) }
         end
         return ret
     end
