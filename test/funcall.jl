@@ -164,3 +164,14 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+s = """
+function f{T}( a::Array{T,1}  )
+    n = size(a)
+    tmp  = Array( T, n )
+    lintpragma( "Info type tmp")
+    lintpragma( "Info type T")
+    tmp
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "typeof( T ) == DataType" ) )

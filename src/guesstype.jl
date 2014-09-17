@@ -55,6 +55,9 @@ function guesstype( ex::Any, ctx::LintContext )
                 return stacktop.localarguments[i][sym].typeactual
             end
         end
+        if in( sym, stacktop.types )
+            return DataType
+        end
         return Any
     end
 
@@ -160,8 +163,31 @@ function guesstype( ex::Any, ctx::LintContext )
         ret = Array
         try
             ret = Array{ eval( ex.args[2] ), length(ex.args)-2 }
+        catch
+            ret = Array{ Any, length(ex.args)-2 }
         end
         return ret
+    end
+
+    if isexpr( ex, :call ) && ex.args[1] == :zeros
+        sig = []
+        for i = 2:length(ex.args)
+            push!( sig, guesstype( ex.args, ctx ) )
+        end
+        if length( sig ) == 1
+            return sig[1] # assume it's the same type, as in zeros{T}( A::AbstractArray{T,N} )
+        end
+        if sig[1] == DataType
+            ret = Array
+            try
+                ret = Array{ eval( ex.args[2] ), length(ex.args)-2 }
+            catch
+                ret = Array{ Any, length(ex.args)-2 }
+            end
+            return ret
+        else
+            return Array
+        end
     end
 
     if isexpr( ex, :ref ) # it could be a ref a[b] or an array Int[1,2,3]
@@ -177,23 +203,26 @@ function guesstype( ex::Any, ctx::LintContext )
             partyp = guesstype( ex.args[1], ctx )
             if partyp <: Array
                 eletyp = eltype( partyp )
-                nd = ndims( partyp )
-                tmpdim = nd - (length( ex.args )-1)
-                if tmpdim < 0
-                    msg( ctx, 2, string( ex ) * " has more indices than dimensions")
-                    return Any
-                end
+                try
+                    nd = ndims( partyp ) # This may throw if we couldn't infer the dimension
+                    tmpdim = nd - (length( ex.args )-1)
+                    if tmpdim < 0
+                        msg( ctx, 2, string( ex ) * " has more indices than dimensions")
+                        return Any
+                    end
 
-                for i in 2:length( ex.args )
-                    if ex.args[i] == :(:)
-                        tmpdim += 1
+                    for i in 2:length( ex.args )
+                        if ex.args[i] == :(:)
+                            tmpdim += 1
+                        end
+                    end
+                    if tmpdim != 0
+                        return Array{ eletyp, tmpdim } # is this strictly right?
+                    else
+                        return eletyp
                     end
                 end
-                if tmpdim != 0
-                    return Array{ eletyp, tmpdim } # is this strictly right?
-                else
-                    return eletyp
-                end
+                return Any
             elseif partyp <: Associative
                 ktypeexpect = keytype( partyp )
                 vtypeexpect = valuetype( partyp )
