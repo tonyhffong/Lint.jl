@@ -84,3 +84,14 @@ msgs = lintstr( s )
 @test( contains( msgs[4].message, "typeof( x4 ) == Any" ) )
 @test( contains( msgs[5].message, "typeof( x5 ) == Array{Int64,N}" ) )
 @test( contains( msgs[6].message, "typeof( x6 ) == Array{Int64,2}" ) )
+
+s = """
+function f( a::Array{Float64} )
+    x = a[1,2]
+    lintpragma( "Info type x")
+    return x
+end
+"""
+msgs = lintstr( s )
+# it could be Float64, or it could be an array still!
+@test( contains( msgs[1].message, "typeof( x ) == Any" ) )
