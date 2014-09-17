@@ -89,3 +89,21 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "typeof( x ) == Int" ) )
+s = """
+function f()
+    x = push!
+    lintpragma( "Info type x")
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "typeof( x ) == Function" ) )
+s = """
+function f()
+    x = Test
+    lintpragma( "Info type x")
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "typeof( x ) == Module" ) )
