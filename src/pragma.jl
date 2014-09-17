@@ -30,6 +30,6 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
             push!( ctx.callstack[end].pragmas, ex.args[2] )
         end
     else
-        msg( ctx, 2, "lintpragma must be called using only string literals.")
+        msg( ctx, 2, "@lintpragma must be called using only string literals.")
     end
 end

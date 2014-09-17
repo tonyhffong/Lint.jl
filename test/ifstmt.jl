@@ -53,7 +53,7 @@ msgs = lintstr(s )
 s = """
 function f(b::Boolean, x::Int, y::Int)
     a = b ? x : y
-    lintpragma( "Info type a")
+    @lintpragma( "Info type a")
     a
 end
 """
@@ -62,7 +62,7 @@ msgs = lintstr(s )
 s = """
 function f(b::Boolean, x::Int, y::Any)
     a = b ? x : y
-    lintpragma( "Info type a")
+    @lintpragma( "Info type a")
     a
 end
 """

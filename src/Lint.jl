@@ -5,16 +5,15 @@ module Lint
 using Base.Meta
 
 export LintMessage, LintContext, LintStack
-export lintfile, lintstr, lintpkg, lintpragma, @lintpragma
+export lintfile, lintstr, lintpkg, @lintpragma
 export test_similarity_string
 
 const SIMILARITY_THRESHOLD = 10.0
 const ASSIGN_OPS = [ :(=), :(+=), :(-=), :(*=), :(/=), :(&=), :(|=) ]
 
-# Wishlist:
-# setting a value to a datatype instead of an instance of that type
-# warn push! vs append! (requires understanding of types)
-# warn eval
+# no-op. We have to use macro inside type declaration as it disallows actual function calls
+macro lintpragma( s )
+end
 
 include( "linttypes.jl" )
 include( "knownsyms.jl")
@@ -30,13 +29,6 @@ include( "macros.jl" )
 include( "knowndeprec.jl" )
 include( "misc.jl")
 
-# no-op, the presence of this can suppress lint messages locally
-function lintpragma( s::String )
-end
-
-# also no-op. We have to use macro inside type declaration as it disallows actual function calls
-macro lintpragma( s )
-end
 
 function lintpkg( pkg::String; returnMsgs::Bool = false )
     p = joinpath( Pkg.dir( pkg ), "src", pkg * ".jl" )

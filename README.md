@@ -45,7 +45,7 @@ using Lint
 * simple deadcode detection (e.g if true/false)
 * simple premature-return deadcode detection
 * Bitwise `&`, `|` being used in a Bool context. Suggest `&&` and `||`
-* Declared but unused variable. Overruled by adding the no-op statement `lintpragma( "Ignore Unused [variable name]" )`
+* Declared but unused variable. Overruled by adding the no-op statement `@lintpragma( "Ignore Unused [variable name]" )`
   just before the warning line.
 * Using an undefined variable
 * Duplicate key as in `[:a=>1, :b=>2, :a=>3]`
@@ -77,7 +77,7 @@ using Lint
 * Mispelled constructor function name (when it calls `new(...)` inside)
 * Constructor forgetting to return the constructed object
 * Rudimentary type instability warnings e.g. `a = 1` then followed by `a = 2.0`. Overruled using a no-op statement
-  `lintpragma( "Ignore unstable type variable [variable name]" )` just before the warning.
+  `@lintpragma( "Ignore unstable type variable [variable name]" )` just before the warning.
 * Incompatible type assertion and assignment e.g. `a::Int = 1.0`
 * Incompatible tuple assignment sizes e.g. `(a,b) = (1,2,3)`
 * Flatten behavior of nested vcat e.g. `[[1,2],[3,4]]`
@@ -85,21 +85,32 @@ using Lint
 * More indices than dimensions in an array lookup
 * Look up a dictionary with the wrong key type, if the key's type can be inferred.
 
-## lintpragma: steering Lint-time behavior
-You can insert lintpragma to suppress or generate messages. At runtime, lintpragma is a no-op.
-However, at lint-time, these pragmas steer the lint behavior.
+## @lintpragma: steering Lint-time behavior
+You can insert @lintpragma to suppress or generate messages. At runtime, @lintpragma is a no-op, so it gives
+no performance penalty.
+However, at lint-time, these pragmas steer the lint behavior. Module designers do not even have to import
+the macro from Lint.jl in their module, as long as they just create an empty macro like this, early in their
+module scripts:
+```julia
+macro lintpragma( s )
+end
+```
 
 Lint message suppression (do not include the square brackets)
-* `lintpragma( "Ignore unused [variable name]" )`
-* `lintpragma( "Ignore unstable type variable [variable name]" )`
-* `lintpragma( "Ignore deprecated [function name]" )`
-* `lintpragma( "Ignore undefined module [module name]" )`. Useful to support Julia packages across different Julia releases.
+* `@lintpragma( "Ignore unused [variable name]" )`
+* `@lintpragma( "Ignore unstable type variable [variable name]" )`
+* `@lintpragma( "Ignore deprecated [function name]" )`
+* `@lintpragma( "Ignore undefined module [module name]" )`. Useful to support Julia packages across 
+    different Julia releases.
+* `@lintpragma( "Ignore untyped field [field name]" )`.
+* `@lintpragma( "Ignore dimensionless array field [field name]" )`. Useful if we really want to store 
+    arrays with uncertain/runtime-calculated dimension
 
 Lint message generation (do not include the square brackets)
-* `lintpragma( "Info type [expression]")`. Generate the best guess type of the expression during lint-time.
-* `lintpragma( "Info me [any text]")`. An alternative to-do.
-* `lintpragma( "Warn me [any text]")`. Remind yourself this code isn't done yet.
-* `lintpragma( "Error me [any text]")`. Remind yourself this code is wrong.
+* `@lintpragma( "Info type [expression]")`. Generate the best guess type of the expression during lint-time.
+* `@lintpragma( "Info me [any text]")`. An alternative to-do.
+* `@lintpragma( "Warn me [any text]")`. Remind yourself this code isn't done yet.
+* `@lintpragma( "Error me [any text]")`. Remind yourself this code is wrong.
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing

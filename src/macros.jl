@@ -47,6 +47,11 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
+    if ex.args[1] == symbol( "@lintpragma" )
+        lintlintpragma( ex, ctx )
+        return
+    end
+
     if in( ex.args[1], [ symbol( "@goto" ), symbol( "@label" ) ] )
         msg( ctx, 1, string( ex.args[1] ) * " is an experimental feature" )
         return

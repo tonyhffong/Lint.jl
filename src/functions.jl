@@ -99,7 +99,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
     ctx.scope = string(fname)
     if fname != symbol( "" ) && !contains( ctx.file, "deprecate" )
         isDeprecated = functionIsDeprecated( ex.args[1] )
-        if isDeprecated != nothing
+        if isDeprecated != nothing && !in( "Ignore deprecated " * string( fname ), ctx.callstack[end].pragmas )
             msg( ctx, 2, isDeprecated.message * "\nSee: deprecated.jl " * string( isDeprecated.line ) )
         end
     end
@@ -284,9 +284,7 @@ function lintlambda( ex::Expr, ctx::LintContext )
 end
 
 function lintfunctioncall( ex::Expr, ctx::LintContext )
-    if ex.args[1] == :lintpragma
-        lintlintpragma( ex, ctx )
-    elseif ex.args[1]==:include
+    if ex.args[1]==:include
         if typeof( ex.args[2] ) <: String
             inclfile = string(ex.args[2])
         else
@@ -337,7 +335,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                 end
             end
             try
-                lintpragma( "Ignore deprecated which" )
+                @lintpragma( "Ignore deprecated which" )
                 which( getfield( Base, s ),  tuple( typesig... ) )
             catch er
                 msg( ctx, 2, string(s) * ": " * string( er ) * "\nSignature: " * string( typesig ) )

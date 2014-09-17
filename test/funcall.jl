@@ -170,10 +170,10 @@ function f{T}( a::Array{T,1}  )
     tmp  = Array( T, n )
     tmp2 = zeros( T, 1 )
     tmp3 = zeros( 1,2,3 )
-    lintpragma( "Info type tmp")
-    lintpragma( "Info type T")
-    lintpragma( "Info type tmp2")
-    lintpragma( "Info type tmp3")
+    @lintpragma( "Info type tmp")
+    @lintpragma( "Info type T")
+    @lintpragma( "Info type tmp2")
+    @lintpragma( "Info type tmp3")
     tmp
 end
 """

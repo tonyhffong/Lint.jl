@@ -16,7 +16,7 @@ function f(c::Char)
     x = Rational(x)
     x = float(x)
     x = Complex(x)
-    lintpragma( "Info type x")
+    @lintpragma( "Info type x")
     return x
 end
 """
@@ -27,7 +27,7 @@ msgs = lintstr(s)
 s = """
 function f()
     x = rand()
-    lintpragma( "Info type x")
+    @lintpragma( "Info type x")
     return x
 end
 """
@@ -36,7 +36,7 @@ msgs = lintstr(s)
 s = """
 function f()
     x = rand(3)
-    lintpragma( "Info type x")
+    @lintpragma( "Info type x")
     return x
 end
 """
@@ -83,7 +83,7 @@ msgs = lintstr(s)
 s = """
 function f( arr::Array{Any,1})
     x = arr[1]::Int64
-    lintpragma( "Info type x")
+    @lintpragma( "Info type x")
     return x
 end
 """
@@ -94,7 +94,7 @@ g(x) = x
 
 function f()
     x = g
-    lintpragma( "Info type x")
+    @lintpragma( "Info type x")
     return x
 end
 """
@@ -106,7 +106,7 @@ end
 
 function f()
     x = MyModule
-    lintpragma( "Info type x")
+    @lintpragma( "Info type x")
     return x
 end
 """

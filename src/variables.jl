@@ -199,7 +199,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         end
     end
 
-    lintpragma( "Ignore unstable type variable rhst")
+    @lintpragma( "Ignore unstable type variable rhst")
     for (symidx, s) in enumerate( syms )
         vi = VarInfo( ctx.line )
         if RHStype == Any || length( syms ) == 1

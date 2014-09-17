@@ -37,7 +37,7 @@ msgs = lintstr( s )
 s = """
 function f( x::Array{Float64,2} )
     y = x[1,1]
-    lintpragma( "Info type y")
+    @lintpragma( "Info type y")
 end
 """
 msgs = lintstr( s )
@@ -48,10 +48,10 @@ function f(t)
     x2 = zeros( Int64,2,2 )
     x3 = zeros( t, 2, 2 )
     x4 = zeros( x1 )
-    lintpragma( "Info type x1")
-    lintpragma( "Info type x2")
-    lintpragma( "Info type x3")
-    lintpragma( "Info type x4")
+    @lintpragma( "Info type x1")
+    @lintpragma( "Info type x2")
+    @lintpragma( "Info type x3")
+    @lintpragma( "Info type x4")
 end
 """
 msgs = lintstr( s )
@@ -69,12 +69,12 @@ function f(t::Array{Int64,2}, m, n )
     x4 = reshape( m, (1,2) )
     x5 = reshape( t, n )
     x6 = reshape( t, 1,2 )
-    lintpragma( "Info type x1")
-    lintpragma( "Info type x2")
-    lintpragma( "Info type x3")
-    lintpragma( "Info type x4")
-    lintpragma( "Info type x5")
-    lintpragma( "Info type x6")
+    @lintpragma( "Info type x1")
+    @lintpragma( "Info type x2")
+    @lintpragma( "Info type x3")
+    @lintpragma( "Info type x4")
+    @lintpragma( "Info type x5")
+    @lintpragma( "Info type x6")
 end
 """
 msgs = lintstr( s )
@@ -88,7 +88,7 @@ msgs = lintstr( s )
 s = """
 function f( a::Array{Float64} )
     x = a[1,2]
-    lintpragma( "Info type x")
+    @lintpragma( "Info type x")
     return x
 end
 """

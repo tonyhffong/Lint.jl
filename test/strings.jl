@@ -19,7 +19,7 @@ msgs = lintstr( s )
 s = """
 function f()
     b = repeat( " ", 10 )
-    lintpragma( "Info type b")
+    @lintpragma( "Info type b")
     b
 end
 """
