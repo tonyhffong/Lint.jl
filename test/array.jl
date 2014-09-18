@@ -100,3 +100,9 @@ end
 msgs = lintstr( s )
 # it could be Float64, or it could be an array still!
 @test( contains( msgs[1].message, "typeof( x ) == Any" ) )
+s = """
+s = utf8( "abcdef" )
+s = s[ chr2ind(s,2) :end ]
+"""
+msgs = lintstr( s )
+@test( contains( msgs[1].message, "Ambiguity of :end as a symbol vs as part of a range"))

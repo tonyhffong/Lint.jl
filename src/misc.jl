@@ -80,3 +80,13 @@ function linthcat( ex::Expr, ctx::LintContext )
         lintexpr( a, ctx )
     end
 end
+
+function linttyped_hcat( ex::Expr, ctx::LintContext )
+    #dump(ex)
+    if length( ex.args ) == 3 && ex.args[3] == QuoteNode( symbol( "end" ) )
+        msg( ctx, 0, "Ambiguity of :end as a symbol vs as part of a range." )
+    end
+    for a in ex.args
+        lintexpr( a, ctx )
+    end
+end

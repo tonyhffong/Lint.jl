@@ -212,6 +212,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintvcat( ex, ctx )
     elseif ex.head == :hcat
         linthcat( ex, ctx )
+    elseif ex.head == :typed_hcat
+        linttyped_hcat( ex, ctx )
     elseif ex.head == :while
         lintwhile( ex, ctx )
     elseif ex.head == :for
