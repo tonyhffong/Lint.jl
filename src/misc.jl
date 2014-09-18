@@ -83,8 +83,13 @@ end
 
 function linttyped_hcat( ex::Expr, ctx::LintContext )
     #dump(ex)
-    if length( ex.args ) == 3 && ex.args[3] == QuoteNode( symbol( "end" ) )
-        msg( ctx, 0, "Ambiguity of :end as a symbol vs as part of a range." )
+    if length( ex.args ) == 3
+        if ex.args[3] == QuoteNode( symbol( "end" ) )
+            msg( ctx, 0, "Ambiguity of :end as a symbol vs as part of a range." )
+        elseif ex.args[2] == symbol( "end" ) && typeof( ex.args[3] ) <: Integer &&
+            ex.args[3] < 0
+            msg( ctx, 0, "Ambiguity of `[end -n]` as a matrix row vs index [end-n]")
+        end
     end
     for a in ex.args
         lintexpr( a, ctx )
