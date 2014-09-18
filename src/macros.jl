@@ -57,6 +57,16 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
+    if ex.args[1] == symbol( "@gensym" )
+        for i in 2:length( ex.args )
+            if typeof( ex.args[i] ) == Symbol
+                vi = VarInfo( ctx.line )
+                ctx.callstack[end].localvars[end][ ex.args[i] ] = vi
+            end
+        end
+        return
+    end
+
     ctx.macrocallLvl = ctx.macrocallLvl + 1
 
     # AST for things like
