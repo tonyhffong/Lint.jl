@@ -120,3 +120,11 @@ function lintabstract( ex::Expr, ctx::LintContext )
         end
     end
 end
+
+function lintbitstype( ex::Expr, ctx::LintContext )
+    if typeof( ex.args[2] ) != Symbol
+        msg( ctx, 2, "bitstype needs its 2nd argument to be a new type symbol")
+    else
+        push!( ctx.callstack[end].types, ex.args[2] )
+    end
+end

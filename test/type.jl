@@ -88,6 +88,7 @@ abstract SomeAbsType
 abstract SomeAbsNum <: Number
 abstract SomeAbsVec1{T} <: Array{T,1}
 abstract SomeAbsVec2{T}
+bitstype 8 MyBitsType
 
 type MyType{T<:SomeAbsType}
     t::T
@@ -157,3 +158,8 @@ end
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "Use @lintpragma macro inside type declaration" ) )
+s = """
+bitstype a 8
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "bitstype needs its 2nd argument to be a new type symbol" ) )
