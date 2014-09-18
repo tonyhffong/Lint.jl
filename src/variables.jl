@@ -182,7 +182,9 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             msg( ctx, 0, "Iteration works for a number but it may be a typo." )
         end
 
-        if RHStype <: Set || RHStype <: Array || RHStype <: Range || RHStype <: Enumerate
+        if RHStype <: Tuple
+            RHStype = Any
+        elseif RHStype <: Set || RHStype <: Array || RHStype <: Range || RHStype <: Enumerate
             RHStype = eltype( RHStype )
         elseif RHStype <: Associative
             RHStype = ( keytype( RHStype ), valuetype( RHStype ) )

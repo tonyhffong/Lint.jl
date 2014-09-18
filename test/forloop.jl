@@ -29,6 +29,16 @@ end
 """
 msgs = lintstr(s)
 @test( isempty( msgs ) )
+s = """
+function f(x)
+    for i in (1,2,3)
+        println( i)
+    end
+    return x
+end
+"""
+msgs = lintstr(s)
+@test( isempty( msgs ) )
 
 s = """
 function f(x::Int)
