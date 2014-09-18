@@ -15,6 +15,14 @@ function lintifexpr( ex::Expr, ctx::LintContext )
         if typeof(ex.args[1]) == Expr
             lintboolean( ex.args[1], ctx )
         end
+        # if the first "meaty" expression under the true branch is
+        # a boolean expression (!=, ==, >=, <=, >, <, &&, ||),
+        # generate a INFO, as it could have been a typo
+        if isexpr( ex.args[2], :block ) && length( ex.args[2].args ) >= 2 &&
+            ( isexpr( ex.args[2].args[2], [ :comparison, :(&&), :(||) ] ) ||
+              isexpr( ex.args[2].args[2], :call ) && ex.args[2].args[2].args[1] == :(!) )
+            msg( ctx, 0, "The 1st statement under the true-branch is a boolean expression. Typo?")
+        end
         lintexpr( ex.args[2], ctx )
         if length(ex.args) > 2
             lintexpr( ex.args[3], ctx )
