@@ -74,12 +74,14 @@ function f(t::Array{Int64,2}, m, n )
     x4 = reshape( m, (1,2) )
     x5 = reshape( t, n )
     x6 = reshape( t, 1,2 )
+    x7 = t'
     @lintpragma( "Info type x1")
     @lintpragma( "Info type x2")
     @lintpragma( "Info type x3")
     @lintpragma( "Info type x4")
     @lintpragma( "Info type x5")
     @lintpragma( "Info type x6")
+    @lintpragma( "Info type x7")
 end
 """
 msgs = lintstr( s )
@@ -89,6 +91,7 @@ msgs = lintstr( s )
 @test( contains( msgs[4].message, "typeof( x4 ) == Any" ) )
 @test( contains( msgs[5].message, "typeof( x5 ) == Array{Int64,N}" ) )
 @test( contains( msgs[6].message, "typeof( x6 ) == Array{Int64,2}" ) )
+@test( contains( msgs[7].message, "typeof( x7 ) == Array{Int64,2}" ) )
 
 s = """
 function f( a::Array{Float64} )
