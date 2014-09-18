@@ -149,11 +149,15 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
             end
             sym = resolveArguments( sube.args[1], 0 )
             RHStype = guesstype( sube.args[2], ctx )
-            typeRHShints[ sym ] = RHStype
+            if typeof( sym ) == Symbol
+                typeRHShints[ sym ] = RHStype
+            end
         elseif sube.head == :(::)
             if length( sube.args ) > 1
                 sym = resolveArguments( sube.args[1], 0 )
-                typeassert[ sym ] = sube.args[2]
+                if typeof( sym ) == Symbol
+                    typeassert[ sym ] = sube.args[2]
+                end
                 lintfuncargtype( sube.args[2], ctx )
                 return sym
             else

@@ -82,7 +82,7 @@ function guesstype( ex::Any, ctx::LintContext )
     end
 
     if isexpr( ex, :tuple )
-        ts = DataType[]
+        ts = Any[]
         for a in ex.args
             push!( ts, guesstype( a, ctx ) )
         end
@@ -204,9 +204,13 @@ function guesstype( ex::Any, ctx::LintContext )
         end
     end
 
-    if isexpr( ex, :call ) && in( ex.args[1], [ :slicedim, :transpose ] ) ||
-        isexpr( ex, symbol("'") )
+    if isexpr( ex, :call ) && in( ex.args[1], [ :slicedim, :transpose ] )
         fst = guesstype( ex.args[2], ctx )
+        return fst
+    end
+
+    if isexpr( ex, symbol( "'" ) )
+        fst = guesstype( ex.args[1], ctx )
         return fst
     end
 
