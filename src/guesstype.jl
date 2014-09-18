@@ -204,7 +204,8 @@ function guesstype( ex::Any, ctx::LintContext )
         end
     end
 
-    if isexpr( ex, :call ) && ex.args[1]==:slicedim
+    if isexpr( ex, :call ) && in( ex.args[1], [ :slicedim, :transpose ] ) ||
+        isexpr( ex, symbol("'") )
         fst = guesstype( ex.args[2], ctx )
         return fst
     end

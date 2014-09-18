@@ -71,3 +71,12 @@ function lintvcat( ex::Expr, ctx::LintContext )
         lintexpr( a, ctx )
     end
 end
+
+function linthcat( ex::Expr, ctx::LintContext )
+    for a in ex.args
+        if isexpr( a, :hcat )
+            msg( ctx, 1, "Nested hcat is treated as a 1-row horizontal array of dim=2." )
+        end
+        lintexpr( a, ctx )
+    end
+end

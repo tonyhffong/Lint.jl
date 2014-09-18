@@ -167,6 +167,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         linttypealias( ex, ctx )
     elseif ex.head == :abstract
         lintabstract( ex, ctx )
+    elseif ex.head == :bitstype
+        lintbitstype( ex, ctx )
     elseif ex.head == :(->)
         lintlambda( ex, ctx )
     elseif ex.head == :($) && ctx.quoteLvl > 0 # an unquoted node inside a quote node
@@ -208,6 +210,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintdict( ex, ctx; typed=true )
     elseif ex.head == :vcat
         lintvcat( ex, ctx )
+    elseif ex.head == :hcat
+        linthcat( ex, ctx )
     elseif ex.head == :while
         lintwhile( ex, ctx )
     elseif ex.head == :for
