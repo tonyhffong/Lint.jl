@@ -41,3 +41,14 @@ s = """
 """
 msgs = lintstr( s )
 @assert( isempty( msgs ) )
+
+s = """
+function f()
+    @gensym x y z
+    println( x )
+    println( y )
+    println( z )
+end
+"""
+msgs = lintstr( s )
+@assert( isempty( msgs ) )
