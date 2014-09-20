@@ -91,7 +91,7 @@ function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
             lastpart = ex.args[end]
         else
             lastpart = ex.args[end]
-            m = eval( parse( join(ex.args, "." ) ) )
+            m = eval( Main, parse( join(ex.args, "." ) ) )
         end
     catch er
         problem = true
