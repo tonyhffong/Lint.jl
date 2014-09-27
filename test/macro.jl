@@ -18,18 +18,6 @@ msgs = lintstr( s )
 @assert( isempty( msgs ) )
 
 s = """
-i = 1
-@label testlabel
-i = i +1
-if i < 10
-    @goto testlabel
-end
-"""
-msgs = lintstr( s )
-@assert( length( msgs ) == 2 )
-@assert( contains( msgs[1].message, "experimental feature" ) )
-@assert( contains( msgs[2].message, "experimental feature" ) )
-s = """
 @windows ? 1 : 2
 """
 msgs = lintstr( s )

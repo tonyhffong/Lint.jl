@@ -52,11 +52,6 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
-    if in( ex.args[1], [ symbol( "@goto" ), symbol( "@label" ) ] )
-        msg( ctx, 1, string( ex.args[1] ) * " is an experimental feature" )
-        return
-    end
-
     if ex.args[1] == symbol( "@gensym" )
         for i in 2:length( ex.args )
             if typeof( ex.args[i] ) == Symbol
