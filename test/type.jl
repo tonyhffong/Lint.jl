@@ -163,3 +163,14 @@ bitstype a 8
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "bitstype needs its 2nd argument to be a new type symbol" ) )
+
+s = """
+type MyType
+    a::Int
+    b::Int
+    MyType( x::Int,y::Int ) = new(x,y)
+    MyType( x::Int ) = MyType( x, 0 )
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
