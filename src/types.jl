@@ -70,6 +70,9 @@ function linttype( ex::Expr, ctx::LintContext )
         push!( ctx.callstack[end-1].types, typename )
     end
 
+    fields = Any[]
+    funcs = Any[]
+
     for def in ex.args[3].args
         if typeof( def ) == LineNumberNode
             ctx.line = def.line
@@ -78,6 +81,7 @@ function linttype( ex::Expr, ctx::LintContext )
             if !in( "Ignore untyped field " * string( def ), ctx.callstack[end].pragmas )
                 msg( ctx, 0, "A type is not given to the field " * string( def ) * ", which can be slow." )
             end
+            push!( fields, ( def, Any ))
         elseif isexpr( def, :macrocall ) && def.args[1] == symbol( "@lintpragma" )
             lintlintpragma( def, ctx )
         elseif isexpr( def, :call ) && def.args[1] == symbol( "lintpragma" )
@@ -88,12 +92,28 @@ function linttype( ex::Expr, ctx::LintContext )
                 !in( "Ignore dimensionless array field " * string( def.args[1] ), ctx.callstack[end].pragmas )
                 msg( ctx, 0, "Array field " * string( def.args[1] ) * " has no dimension, which can be slow" )
             end
-        elseif def.head == :(=) && isexpr( def.args[1], :call )
-            lintfunction( def, ctx; ctorType = typename )
-        elseif def.head == :function
-            lintfunction( def, ctx; ctorType = typename )
+            push!( fields, (def.args[1], def.args[2]) )
+        elseif def.head == :(=) && isexpr( def.args[1], :call ) || def.head == :function
+            # curly bracket doesn't belong here. catch it first before linting the rest of the function body
+            if def.args[1].head == :tuple
+                # if julia supports anonymous constructor syntactic sugar, remove this, and make sure ctx.scope is type name
+                msg( ctx, 2, "What is an anonymous function doing inside a type definition?")
+            elseif isexpr( def.args[1].args[1], :curly )
+                msg( ctx, 2, "Parametric constructors (with curly brackets) should not be inner constructors. Define them outside type definition.")
+            end
+            push!( funcs, ( def, ctx.line ) )
         end
     end
+
+    if typename != symbol( "" )
+        ctx.callstack[end-1].typefields[ typename ] = fields
+    end
+
+    for f in funcs
+        ctx.line = f[2]
+        lintfunction( f[1], ctx; ctorType = typename )
+    end
+
     if ctx.macroLvl ==0 && ctx.functionLvl == 0
         pop!( ctx.callstack )
     end

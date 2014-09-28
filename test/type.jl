@@ -174,3 +174,33 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+s = """
+type MyType
+    a::Int
+    b::Int
+    function( x )
+        new(x)
+    end
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "What is an anonymous function doing inside a type definition" ) )
+@assert( contains( msgs[2].message, "Constructor-like function" ) )
+s = """
+type MyType
+    a::Int
+    b::Int
+    MyType( x )= new(x)
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "new is not provided with the correct number of arguments" ) )
+
+s = """
+type MyType{T}
+    b::T
+    MyType{T}(x::T) = new( T )
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Parametric constructors (with curly brackets) should not be inner constructors." ) )

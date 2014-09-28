@@ -70,6 +70,7 @@ type LintStack
     inModule      :: Bool
     moduleName    :: Any
     types         :: Set{Any}
+    typefields    :: Dict{Any, Any}
     exports       :: Set{Any}
     imports       :: Set{Any}
     functions     :: Set{Any}
@@ -91,6 +92,7 @@ type LintStack
             false,
             symbol(""),
             Set{Any}(),
+            Dict{Any,Any}(),
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),

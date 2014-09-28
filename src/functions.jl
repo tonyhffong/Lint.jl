@@ -353,6 +353,20 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             typeof( ex.args[3].args[2] ) <: Real && ex.args[3].args[2] < ex.args[3].args[1]
             push!( skiplist, 3 )
         end
+
+        if ex.args[1] == :new
+            tname = symbol( ctx.scope )
+            for i = length( ctx.callstack ):-1:1
+                if haskey( ctx.callstack[i].typefields, tname )
+                    fields = ctx.callstack[i].typefields[ tname ]
+                    if length( fields ) != length( ex.args ) - 1
+                        msg( ctx, 2, "new is not provided with the correct number of arguments" )
+                    end
+                    break
+                end
+            end
+        end
+
         st = 2
         if ex.args[1] == :ifelse && typeof( ex.args[2] ) == Expr
             lintboolean( ex.args[2], ctx )
