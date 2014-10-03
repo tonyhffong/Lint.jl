@@ -359,8 +359,10 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             for i = length( ctx.callstack ):-1:1
                 if haskey( ctx.callstack[i].typefields, tname )
                     fields = ctx.callstack[i].typefields[ tname ]
-                    if length( fields ) != length( ex.args ) - 1
-                        msg( ctx, 2, "new is not provided with the correct number of arguments" )
+                    if 0 < length( ex.args ) - 1 < length( fields )
+                        msg( ctx, 0, "new is provided with fewer arguments than fields." )
+                    elseif length( fields ) < length( ex.args ) - 1
+                        msg( ctx, 2, "new is provided with more arguments than fields" )
                     end
                     break
                 end

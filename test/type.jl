@@ -194,7 +194,7 @@ type MyType
 end
 """
 msgs = lintstr(s)
-@assert( contains( msgs[1].message, "new is not provided with the correct number of arguments" ) )
+@assert( contains( msgs[1].message, "new is provided with fewer arguments than fields" ) )
 
 s = """
 type MyType{T}
@@ -204,3 +204,22 @@ end
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "Parametric constructors (with curly brackets) should not be inner constructors." ) )
+
+s = """
+type MyType
+    a::Int
+    b::Int
+    MyType( x )= new(x, 0, 0)
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "new is provided with more arguments than fields" ) )
+s = """
+type MyType
+    a::Int
+    b::Int
+    MyType()= new()
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) ) # ok
