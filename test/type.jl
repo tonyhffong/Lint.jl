@@ -223,3 +223,15 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) ) # ok
+s = """
+type MyType
+    a::Int
+    b::Int
+    function MyType( x )
+        @lintpragma( "Ignore short new argument" )
+        new(x)
+    end
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
