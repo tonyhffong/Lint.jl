@@ -46,7 +46,9 @@ function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
         declktype = ex.args[1].args[1]
         declvtype = ex.args[1].args[2]
         if declktype == TopNode( :Any ) && declvtype == TopNode( :Any )
-            msg( ctx, 0, "Untyped dictionary {a=>b,...}, may be deprecated by Julia 0.4. Use (Any=>Any)[a=>b,...].")
+            if VERSION < v"0.4-"
+                msg( ctx, 0, "Untyped dictionary {a=>b,...}, may be deprecated by Julia 0.4. Use (Any=>Any)[a=>b,...].")
+            end
             if !in( Any, ktypes ) && length( ktypes ) == 1 && !in( Any, vtypes ) && length( vtypes ) == 1
                 msg( ctx, 0, "There is only 1 key type && 1 value type. Use explicit (K=>V)[] for better performances.")
             end
