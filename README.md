@@ -105,6 +105,7 @@ Lint message suppression (do not include the square brackets)
 * `@lintpragma( "Ignore untyped field [field name]" )`.
 * `@lintpragma( "Ignore dimensionless array field [field name]" )`. Useful if we really want to store 
     arrays with uncertain/runtime-calculated dimension
+* `@lintpragma( "Ignore use of undeclared variable [variable name]" )`
 
 Lint message generation (do not include the square brackets)
 * `@lintpragma( "Info type [expression]")`. Generate the best guess type of the expression during lint-time.

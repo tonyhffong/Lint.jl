@@ -98,7 +98,9 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
     end
 
     if !found
-        msg( ctx, 2, "Use of undeclared symbol " *string(sym))
+        if !in( "Ignore use of undeclared variable " * string( sym ), ctx.callstack[end].pragmas )
+            msg( ctx, 2, "Use of undeclared symbol " *string(sym))
+        end
     end
 end
 
