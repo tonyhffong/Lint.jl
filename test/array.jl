@@ -115,3 +115,10 @@ sndlast = s[end -1]
 """
 msgs = lintstr( s )
 @test( contains( msgs[1].message, "Ambiguity of `[end -n]` as a matrix row vs index [end-n]" ) )
+s = """
+s = {}
+"""
+msgs = lintstr( s )
+if VERSION < v"0.4-"
+    @test( contains( msgs[1].message, "Using {} for Any[] may be deprecated in Julia 0.4" ) )
+end

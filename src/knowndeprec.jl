@@ -159,7 +159,7 @@ function getFuncNameAndSig( callex::Expr, strict::Bool=true )
             return ( nothing, nothing )
         end
     end
-    sig = {}
+    sig = Any[]
     for i in 2:length( callex.args )
         sube = callex.args[i]
         if Meta.isexpr( sube, :parameters )

@@ -45,10 +45,11 @@ function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
         #   :Any=>:Any, not TopNode( :Any )=>TopNode( :Any )
         declktype = ex.args[1].args[1]
         declvtype = ex.args[1].args[2]
-        if declktype == TopNode( :Any ) && declvtype == TopNode( :Any ) &&
-            !in( Any, ktypes ) && length( ktypes ) == 1 &&
-            !in( Any, vtypes ) && length( vtypes ) == 1
-            msg( ctx, 0, "There is only 1 key type && 1 value type. Use [] for better performances.")
+        if declktype == TopNode( :Any ) && declvtype == TopNode( :Any )
+            msg( ctx, 0, "Untyped dictionary {a=>b,...}, may be deprecated by Julia 0.4. Use (Any=>Any)[a=>b,...].")
+            if !in( Any, ktypes ) && length( ktypes ) == 1 && !in( Any, vtypes ) && length( vtypes ) == 1
+                msg( ctx, 0, "There is only 1 key type && 1 value type. Use explicit (K=>V)[] for better performances.")
+            end
         end
     end
 end
@@ -90,6 +91,15 @@ function linttyped_hcat( ex::Expr, ctx::LintContext )
             ex.args[3] < 0
             msg( ctx, 0, "Ambiguity of `[end -n]` as a matrix row vs index [end-n]")
         end
+    end
+    for a in ex.args
+        lintexpr( a, ctx )
+    end
+end
+
+function lintcell1d( ex::Expr, ctx::LintContext )
+    if length( ex.args ) == 0 && VERSION < v"0.4-"
+        msg( ctx, 0, "Using {} for Any[] may be deprecated in Julia 0.4" )
     end
     for a in ex.args
         lintexpr( a, ctx )

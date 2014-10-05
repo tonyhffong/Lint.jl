@@ -29,7 +29,7 @@ function lintusing( ex::Expr, ctx::LintContext )
     end
     for s in ex.args
         if s != :(.)
-            ctx.callstack[end].declglobs[ s ] = { :file => ctx.file, :line => ctx.line }
+            ctx.callstack[end].declglobs[ s ] = (Symbol=>Any)[ :file => ctx.file, :line => ctx.line ]
         end
     end
     if ex.args[1] != :(.)
@@ -43,7 +43,7 @@ function lintusing( ex::Expr, ctx::LintContext )
         if t == Module
             for n in names( m )
                 if !haskey( ctx.callstack[end].declglobs, n )
-                    ctx.callstack[end].declglobs[ n ] = { :file => ctx.file, :line => ctx.line }
+                    ctx.callstack[end].declglobs[ n ] = (Symbol=>Any)[ :file => ctx.file, :line => ctx.line ]
                 end
             end
 

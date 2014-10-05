@@ -93,7 +93,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
         end
         found = (t == Function)
         if found
-            ctx.callstack[end].declglobs[ sym ] = { :file => ctx.file, :line => ctx.line }
+            ctx.callstack[end].declglobs[ sym ] = (Symbol=>Any)[ :file => ctx.file, :line => ctx.line ]
         end
     end
 
@@ -106,7 +106,7 @@ function lintglobal( ex::Expr, ctx::LintContext )
     for sym in ex.args
         if typeof(sym) == Symbol
             if !haskey( ctx.callstack[end].declglobs, sym)
-                ctx.callstack[end].declglobs[ sym ] = { :file=>ctx.file, :line=>ctx.line }
+                ctx.callstack[end].declglobs[ sym ] = (Symbol=>Any)[ :file=>ctx.file, :line=>ctx.line ]
             end
         elseif isexpr( sym, ASSIGN_OPS )
             lintassignment( sym, ctx; isGlobal=true )
@@ -279,7 +279,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             end
         end
         if isGlobal || isConst || (ctx.functionLvl + ctx.macroLvl == 0 && ctx.callstack[end].isTop)
-            ctx.callstack[end].declglobs[ s ] = { :file => ctx.file, :line => ctx.line }
+            ctx.callstack[end].declglobs[ s ] = (Symbol=>Any)[ :file => ctx.file, :line => ctx.line ]
         end
     end
 end

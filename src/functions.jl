@@ -57,7 +57,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
         return
     end
 
-    temporaryTypes = {}
+    temporaryTypes = Any[]
     fname = symbol("")
     if ex.args[1].head == :tuple # anonymous
         # do nothing

@@ -11,14 +11,24 @@ s = """
 msgs = lintstr( s )
 
 @test( contains( msgs[1].message, "Duplicate key" ) )
-@test( contains( msgs[2].message, "Use [] for better performances" ) )
+if VERSION < v"0.4-"
+    @test( contains( msgs[2].message, "Untyped dictionary {a=>b,...}, may be deprecated by Julia 0.4" ) )
+    @test( contains( msgs[3].message, "Use explicit (K=>V)[] for better performances" ) )
+else
+    @test( contains( msgs[2].message, "Use explicit (K=>V)[] for better performances" ) )
+end
 
 s = """
 { :a=>Date( 2014,1,1 ), :b=>Date( 2015,1,1 ) }
 """
 msgs = lintstr( s )
 
-@test( contains( msgs[1].message, "Use [] for better performances" ) )
+if VERSION < v"0.4-"
+    @test( contains( msgs[1].message, "Untyped dictionary {a=>b,...}, may be deprecated by Julia 0.4" ) )
+    @test( contains( msgs[2].message, "Use explicit (K=>V)[] for better performances" ) )
+else
+    @test( contains( msgs[1].message, "Use explicit (K=>V)[] for better performances" ) )
+end
 
 s = """
 [ :a=>1, :b=>"" ]
