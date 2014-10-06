@@ -9,6 +9,25 @@ msgs = lintstr( s )
 
 s = """
 function f(x)
+    @lintpragma( "Ignore use of undeclared variable y")
+    x + y
+end
+"""
+msgs = lintstr( s )
+@test( isempty(msgs) )
+
+s = """
+function f(x)
+    @lintpragma( "Ignore use of undeclared variable y")
+    @addOne( x, y)
+    @addOne y
+end
+"""
+msgs = lintstr( s )
+@test( isempty(msgs) )
+
+s = """
+function f(x)
     if x > 1
         local i = 1
         println(i)
