@@ -16,11 +16,11 @@ end
 msgs = lintstr( s )
 @test( isempty(msgs) )
 
+# from @pao
 s = """
 function f(x)
-    @lintpragma( "Ignore use of undeclared variable y")
-    @addOne( x, y)
-    @addOne y
+    @lintpragma( "Ignore use of undeclared variable aone")
+    addOne() = @withOneVar aone (aone + 1)
 end
 """
 msgs = lintstr( s )
