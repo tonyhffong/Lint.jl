@@ -56,6 +56,8 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         if isexpr( ex.args[2], :(->) )
             lintexpr( ex.args[2].args[2], ctx ) # no need to lint the doc string
             return
+        else
+            msg( ctx, 1, "Did you forget an -> after @doc?" )
         end
     end
 
