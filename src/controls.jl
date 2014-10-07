@@ -94,6 +94,24 @@ function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
     pushVarScope( ctx )
     st = typed? 3 :2
     fn = typed? 2 :1
+
+    if typed
+        if ex.head == :typed_dict_comprehension
+            if isexpr( ex.args[1], :(=>) )
+                declktype = ex.args[1].args[1]
+                declvtype = ex.args[1].args[2]
+                if declktype == TopNode( :Any ) && declvtype == TopNode( :Any ) && VERSION < v"0.4-"
+                    msg( ctx, 0, "Untyped dictionary {a=>b for (a,b) in c}, may be deprecated by Julia 0.4. Use (Any=>Any)[a=>b for (a,b) in c].")
+                end
+            end
+        else
+            declvtype = ex.args[1]
+            if declvtype == TopNode( :Any ) && VERSION < v"0.4-"
+                msg( ctx, 0, "Untyped dictionary {a for a in c}, may be deprecated by Julia 0.4. Use (Any)[a for a in c].")
+            end
+        end
+    end
+
     for i in st:length(ex.args)
         if isexpr( ex.args[i], :(=) )
             lintassignment( ex.args[i], ctx; islocal=true, isForLoop=true ) # note contrast with for loop
