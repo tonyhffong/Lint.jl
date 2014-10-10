@@ -182,3 +182,20 @@ msgs = lintstr(s)
 @assert( contains( msgs[2].message, "typeof( T ) == DataType" ) )
 @assert( contains( msgs[3].message, "typeof( tmp2 ) == Array{Any,1}" ) )
 @assert( contains( msgs[4].message, "typeof( tmp3 ) == Array{Float64,3}" ) )
+
+s = """
+function f( x )
+    f = x
+    f
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Variable f == function name" ) )
+s = """
+function f( x )
+    local f = x
+    f
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )

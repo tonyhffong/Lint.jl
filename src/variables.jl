@@ -208,6 +208,9 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
 
     @lintpragma( "Ignore unstable type variable rhst")
     for (symidx, s) in enumerate( syms )
+        if string(s) == ctx.scope && !islocal
+            msg( ctx, 1, "Variable " *ctx.scope * " == function name." )
+        end
         vi = VarInfo( ctx.line )
         if RHStype == Any || length( syms ) == 1
             rhst = RHStype
