@@ -33,3 +33,12 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
         msg( ctx, 2, "@lintpragma must be called using only string literals.")
     end
 end
+
+function pragmaexists( s::String, ctx::LintContext )
+    for i in length( ctx.callstack ):-1:1
+        if in( s, ctx.callstack[i].pragmas )
+            return true
+        end
+    end
+    return false
+end
