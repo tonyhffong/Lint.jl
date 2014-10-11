@@ -2,6 +2,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
     fname = ex.args[1].args[1]
     push!( ctx.callstack[end].macros, symbol( "@" * string(fname ) ) )
     push!( ctx.callstack[end].localarguments, Dict{ Symbol, Any }() )
+    push!( ctx.callstack[end].localusedargs, Set{ Symbol }() )
 
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
     stacktop = ctx.callstack[end]
@@ -40,6 +41,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
     lintexpr( ex.args[2], ctx )
     ctx.macroLvl -= 1
     pop!( ctx.callstack[end].localarguments )
+    pop!( ctx.callstack[end].localusedargs )
 end
 
 function lintmacrocall( ex::Expr, ctx::LintContext )

@@ -2,9 +2,10 @@ s = """
 wrap(pos::Int, len::Int) = true ? 1 : (pos > len ? len : pos)
 """
 msgs = lintstr( s )
-@test( length(msgs)==1 )
+@test( length(msgs)==3 )
 @test( contains( msgs[1].message, "false branch" ) )
-@test( msgs[1].line == 1 )
+@test( contains( msgs[2].message, "Argument declared but not used" ) )
+@test( contains( msgs[3].message, "Argument declared but not used" ) )
 
 s = """
 wrap(pos::Int, len::Int) = false ? 1 : (pos > len ? len : pos)

@@ -1,10 +1,19 @@
-function popVarScope( ctx::LintContext )
+function popVarScope( ctx::LintContext; checkargs::Bool=false )
     stacktop = ctx.callstack[end]
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
     for v in unused
-        if !in( "Ignore unused " * string( v ), stacktop.pragmas )
+        if !pragmaexists( "Ignore unused " * string( v ), ctx )
             ctx.line = stacktop.localvars[end][ v ].line
             msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
+        end
+    end
+    if checkargs
+        unusedargs = setdiff( keys( stacktop.localarguments[end] ), stacktop.localusedargs[end] )
+        for v in unusedargs
+            if !pragmaexists( "Ignore unused " * string( v ), ctx )
+                ctx.line = stacktop.localarguments[end][ v ].line
+                msg( ctx, 0, "Argument declared but not used: " * string( v ) )
+            end
         end
     end
 
@@ -50,6 +59,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
     if !found
         for i in length(stacktop.localarguments):-1:1
             if haskey( stacktop.localarguments[i], sym )
+                push!( stacktop.localusedargs[i], sym )
                 found = true
                 break
             end
@@ -98,10 +108,8 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
     end
 
     if !found
-        for i in length(ctx.callstack):-1:1
-            if in( "Ignore use of undeclared variable " * string( sym ), ctx.callstack[i].pragmas )
-                return
-            end
+        if pragmaexists( "Ignore use of undeclared variable " * string( sym ), ctx )
+            return
         end
         msg( ctx, 2, "Use of undeclared symbol " *string(sym))
     end

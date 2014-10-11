@@ -107,7 +107,8 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
     if ctx.macroLvl == 0 && ctx.functionLvl == 0
         push!( ctx.callstack, LintStack() )
     else
-        push!( ctx.callstack[end].localarguments, Dict{ Symbol, Any }() )
+        push!( ctx.callstack[end].localarguments, Dict{ Symbol,Any }() )
+        push!( ctx.callstack[end].localusedargs, Set{ Symbol }() )
     end
     ctx.functionLvl = ctx.functionLvl + 1
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
@@ -211,7 +212,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
             msg( ctx, 2, "Constructor doesn't seem to return the constructed object. " )
         end
     end
-    popVarScope( ctx )
+    popVarScope( ctx, checkargs=true )
 
     ctx.functionLvl = ctx.functionLvl - 1
     # TODO check cyclomatic complexity?
@@ -219,6 +220,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
         pop!( ctx.callstack )
     else
         pop!( ctx.callstack[end].localarguments )
+        pop!( ctx.callstack[end].localusedargs )
     end
     ctx.scope = ""
 end
@@ -226,6 +228,7 @@ end
 function lintlambda( ex::Expr, ctx::LintContext )
     stacktop = ctx.callstack[end]
     push!( stacktop.localarguments, Dict{Symbol, Any}() )
+    push!( stacktop.localusedargs, Set{Symbol}() )
     pushVarScope( ctx )
     # check for conflicts on lambda arguments
     checklambdaarg = (sym)->begin
@@ -283,8 +286,9 @@ function lintlambda( ex::Expr, ctx::LintContext )
     end
     lintexpr( ex.args[2], ctx )
 
-    popVarScope( ctx )
+    popVarScope( ctx, checkargs=true )
     pop!( stacktop.localarguments )
+    pop!( stacktop.localusedargs )
 end
 
 function lintfunctioncall( ex::Expr, ctx::LintContext )

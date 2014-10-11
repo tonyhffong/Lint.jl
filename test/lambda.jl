@@ -26,6 +26,9 @@ msgs = lintstr(s)
 @assert( contains( msgs[1].message, "Lambda argument" ) )
 s = """
 function f()
+    @lintpragma( "Ignore unused y")
+    @lintpragma( "Ignore unused z")
+    @lintpragma( "Ignore unused args")
     g  = (x, y::Int, z::Float64=0.0, args... )-> x+1
 end
 """

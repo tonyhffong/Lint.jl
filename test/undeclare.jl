@@ -18,7 +18,7 @@ msgs = lintstr( s )
 
 # from @pao
 s = """
-function f(x)
+function f()
     @lintpragma( "Ignore use of undeclared variable aone")
     addOne() = @withOneVar aone (aone + 1)
 end

@@ -61,6 +61,7 @@ end
 type LintStack
     declglobs     :: Dict{Symbol, Any}
     localarguments:: Array{ Dict{Symbol, Any}, 1 }
+    localusedargs :: Array{ Set{Symbol}, 1 }
     localvars     :: Array{ Dict{Symbol, Any}, 1 }
     localusedvars :: Array{ Set{Symbol}, 1 }
     usedvars      :: Set{Symbol}
@@ -83,6 +84,7 @@ type LintStack
         x = new(
             Dict{Symbol,Any}(),
             [ Dict{Symbol, Any}() ],
+            [ Set{Symbol}() ],
             [ Dict{Symbol, Any}() ],
             [ Set{Symbol}() ],
             Set{Symbol}(),

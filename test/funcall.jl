@@ -1,5 +1,6 @@
 s = """
 function f( x; y = 1, z::Int = 4)
+    println( z )
     x + y
 end
 
