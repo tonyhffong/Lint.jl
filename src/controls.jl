@@ -12,9 +12,7 @@ function lintifexpr( ex::Expr, ctx::LintContext )
             msg( ctx, 1, "redundant if-true statement")
         end
     else
-        if typeof(ex.args[1]) == Expr
-            lintboolean( ex.args[1], ctx )
-        end
+        lintboolean( ex.args[1], ctx )
         # if the first "meaty" expression under the true branch is
         # a boolean expression (!=, ==, >=, <=, >, <, &&, ||),
         # generate a INFO, as it could have been a typo
@@ -30,34 +28,32 @@ function lintifexpr( ex::Expr, ctx::LintContext )
     end
 end
 
-function lintboolean( ex::Expr, ctx::LintContext )
-    if ex.head == :(=)
-        msg( ctx, 0, "Assignment in the if-predicate clause.")
-    elseif ex.head == :call && ex.args[1] in [ :(&), :(|), :($) ]
-        msg( ctx, 1, "Bit-wise " * string( ex.args[1]) * " in a boolean context. (&,|) do not have short-circuit behavior." )
-    elseif ex.head == :(&&) || ex.head == :(||)
-        for a in ex.args
-            if typeof(a) == Symbol
-                registersymboluse(a, ctx)
-            elseif typeof(a)== Expr
+function lintboolean( ex, ctx::LintContext )
+    if typeof( ex ) <: Expr
+        if ex.head == :(=)
+            msg( ctx, 0, "Assignment in the if-predicate clause.")
+        elseif ex.head == :call && ex.args[1] in [ :(&), :(|), :($) ]
+            msg( ctx, 1, "Bit-wise " * string( ex.args[1]) * " in a boolean context. (&,|) do not have short-circuit behavior." )
+        elseif ex.head == :(&&) || ex.head == :(||)
+            for a in ex.args
                 lintboolean( a, ctx )
-            else
-                msg( ctx, 2, "Lint doesn't understand " * string( a ) * " in a boolean context." )
             end
-        end
-    elseif ex.head ==:call && ex.args[1] == :(!)
-        for i in 2:length(ex.args)
-            a = ex.args[i]
-            if typeof(a) == Symbol
-                registersymboluse(a, ctx)
-            elseif typeof(a)== Expr
+        elseif ex.head ==:call && ex.args[1] == :(!)
+            for i in 2:length(ex.args)
+                a = ex.args[i]
                 lintboolean( a, ctx )
-            else
-                msg( ctx, 2, "Lint doesn't understand " * string( a ) * " in a boolean context." )
             end
+        elseif ex.head == :call && ex.args[1] == :length
+            msg( ctx, 2, "Incorrect usage of length() in a Boolean context. You want to use isempty().")
         end
-    elseif ex.head == :call && ex.args[1] == :length
-        msg( ctx, 2, "Incorrect usage of length() in a Boolean context. You want to use isempty().")
+    elseif typeof( ex ) == Symbol
+        # can we figure of if that symbol is Bool?
+        gt = guesstype( ex, ctx )
+        if gt != Any && gt != Bool
+            msg( ctx, 2, "Variable " * string( ex ) * " has apparent non-Bool type." )
+        end
+    else
+        msg( ctx, 2, "Lint doesn't understand " * string( ex ) * " in a boolean context" )
     end
     lintexpr( ex, ctx )
 end
