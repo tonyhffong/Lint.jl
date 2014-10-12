@@ -35,3 +35,8 @@ end
 msgs = lintstr(s)
 
 @assert( isempty(msgs) )
+s = """
+ntuple( 4, _->0)
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
