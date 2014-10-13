@@ -46,3 +46,10 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "declared but not used" ))
+s = """
+function f(x)
+    x+=1
+end
+"""
+msgs = lintstr(s)
+@test( isempty( msgs ) )
