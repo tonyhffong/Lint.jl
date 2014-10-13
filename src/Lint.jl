@@ -3,6 +3,7 @@
 module Lint
 
 using Base.Meta
+using Compat
 
 export LintMessage, LintContext, LintStack
 export lintfile, lintstr, lintpkg, @lintpragma
