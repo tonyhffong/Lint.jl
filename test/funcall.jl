@@ -160,7 +160,7 @@ msgs = lintstr(s)
 s = """
 g( ;x=0, y=1 ) = x+y
 function f()
-    d = @compat( Dict(:x=>6,:y=>4 ) )
+    d = @compat( Dict{Symbol,Int}(:x=>6,:y=>4 ) )
     g(; d... )
 end
 """
