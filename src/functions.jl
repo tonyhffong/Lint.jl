@@ -323,6 +323,11 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             ctx.lineabs = lineabs
         end
     else
+        if ex.args[1]== :Dict || isexpr( ex.args[1], :curly ) && ex.args[1].args[1] == :Dict
+            lintdict4( ex, ctx )
+            return
+        end
+
         skiplist = Int[]
         if ex.args[1] == :Symbol
             msg( ctx, 2, "You want symbol(), i.e. symbol conversion, instead of a non-existent constructor" )
