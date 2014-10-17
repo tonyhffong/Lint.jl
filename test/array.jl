@@ -11,7 +11,7 @@ r = [[1 2]  [3 4]]
 msgs = lintstr( s )
 @test( contains( msgs[1].message, "Nested hcat" ) )
 s = """
-x = {[1,2],[7,8]}
+x = Any[[1,2],[7,8]]
 y = Array[ [1,2], [3,4] ]
 """
 msgs = lintstr( s )
@@ -117,10 +117,11 @@ sndlast = s[end -1]
 """
 msgs = lintstr( s )
 @test( contains( msgs[1].message, "Ambiguity of `[end -n]` as a matrix row vs index [end-n]" ) )
-s = """
-s = {}
-"""
-msgs = lintstr( s )
+
 if VERSION < v"0.4-"
+    s = """
+    s = {}
+    """
+    msgs = lintstr( s )
     @test( contains( msgs[1].message, "may be deprecated in Julia 0.4" ) )
 end
