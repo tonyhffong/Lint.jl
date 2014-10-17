@@ -52,7 +52,7 @@ msgs = lintstr( s )
 
 s = """
 function f(x)
-    d = (Symbol=>Int)[:a=>1, :b=>2 ]
+    d = @compat Dict{Symbol,Int}(:a=>1, :b=>2 )
     for i in d
     end
     return x
@@ -62,7 +62,7 @@ msgs = lintstr(s)
 @test( contains( msgs[1].message, "Iteration generates tuples of" ))
 s = """
 function f(x)
-    d = (Symbol=>Int)[:a=>1, :b=>2 ]
+    d = @compat Dict{Symbol,Int}(:a=>1, :b=>2 )
     x = d[:a]
     x = 1.0
     return x
@@ -73,7 +73,7 @@ msgs = lintstr(s)
 s = """
 function f()
     a = 1
-    d = (Symbol=>Int)[:a=>1, :b=>2 ]
+    d = @compat Dict{Symbol,Int}(:a=>1, :b=>2 )
     x = d[a]
     return x
 end

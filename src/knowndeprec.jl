@@ -11,12 +11,7 @@ deprecates = Dict{ Symbol, Vector{ DeprecateInfo } }()
 
 function initDeprecateInfo()
     str = open( readall, Base.find_source_file( "deprecated.jl" ) )
-
-    if VERSION < v"0.4-"
-        linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
-    else
-        linecharc = cumsum( map( x->length(x)+1, split( str, "\n", keep=true ) ) )
-    end
+    linecharc = cumsum( map( x->length(x)+1, @compat(split( str, "\n", keep=true ) ) ) )
 
     i = start( str )
     lineabs = 1
@@ -182,13 +177,13 @@ function addDummyDeprecates()
     deprecates[ :testDep1 ] = DeprecateInfo[]
     mypush!( :testDep1, nothing )
     deprecates[ :testDep2 ] = DeprecateInfo[]
-    mypush!( :testDep2, { ( :normal, :Integer ) } )
+    mypush!( :testDep2, Any[ ( :normal, :Integer ) ] )
     deprecates[ :testDep3 ] = DeprecateInfo[]
-    mypush!( :testDep3, { ( :normal, :( Array{Any, 1} ) ) } )
+    mypush!( :testDep3, Any[ ( :normal, :( Array{Any, 1} ) ) ] )
     deprecates[ :testDep4 ] = DeprecateInfo[]
-    mypush!( :testDep4, { ( :normal, :Integer ), ( :(...), :Integer ) } )
+    mypush!( :testDep4, Any[ ( :normal, :Integer ), ( :(...), :Integer ) ] )
     deprecates[ :testDep5 ] = DeprecateInfo[]
-    mypush!( :testDep5, { ( :normal, :( Array{Real, 1} ) ) } )
+    mypush!( :testDep5, Any[ ( :normal, :( Array{Real, 1} ) ) ] )
 end
 
 # returns nothing, or DeprecateInfo

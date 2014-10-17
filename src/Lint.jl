@@ -28,6 +28,7 @@ include( "blocks.jl" )
 include( "controls.jl" )
 include( "macros.jl" )
 include( "knowndeprec.jl" )
+include( "dict.jl")
 include( "misc.jl")
 
 
@@ -69,11 +70,7 @@ function lintfile( file::String; returnMsgs::Bool = false )
 end
 
 function lintstr( str::String, ctx :: LintContext = LintContext(), lineoffset = 0 )
-    if VERSION < v"0.4-"
-        linecharc = cumsum( map( x->length(x)+1, split( str, "\n", true ) ) )
-    else
-        linecharc = cumsum( map( x->length(x)+1, split( str, "\n", keep=true ) ) )
-    end
+    linecharc = cumsum( map( x->length(x)+1, @compat(split( str, "\n", keep=true ) ) ) )
     i = start(str)
     while !done(str,i)
         problem = false

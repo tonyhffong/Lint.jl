@@ -122,5 +122,5 @@ s = {}
 """
 msgs = lintstr( s )
 if VERSION < v"0.4-"
-    @test( contains( msgs[1].message, "Using {} for Any[] may be deprecated in Julia 0.4" ) )
+    @test( contains( msgs[1].message, "may be deprecated in Julia 0.4" ) )
 end

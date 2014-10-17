@@ -34,7 +34,7 @@ function isAnyOrTupleAny( x )
     return false
 end
 
-function guesstype( ex::Any, ctx::LintContext )
+function guesstype( ex, ctx::LintContext )
     t = typeof( ex )
     if t <: Number
         return t
@@ -155,11 +155,15 @@ function guesstype( ex::Any, ctx::LintContext )
         end
     end
 
-    if isexpr( ex, :macrocall ) && ex.args[1] == symbol( "@sprintf" ) ||
-        isexpr( ex, :call ) && in( ex.args[1], [:replace, :string, :utf8, :utf16, :utf32, :repr, :normalize_string, :join, :chop, :chomp,
+    if isexpr( ex, :macrocall )
+        if ex.args[1] == symbol( "@sprintf" ) ||
+            isexpr( ex, :call ) && in( ex.args[1], [:replace, :string, :utf8, :utf16, :utf32, :repr, :normalize_string, :join, :chop, :chomp,
             :lpad, :rpad, :strip, :lstrip, :rstrip, :uppercase, :lowercase, :ucfirst, :lcfirst,
             :escape_string, :unescape_string ] )
-        return String
+            return String
+        elseif ex.args[1] == symbol( "@compat" )
+            return guesstype( ex.args[2], ctx )
+        end
     end
 
     if isexpr( ex, :(:) )
@@ -256,6 +260,18 @@ function guesstype( ex::Any, ctx::LintContext )
         if ret <: String
             return ret
         end
+    end
+
+    if isexpr( ex, :call ) && ex.args[1] == :Dict
+        return Dict
+    end
+
+    if isexpr( ex, :call ) && isexpr( ex.args[1], :curly ) && ex.args[1].args[1] == :Dict
+        ret = Dict
+        try
+            ret = Dict{ eval( Main, ex.args[1].args[2] ), eval( Main, ex.args[1].args[3] ) }
+        end
+        return ret
     end
 
     if isexpr( ex, :ref ) # it could be a ref a[b] or an array Int[1,2,3]
