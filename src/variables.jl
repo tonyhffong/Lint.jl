@@ -30,7 +30,7 @@ function pushVarScope( ctx::LintContext )
     push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
 end
 
-function registersymboluse( sym::Symbol, ctx::LintContext )
+function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
     global knownsyms
     stacktop = ctx.callstack[end]
 
@@ -70,7 +70,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext )
     end
 
     # a bunch of whitelist to just grandfather-in
-    if !found && in( sym, knownsyms )
+    if !found && in( sym, knownsyms ) || !strict
         return
     end
 
@@ -221,6 +221,9 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     for (symidx, s) in enumerate( syms )
         if string(s) == ctx.scope && !islocal
             msg( ctx, 1, "Variable " *ctx.scope * " == function name." )
+        end
+        if s == :call
+            msg( ctx, 2, "You should not use '"*string(s)*"' as a variable name.")
         end
         if ex.head != :(=)
             registersymboluse( s, ctx )

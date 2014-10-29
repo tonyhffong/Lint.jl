@@ -327,6 +327,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             lintdict4( ex, ctx )
             return
         end
+        known=false
 
         skiplist = Int[]
         if ex.args[1] == :Symbol
@@ -335,11 +336,13 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             msg( ctx, 2, "You want string(), i.e. string conversion, instead of a non-existent constructor" )
         elseif ex.args[1]==:(+)
             lintplus( ex, ctx )
+            known = true
         end
 
         global commoncollmethods
 
         if typeof( ex.args[1] ) == Symbol && haskey( commoncollmethods, ex.args[1] )
+            known=true
             s = ex.args[1]
             typesig = Any[]
             for i in 2:length( ex.args )
@@ -378,13 +381,20 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                     break
                 end
             end
+            known=true
         end
 
         st = 2
         if ex.args[1] == :ifelse && typeof( ex.args[2] ) == Expr
             lintboolean( ex.args[2], ctx )
             st = 3
+            known=true
         end
+
+        if !known && isa( ex.args[1], Symbol )
+            registersymboluse( ex.args[1], ctx, false )
+        end
+
         en = length(ex.args)
 
         if isexpr( ex.args[1], :curly )
