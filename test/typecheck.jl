@@ -112,3 +112,14 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "typeof( x ) == Module" ) )
+
+s = """
+function f()
+    z = Complex(1.0, 1.0)
+    z.re = 2.0
+    z
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "z is of an immutable type" ) )
+

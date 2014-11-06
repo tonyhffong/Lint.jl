@@ -163,7 +163,7 @@ function lintlocal( ex::Expr, ctx::LintContext )
     end
 end
 
-function resolveLHSsymbol( ex, syms::Array{Symbol,1}, ctx::LintContext, typeassert::Dict{Symbol,Any} )
+function resolveLHSsymbol( ex, syms::Array{Any,1}, ctx::LintContext, typeassert::Dict{Symbol,Any} )
     if typeof( ex ) == Symbol
         push!( syms, ex)
     elseif ex.head == :(::)
@@ -178,6 +178,7 @@ function resolveLHSsymbol( ex, syms::Array{Symbol,1}, ctx::LintContext, typeasse
     elseif ex.head == :(.) ||   # a.b = something
         ex.head == :ref ||      # a[b] = something
         ex.head == :($)         # :( $(esc(name)) = something )
+        push!( syms, ex )
         lintexpr( ex.args[1], ctx )
         return
     else
@@ -188,9 +189,10 @@ end
 function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false ) # is it a local decl & assignment?
     lintexpr( ex.args[2], ctx )
 
-    syms = Symbol[]
+    syms = Any[]
     typeassert = Dict{ Symbol, Any }()
     resolveLHSsymbol( ex.args[1], syms, ctx, typeassert )
+    ntuple = length( syms )
     RHStype = guesstype( ex.args[2], ctx )
 
     if isForLoop
@@ -206,19 +208,29 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             RHStype = ( keytype( RHStype ), valuetype( RHStype ) )
         end
 
-        if typeof( RHStype ) <: Tuple && length( RHStype ) != length(syms)
-            msg( ctx, 0, "Iteration generates tuples of "*string(RHStype)*". N of variables used: "* string( length(syms) ) )
+        if typeof( RHStype ) <: Tuple && length( RHStype ) != ntuple
+            msg( ctx, 0, "Iteration generates tuples of "*string(RHStype)*". N of variables used: "* string( ntuple ) )
         end
     end
 
-    if typeof( RHStype ) <: Tuple && length( RHStype ) != length( syms ) && !isForLoop
+    if typeof( RHStype ) <: Tuple && length( RHStype ) != ntuple && !isForLoop
         if length( syms ) > 1
-            msg( ctx, 2, "RHS is a tuple of "*string(RHStype)*". N of variables used: "* string( length(syms) ) )
+            msg( ctx, 2, "RHS is a tuple of "*string(RHStype)*". N of variables used: "* string( ntuple ) )
         end
     end
 
     @lintpragma( "Ignore unstable type variable rhst")
     for (symidx, s) in enumerate( syms )
+        if typeof( s ) != Symbol # a.b or a[b]
+            if isexpr( s, [ :(.), :ref ] )
+                containertype = guesstype( s.args[1], ctx )
+                if containertype != Any && typeof( containertype ) == DataType && !containertype.mutable
+                    msg( ctx, 2, string( s.args[1]) * " is of an immutable type " * string( containertype ) )
+                end
+            end
+
+            continue
+        end
         if string(s) == ctx.scope && !islocal
             msg( ctx, 1, "Variable " *ctx.scope * " == function name." )
         end
