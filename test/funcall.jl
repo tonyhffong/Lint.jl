@@ -150,6 +150,14 @@ msgs = lintstr(s)
 @assert( contains(msgs[1].message, "type assertion and default") )
 
 s = """
+function f( x; y = 1, z::Int = error( "You must provide z") )
+    x + y + z
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
+
+s = """
 g( x ) = -x
 function f( arr::Array )
     map( g, arr )
