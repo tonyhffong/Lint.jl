@@ -209,3 +209,11 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+
+s = """
+function f( x )
+    x.somefunc(1)
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
