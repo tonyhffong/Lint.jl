@@ -52,31 +52,7 @@ end
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "typeof( x ) == Int" ) )
 @test( contains( msgs[2].message, "Iteration works for a number but it may be a typo" ) )
-s = """
-function f(x=1)
-    @lintpragma( "Info type x")
-    return x
-end
-"""
-msgs = lintstr(s)
-@test( contains( msgs[1].message, "typeof( x ) == Int" ) )
-s = """
-function f(x::Int8=int8(1))
-    @lintpragma( "Info type x")
-    return x
-end
-"""
-msgs = lintstr(s)
-@test( contains( msgs[1].message, "typeof( x ) == Int8" ) )
-s = """
-function f(c::Char)
-    x = convert( Int, c )
-    @lintpragma( "Info type x")
-    return x
-end
-"""
-msgs = lintstr(s)
-@test( contains( msgs[1].message, "typeof( x ) == Int" ) )
+
 s = """
 function f(a::Array{Int,1})
     for i in enumerate( a )
