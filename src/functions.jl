@@ -52,7 +52,7 @@ end
 # if ctorType isn't symbol( "" ) then we are in the context of
 # a constructor for a type. We would check
 # * if the function name matches the type name
-function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
+function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isstaged=false )
     if ex.args[1].args[1]==:eval # extending eval(m,x) = ... in module. don't touch it.
         return
     end
@@ -130,6 +130,9 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
                 msg( ctx, 2, "You cannot have non-default argument following default arguments")
             end
             push!( argsSeen, sube )
+            if isstaged
+                typeassert[ sube ] = :DataType
+            end
             return sube
         elseif sube.head == :parameters
             for (j,kw) in enumerate(sube.args)
@@ -149,15 +152,19 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ) )
                 optionalposition = position
             end
             sym = resolveArguments( sube.args[1], 0 )
-            RHStype = guesstype( sube.args[2], ctx )
-            if typeof( sym ) == Symbol
-                typeRHShints[ sym ] = RHStype
+            if !isstaged
+                RHStype = guesstype( sube.args[2], ctx )
+                if typeof( sym ) == Symbol
+                    typeRHShints[ sym ] = RHStype
+                end
             end
         elseif sube.head == :(::)
             if length( sube.args ) > 1
                 sym = resolveArguments( sube.args[1], 0 )
-                if typeof( sym ) == Symbol
-                    typeassert[ sym ] = sube.args[2]
+                if !isstaged
+                    if typeof( sym ) == Symbol
+                        typeassert[ sym ] = sube.args[2]
+                    end
                 end
                 lintfuncargtype( sube.args[2], ctx )
                 return sym

@@ -175,6 +175,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         ctx.quoteLvl += 1
     elseif ex.head == :function
         lintfunction( ex, ctx )
+    elseif ex.head == :stagedfunction
+        lintfunction( ex, ctx, isstaged=true )
     elseif ex.head == :macro
         lintmacro( ex, ctx )
     elseif ex.head == :macrocall
