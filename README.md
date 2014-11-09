@@ -114,6 +114,7 @@ Lint message suppression (do not include the square brackets)
     arrays with uncertain/runtime-calculated dimension
 * `@lintpragma( "Ignore use of undeclared variable [variable name]" )`. Useful when using macros to
   generate symbols on the fly.
+* `@lintpragma( "Ignore incompatible type comparison" )`. Useful to silence deliberately type-unstable code
 
 Lint message generation (do not include the square brackets)
 * `@lintpragma( "Info type [expression]")`. Generate the best guess type of the expression during lint-time.

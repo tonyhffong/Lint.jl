@@ -37,6 +37,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
     str = string(sym)
 
     if isupper( str[1] )
+        @lintpragma( "Ignore incompatible type comparison" )
         t = nothing
         try
             tmp = eval( sym )
@@ -241,6 +242,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             registersymboluse( s, ctx )
         end
         vi = VarInfo( ctx.line )
+        @lintpragma( "Ignore incompatible type comparison" )
         if RHStype == Any || length( syms ) == 1
             rhst = RHStype
         elseif typeof( RHStype ) <: Tuple && length( RHStype ) == length( syms )
