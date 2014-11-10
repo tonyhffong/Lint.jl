@@ -58,9 +58,17 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         if isexpr( ex.args[2], :(->) )
             lintexpr( ex.args[2].args[2], ctx ) # no need to lint the doc string
             return
-        else
-            msg( ctx, 1, "Did you forget an -> after @doc?" )
+        elseif ( typeof( ex.args[2] ) <: String ||
+              isexpr( ex.args[2], :macrocall) && ex.args[2].args[1] == symbol( "@mstr" )
+              )
+            if length( ex.args ) >= 3
+                lintexpr( ex.args[3], ctx )
+            else
+                msg( ctx, 1, "Did you forget an -> after @doc or make it inline?" )
+            end
+            return
         end
+        return
     end
 
     if ex.args[1] == symbol( "@compat" )
