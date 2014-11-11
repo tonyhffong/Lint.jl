@@ -156,7 +156,7 @@ function popcallstack( ctx::LintContext )
     stacktop = ctx.callstack[end]
     for (p,b) in stacktop.pragmas
         if !b
-            msg( ctx, 1, "Unused @lintpragma " * p )
+            msg( ctx, 0, "Unused @lintpragma " * p )
         end
     end
     pop!( ctx.callstack )
