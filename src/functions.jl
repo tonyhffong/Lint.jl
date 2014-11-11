@@ -207,6 +207,8 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
         stacktop.localarguments[end][s] = vi
     end
 
+    prev_isstaged = ctx.isstaged
+    ctx.isstaged = isstaged
     pushVarScope( ctx )
     lintexpr( ex.args[2], ctx )
 
@@ -230,6 +232,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
         pop!( ctx.callstack[end].localusedargs )
     end
     ctx.scope = ""
+    ctx.isstaged = prev_isstaged
 end
 
 function lintlambda( ex::Expr, ctx::LintContext )

@@ -115,7 +115,11 @@ function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
         if pragmaexists( "Ignore use of undeclared variable " * string( sym ), ctx )
             return
         end
-        msg( ctx, 2, "Use of undeclared symbol " *string(sym))
+        if ctx.quoteLvl == 0
+            msg( ctx, 2, "Use of undeclared symbol " *string(sym))
+        elseif ctx.isstaged
+            msg( ctx, 0, "Use of undeclared symbol " *string(sym))
+        end
     end
 end
 

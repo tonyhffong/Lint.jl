@@ -130,7 +130,8 @@ type LintContext
     file         :: String
     line         :: Int
     lineabs      :: Int
-    scope        :: String
+    scope        :: String # usually the function name
+    isstaged     :: Bool
     path         :: String
     globals      :: Dict{Symbol,Any}
     types        :: Dict{Symbol,Any}
@@ -142,7 +143,7 @@ type LintContext
     callstack    :: Array{ Any, 1 }
     messages     :: Array{ LintMessage, 1 }
     ignoreState  :: LintIgnoreState
-    LintContext() = new( "none", 0, 1, "", ".",
+    LintContext() = new( "none", 0, 1, "", false, ".",
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0, 0,
             Any[ LintStack( true ) ], LintMessage[], LintIgnoreState() )
 end

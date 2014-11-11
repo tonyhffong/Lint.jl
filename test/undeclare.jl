@@ -54,3 +54,10 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "used in a local scope"))
+s = """
+function f()
+    :(x + y)
+end
+"""
+msgs = lintstr( s )
+@test( isempty(msgs) )
