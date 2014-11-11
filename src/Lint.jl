@@ -100,9 +100,7 @@ end
 
 function lintexpr( ex::Any, ctx::LintContext )
     if typeof(ex) == Symbol
-        if ctx.quoteLvl == 0
-            registersymboluse( ex, ctx )
-        end
+        registersymboluse( ex, ctx )
         return
     end
 
@@ -110,6 +108,7 @@ function lintexpr( ex::Any, ctx::LintContext )
         ctx.quoteLvl += 1
         lintexpr( ex.value, ctx )
         ctx.quoteLvl -= 1
+        return
     end
 
     if typeof(ex)!=Expr
