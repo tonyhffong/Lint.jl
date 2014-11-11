@@ -55,7 +55,7 @@ function lintboolean( ex, ctx::LintContext )
                     end
                     righttype = guesstype( ex.args[i+1], ctx )
                     #println( "left ", lefttype )
-                    if lefttype != Any && righttype != Any &&
+                    if ctx.quoteLvl == 0 && lefttype != Any && righttype != Any &&
                         #ex.args[i-1] != :Any &&
                         #ex.args[i+1] != :Any &&
                         #ex.args[i-1] != :DataType &&
