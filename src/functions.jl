@@ -99,13 +99,13 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
     ctx.scope = string(fname)
     if fname != symbol( "" ) && !contains( ctx.file, "deprecate" )
         isDeprecated = functionIsDeprecated( ex.args[1] )
-        if isDeprecated != nothing && !in( "Ignore deprecated " * string( fname ), ctx.callstack[end].pragmas )
+        if isDeprecated != nothing && !pragmaexists( "Ignore deprecated " * string( fname ), ctx )
             msg( ctx, 2, isDeprecated.message * "\nSee: deprecated.jl " * string( isDeprecated.line ) )
         end
     end
 
     if ctx.macroLvl == 0 && ctx.functionLvl == 0
-        push!( ctx.callstack, LintStack() )
+        pushcallstack( ctx )
     else
         push!( ctx.callstack[end].localarguments, Dict{ Symbol,Any }() )
         push!( ctx.callstack[end].localusedargs, Set{ Symbol }() )
@@ -226,7 +226,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
     ctx.functionLvl = ctx.functionLvl - 1
     # TODO check cyclomatic complexity?
     if ctx.macroLvl == 0 && ctx.functionLvl == 0
-        pop!( ctx.callstack )
+        popcallstack( ctx )
     else
         pop!( ctx.callstack[end].localarguments )
         pop!( ctx.callstack[end].localusedargs )
@@ -361,7 +361,6 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                 end
             end
             try
-                @lintpragma( "Ignore deprecated which" )
                 which( getfield( Base, s ),  tuple( typesig... ) )
             catch er
                 msg( ctx, 2, string(s) * ": " * string( er ) * "\nSignature: " * string( typesig ) )
@@ -382,7 +381,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                 if haskey( ctx.callstack[i].typefields, tname )
                     fields = ctx.callstack[i].typefields[ tname ]
                     if 0 < length( ex.args ) - 1 < length( fields )
-                        if !in( "Ignore short new argument", ctx.callstack[end].pragmas )
+                        if !pragmaexists( "Ignore short new argument", ctx, deep=false )
                             msg( ctx, 0, "new is provided with fewer arguments than fields." )
                         end
                     elseif length( fields ) < length( ex.args ) - 1

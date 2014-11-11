@@ -27,16 +27,18 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
                 msg( ctx, 2, str )
             end
         else
-            push!( ctx.callstack[end].pragmas, ex.args[2] )
+            ctx.callstack[end].pragmas[ ex.args[2] ] = false
         end
     else
         msg( ctx, 2, "@lintpragma must be called using only string literals.")
     end
 end
 
-function pragmaexists( s::String, ctx::LintContext )
-    for i in length( ctx.callstack ):-1:1
-        if in( s, ctx.callstack[i].pragmas )
+function pragmaexists( s::String, ctx::LintContext; deep=true )
+    iend = deep ? 1 : length(ctx.callstack)
+    for i in length( ctx.callstack ):-1:iend
+        if haskey( ctx.callstack[i].pragmas, s )
+            ctx.callstack[i].pragmas[s] = true # it has been used
             return true
         end
     end

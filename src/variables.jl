@@ -291,7 +291,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                     prevvi = ctx.callstack[end].localvars[i][s]
                     if !isAnyOrTupleAny( vi.typeactual ) && !( vi.typeactual <: prevvi.typeactual ) &&
                         !( vi.typeactual == String && prevvi.typeactual <: vi.typeactual ) &&
-                        !in( "Ignore unstable type variable " * string( s ), ctx.callstack[end].pragmas )
+                        !pragmaexists( "Ignore unstable type variable " * string( s ), ctx )
                         msg( ctx, 1, "Previously used " * string( s ) * " has apparent type " * string( prevvi.typeactual ) * ", but now assigned " * string( vi.typeactual ) )
                     end
                     ctx.callstack[end].localvars[i][ s] = vi

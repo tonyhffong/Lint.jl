@@ -66,7 +66,7 @@ type LintStack
     localusedvars :: Array{ Set{Symbol}, 1 }
     usedvars      :: Set{Symbol}
     oosvars       :: Set{Symbol}
-    pragmas       :: Set{String}
+    pragmas       :: Dict{String, Bool} # the boolean denotes if the pragma has been used
     calledfuncs   :: Set{Symbol}
     inModule      :: Bool
     moduleName    :: Any
@@ -89,7 +89,7 @@ type LintStack
             [ Set{Symbol}() ],
             Set{Symbol}(),
             Set{Symbol}(),
-            Set{String}(),
+            Dict{String, Bool}(), #pragmas
             Set{Symbol}(),
             false,
             symbol(""),
@@ -148,3 +148,16 @@ type LintContext
             Any[ LintStack( true ) ], LintMessage[], LintIgnoreState() )
 end
 
+function pushcallstack( ctx::LintContext )
+    push!( ctx.callstack, LintStack() )
+end
+
+function popcallstack( ctx::LintContext )
+    stacktop = ctx.callstack[end]
+    for (p,b) in stacktop.pragmas
+        if !b
+            msg( ctx, 1, "Unused @lintpragma " * p )
+        end
+    end
+    pop!( ctx.callstack )
+end

@@ -2,7 +2,7 @@
 
 function linttype( ex::Expr, ctx::LintContext )
     if ctx.macroLvl ==0 && ctx.functionLvl == 0
-        push!( ctx.callstack, LintStack() )
+        pushcallstack( ctx )
     end
 
     processCurly = (sube)->begin
@@ -78,7 +78,7 @@ function linttype( ex::Expr, ctx::LintContext )
             ctx.line = def.line
         elseif typeof( def ) == Symbol
             # it means Any, probably not a very efficient choice
-            if !in( "Ignore untyped field " * string( def ), ctx.callstack[end].pragmas )
+            if !pragmaexists( "Ignore untyped field " * string( def ), ctx, deep=false )
                 msg( ctx, 0, "A type is not given to the field " * string( def ) * ", which can be slow." )
             end
             push!( fields, ( def, Any ))
@@ -89,7 +89,7 @@ function linttype( ex::Expr, ctx::LintContext )
             msg( ctx,2, "Use @lintpragma macro inside type declaration" )
         elseif def.head == :(::)
             if isexpr( def.args[2], :curly ) && def.args[2].args[1] == :Array && length( def.args[2].args ) <= 2 &&
-                !in( "Ignore dimensionless array field " * string( def.args[1] ), ctx.callstack[end].pragmas )
+                !pragmaexists( "Ignore dimensionless array field " * string( def.args[1] ), ctx, deep=false )
                 msg( ctx, 0, "Array field " * string( def.args[1] ) * " has no dimension, which can be slow" )
             end
             push!( fields, (def.args[1], def.args[2]) )
@@ -115,7 +115,7 @@ function linttype( ex::Expr, ctx::LintContext )
     end
 
     if ctx.macroLvl ==0 && ctx.functionLvl == 0
-        pop!( ctx.callstack )
+        popcallstack( ctx )
     end
 end
 

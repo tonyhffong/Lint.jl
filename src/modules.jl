@@ -2,7 +2,7 @@
 
 function lintmodule( ex::Expr, ctx::LintContext )
     push!( ctx.callstack[end].modules, ex.args[2] )
-    push!( ctx.callstack, LintStack() )
+    pushcallstack( ctx )
     stacktop = ctx.callstack[end]
     stacktop.inModule = true
     stacktop.moduleName = ex.args[2]
@@ -20,7 +20,7 @@ function lintmodule( ex::Expr, ctx::LintContext )
     for sym in undefs
         msg( ctx, 2, "exporting undefined symbol " * string(sym))
     end
-    pop!( ctx.callstack )
+    popcallstack( ctx )
 end
 
 function lintusing( ex::Expr, ctx::LintContext )
@@ -54,7 +54,7 @@ function lintusing( ex::Expr, ctx::LintContext )
                 ctx.callstack[end].linthelpers[ path ] = m.lint_helper
             end
         else
-            if !in( "Ignore undefined module " * string( path ), ctx.callstack[end].pragmas )
+            if !pragmaexists( "Ignore undefined module " * string( path ), ctx )
                 msg( ctx, 1, string(path) * " doesn't eval into a Module")
             end
         end
