@@ -67,6 +67,8 @@ function lintblock( ex::Expr, ctx::LintContext )
                 lintexpr( sube, ctx )
                 lastexpr = sube
             end
+        elseif typeof(sube) == QuoteNode
+            lintexpr(sube,ctx)
         elseif typeof(sube) == LineNumberNode
             ctx.line = sube.line
             continue
