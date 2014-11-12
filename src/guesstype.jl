@@ -307,6 +307,17 @@ function guesstype( ex, ctx::LintContext )
                     end
                 end
                 return Any
+            elseif typeof( partyp ) == (DataType,) # e.g. (Int,), (Int...,), (DataType,...)
+                fst = partyp[1]
+                try
+                    if fst.name.name == :Vararg
+                        return fst.parameters[1]
+                    else
+                        return fst
+                    end
+                catch
+                    return Any
+                end
             elseif partyp <: Associative
                 ktypeexpect = keytype( partyp )
                 vtypeexpect = valuetype( partyp )

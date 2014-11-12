@@ -131,7 +131,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
             end
             push!( argsSeen, sube )
             if isstaged
-                typeassert[ sube ] = :DataType
+                typeassert[ sube ] = DataType
             end
             return sube
         elseif sube.head == :parameters
@@ -141,11 +141,22 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
                         msg( ctx, 2, "Named ellipsis ... can only be the last argument")
                         return
                     end
+                    sym = resolveArguments( kw, 0 )
+                    if typeof( sym )== Symbol
+                        if isstaged
+                            typeassert[ sym ] = DataType
+                        else
+                            # This may change to Array{ (Symbol,Any ), 1 } in the future
+                            typeassert[ sym ] = Array{Any,1}
+                        end
+                    end
+                    return
                 elseif typeof( kw ) != Expr || (kw.head != :(=) && kw.head != :kw)
                     msg( ctx, 2, "Named keyword argument must have a default: " *string(kw))
                     return
+                else
+                    resolveArguments( kw, 0 )
                 end
-                resolveArguments( kw, 0 )
             end
         elseif sube.head == :(=) || sube.head == :kw
             if position != 0
@@ -163,7 +174,11 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
                 sym = resolveArguments( sube.args[1], 0 )
                 if !isstaged
                     if typeof( sym ) == Symbol
-                        typeassert[ sym ] = sube.args[2]
+                        dt = Any
+                        try
+                            dt = eval( sube.args[2] )
+                        end
+                        typeassert[ sym ] = dt
                     end
                 end
                 lintfuncargtype( sube.args[2], ctx )
@@ -175,7 +190,16 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
             if position != 0 && position != length(ex.args[1].args)
                 msg( ctx, 2, "Positional ellipsis ... can only be the last argument")
             end
-            resolveArguments( sube.args[1], 0 )
+            sym = resolveArguments( sube.args[1], 0 )
+            if typeof(sym) == Symbol
+                if isstaged
+                    typeassert[ sym ] = (DataType...,)
+                elseif haskey( typeassert, sym )
+                    typeassert[ sym ] = (typeassert[sym]...,)
+                else
+                    typeassert[ sym ] = (Any...,)
+                end
+            end
         elseif sube.head == :($)
             lintexpr( sube.args[1], ctx )
         else
@@ -193,7 +217,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
         try
             if haskey( typeassert, s )
                 dt = eval( typeassert[ s ] )
-                if typeof(dt ) == DataType
+                if typeof(dt ) == DataType || typeof(dt ) == (DataType,)
                     vi.typeactual = dt
                     if dt != Any && haskey( typeRHShints, s ) && typeRHShints[s] != Any &&
                         !( typeRHShints[s] <: dt )

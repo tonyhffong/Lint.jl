@@ -243,3 +243,35 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "typeof( x ) == Int" ) )
+
+s = """
+function f( args...; dict... )
+    @lintpragma( "Info type args")
+    @lintpragma( "Info type dict")
+    length(args) + length( dict )
+end
+"""
+msgs = lintstr(s)
+@test contains( msgs[1].message, "typeof( args ) == (Any...,)")
+@test contains( msgs[2].message, "typeof( dict ) == (Any...,)")
+
+s = """
+function f( args::Float64... )
+    @lintpragma( "Info type args")
+    length(args)
+end
+"""
+msgs = lintstr(s)
+@test contains( msgs[1].message, "typeof( args ) == (Float64...,)")
+
+s = """
+function f( args::Float64... )
+    if args[1] == 1
+        0
+    else
+        length(args)
+    end
+end
+"""
+msgs = lintstr(s)
+@test contains( msgs[1].message, "Comparing apparently incompatible type" )
