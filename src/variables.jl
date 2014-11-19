@@ -1,4 +1,5 @@
 function popVarScope( ctx::LintContext; checkargs::Bool=false )
+    tmpline = ctx.line
     stacktop = ctx.callstack[end]
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
     for v in unused
@@ -23,6 +24,7 @@ function popVarScope( ctx::LintContext; checkargs::Bool=false )
     union!( stacktop.oosvars, setdiff( keys( stacktop.localvars[end] ), keys( stacktop.localvars[1] )))
     pop!( stacktop.localvars )
     pop!( stacktop.localusedvars )
+    ctx.line = tmpline
 end
 
 function pushVarScope( ctx::LintContext )

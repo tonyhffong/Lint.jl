@@ -58,6 +58,11 @@ type VarInfo
     VarInfo( ex::Expr ) = new( -1, Any, ex )
 end
 
+type PragmaInfo
+    line :: Int
+    used :: Bool
+end
+
 type LintStack
     declglobs     :: Dict{Symbol, Any}
     localarguments:: Array{ Dict{Symbol, Any}, 1 }
@@ -66,7 +71,7 @@ type LintStack
     localusedvars :: Array{ Set{Symbol}, 1 }
     usedvars      :: Set{Symbol}
     oosvars       :: Set{Symbol}
-    pragmas       :: Dict{String, Bool} # the boolean denotes if the pragma has been used
+    pragmas       :: Dict{String, PragmaInfo } # the boolean denotes if the pragma has been used
     calledfuncs   :: Set{Symbol}
     inModule      :: Bool
     moduleName    :: Any
@@ -155,8 +160,11 @@ end
 function popcallstack( ctx::LintContext )
     stacktop = ctx.callstack[end]
     for (p,b) in stacktop.pragmas
-        if !b
+        if !b.used
+            tmpline = ctx.line
+            ctx.line = b.line
             msg( ctx, 0, "Unused @lintpragma " * p )
+            ctx.line = tmpline
         end
     end
     pop!( ctx.callstack )

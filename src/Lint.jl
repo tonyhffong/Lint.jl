@@ -71,11 +71,22 @@ end
 
 function lintstr( str::String, ctx :: LintContext = LintContext(), lineoffset = 0 )
     linecharc = cumsum( map( x->length(x)+1, @compat(split( str, "\n", keep=true ) ) ) )
+    numlines = length( linecharc )
     i = start(str)
     while !done(str,i)
         problem = false
         ex = nothing
-        ctx.lineabs = searchsorted( linecharc, i ).start + lineoffset
+        linerange = searchsorted( linecharc, i )
+        if linerange.start > numlines # why is it not donw?
+            break
+        else
+            linebreakloc = linecharc[ linerange.start ]
+        end
+        if linebreakloc == i || isempty( strip( SubString( str, i, linebreakloc-1 ) ) )# empty line
+            i = linebreakloc + 1
+            continue
+        end
+        ctx.lineabs = linerange.start + lineoffset
         try
             (ex, i) = parse(str,i)
         catch y
@@ -85,6 +96,7 @@ function lintstr( str::String, ctx :: LintContext = LintContext(), lineoffset = 
             problem = true
         end
         if !problem
+            ctx.line = 0
             lintexpr( ex, ctx )
         else
             break
@@ -95,7 +107,7 @@ end
 
 function msg( ctx, lvl, str )
     push!( ctx.messages, LintMessage( ctx.file , ctx.scope,
-            ctx.lineabs + ctx.line-1, lvl, str ) )
+            ctx.lineabs + ctx.line, lvl, str ) )
 end
 
 function lintexpr( ex::Any, ctx::LintContext )

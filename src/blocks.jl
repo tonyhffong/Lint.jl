@@ -36,7 +36,7 @@ function lintblock( ex::Expr, ctx::LintContext )
     for (i,sube) in enumerate(ex.args)
         if typeof(sube) == Expr
             if sube.head == :line
-                ctx.line = sube.args[1]
+                ctx.line = sube.args[1]-1
                 if length(sube.args)>1
                     file= string(sube.args[2])
                     if file != "none"
@@ -70,7 +70,7 @@ function lintblock( ex::Expr, ctx::LintContext )
         elseif typeof(sube) == QuoteNode
             lintexpr(sube,ctx)
         elseif typeof(sube) == LineNumberNode
-            ctx.line = sube.line
+            ctx.line = sube.line-1
             continue
         elseif typeof(sube) == Symbol
             registersymboluse( sube, ctx )

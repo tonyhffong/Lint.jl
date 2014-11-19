@@ -351,6 +351,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             str = open(readall, inclfile )
             ctx.file = deepcopy( inclfile )
             ctx.path = dirname( inclfile )
+            ctx.lineabs = 1
             lintstr( str, ctx )
             ctx.file = file
             ctx.path = path

@@ -1,3 +1,8 @@
+type PragmaInfo
+    line :: Int
+    used :: Bool
+end
+
 function lintlintpragma( ex::Expr, ctx::LintContext )
     if typeof( ex.args[2] ) <: String
         m = match( r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)) +(.+)"s, ex.args[2] )
@@ -27,7 +32,7 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
                 msg( ctx, 2, str )
             end
         else
-            ctx.callstack[end].pragmas[ ex.args[2] ] = false
+            ctx.callstack[end].pragmas[ ex.args[2] ] = PragmaInfo( ctx.line, false )
         end
     else
         msg( ctx, 2, "@lintpragma must be called using only string literals.")
@@ -38,7 +43,7 @@ function pragmaexists( s::String, ctx::LintContext; deep=true )
     iend = deep ? 1 : length(ctx.callstack)
     for i in length( ctx.callstack ):-1:iend
         if haskey( ctx.callstack[i].pragmas, s )
-            ctx.callstack[i].pragmas[s] = true # it has been used
+            ctx.callstack[i].pragmas[s].used = true # it has been used
             return true
         end
     end

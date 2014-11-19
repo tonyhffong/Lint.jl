@@ -75,7 +75,7 @@ function linttype( ex::Expr, ctx::LintContext )
 
     for def in ex.args[3].args
         if typeof( def ) == LineNumberNode
-            ctx.line = def.line
+            ctx.line = def.line-1
         elseif typeof( def ) == Symbol
             # it means Any, probably not a very efficient choice
             if !pragmaexists( "Ignore untyped field " * string( def ), ctx, deep=false )
