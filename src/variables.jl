@@ -186,7 +186,7 @@ function resolveLHSsymbol( ex, syms::Array{Any,1}, ctx::LintContext, typeassert:
         ex.head == :ref ||      # a[b] = something
         ex.head == :($)         # :( $(esc(name)) = something )
         push!( syms, ex )
-        lintexpr( ex.args[1], ctx )
+        lintexpr( ex, ctx )
         return
     else
         msg( ctx, 0, "LHS in assignment not understood by Lint. please check: " * string(ex) )

@@ -123,3 +123,12 @@ end
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "z is of an immutable type" ) )
 
+s = """
+n = 32
+A = Array{Int32, n } # bug is here
+for i in 1:n
+    A[i] = i
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "has apparent type DataType, not a container"))

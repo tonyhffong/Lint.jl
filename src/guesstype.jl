@@ -170,6 +170,10 @@ function guesstype( ex, ctx::LintContext )
         return Range
     end
 
+    if isexpr( ex, :curly )
+        return DataType
+    end
+
     if isexpr( ex, :call ) && isexpr( ex.args[1], :curly )
         ret=Any
         try
@@ -275,7 +279,9 @@ function guesstype( ex, ctx::LintContext )
     end
 
     if isexpr( ex, :ref ) # it could be a ref a[b] or an array Int[1,2,3]
-        if typeof( ex.args[1] ) == Symbol && isupper( string( ex.args[1] )[1] ) # assume an array
+        if typeof( ex.args[1] ) == Symbol &&
+            length( string( ex.args[1] ) ) >= 3 &&
+            isupper( string( ex.args[1] )[1] ) # assume an array
             elt = Any
             try
                 elt = eval( Main, ex.args[1] )
@@ -326,6 +332,8 @@ function guesstype( ex, ctx::LintContext )
                     msg( ctx, 2, "Key type expects " * string( ktypeexpect ) * ", provided " * string( ktypeactual ) )
                 end
                 return vtypeexpect
+            elseif partyp != Any
+                msg( ctx, 2, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
             end
         end
         return Any

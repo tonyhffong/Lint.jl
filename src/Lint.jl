@@ -29,8 +29,8 @@ include( "controls.jl" )
 include( "macros.jl" )
 include( "knowndeprec.jl" )
 include( "dict.jl")
+include( "ref.jl")
 include( "misc.jl")
-
 
 function lintpkg( pkg::String; returnMsgs::Bool = false )
     p = joinpath( Pkg.dir( pkg ), "src", pkg * ".jl" )
@@ -201,20 +201,7 @@ function lintexpr( ex::Any, ctx::LintContext )
     elseif ex.head == :(.) # a.b
         lintexpr( ex.args[1], ctx )
     elseif ex.head == :ref # it could be a ref a[b], or an array Int[1,2]
-        sub1 = ex.args[1]
-        guesstype( ex, ctx ) # tickle the type checks on the expression
-        if typeof(sub1)== Symbol
-            # check to see if it's a type
-            str = string( sub1)
-            if !isupper( str[1] )
-                registersymboluse( sub1,ctx )
-            end
-        else
-            lintexpr(sub1, ctx)
-        end
-        for i=2:length(ex.args)
-            lintexpr( ex.args[i], ctx )
-        end
+        lintref( ex, ctx )
     elseif ex.head == :dict # homogeneous dictionary
         lintdict( ex, ctx; typed=false )
     elseif ex.head == :typed_dict # mixed type dictionary
