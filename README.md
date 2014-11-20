@@ -91,6 +91,11 @@ using Lint
   warn for potentially missing `||` or `&&`
 * A type field with undeclared type or array type without dimension (performance INFO)
 * Constant global without assigning a value to it.
+* Staged function: catch one forgetting that the arguments are all types. Inform unused arguments in both the
+  staged function's logic as well as the quoted code.
+* Catch silly curly bracket misuse/abuse e.g. Dict{ :Symbol, Any }
+* Understands and checks basic `@doc`
+* Catch assigning `a.b = something` when `a` is proven to be of an immutable type, e.g. `Complex`
 
 ## @lintpragma: steering Lint-time behavior
 You can insert @lintpragma to suppress or generate messages. At runtime, @lintpragma is a no-op, so it gives
