@@ -332,6 +332,11 @@ function guesstype( ex, ctx::LintContext )
                     msg( ctx, 2, "Key type expects " * string( ktypeexpect ) * ", provided " * string( ktypeactual ) )
                 end
                 return vtypeexpect
+            elseif partyp <: String
+                ktypeactual = guesstype( ex.args[2], ctx )
+                if ktypeactual != Any && !( ktypeactual <: Integer )
+                    msg( ctx, 2, "Key type expects " * string( ktypeexpect ) * ", provided " * string( ktypeactual ) )
+                end
             elseif partyp != Any
                 msg( ctx, 2, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
             end
