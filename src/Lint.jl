@@ -30,6 +30,7 @@ include( "macros.jl" )
 include( "knowndeprec.jl" )
 include( "dict.jl")
 include( "ref.jl")
+include( "curly.jl" )
 include( "misc.jl")
 
 function lintpkg( pkg::String; returnMsgs::Bool = false )
@@ -227,7 +228,7 @@ function lintexpr( ex::Any, ctx::LintContext )
     elseif ex.head == :try
         linttry( ex, ctx )
     elseif ex.head == :curly # e.g. Ptr{T}
-        return
+        lintcurly( ex, ctx )
     else
         for sube in ex.args
             if typeof(sube)== Expr
