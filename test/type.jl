@@ -73,12 +73,12 @@ end
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
 s = """
-typealias T Int64
-typealias SharedVector{T} SharedArray{T,1}
+typealias TT Int64
+typealias SharedVector{TT} SharedArray{TT,1}
 
-type MyType{T}
-    t::T
-    MyType( x ) = new( convert( T, x ) )
+type MyType{TT}
+    t::TT
+    MyType( x ) = new( convert( TT, x ) )
 end
 """
 msgs = lintstr(s)

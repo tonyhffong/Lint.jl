@@ -231,7 +231,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         if typeof( s ) != Symbol # a.b or a[b]
             if isexpr( s, [ :(.), :ref ] )
                 containertype = guesstype( s.args[1], ctx )
-                if containertype != Any && typeof( containertype ) == DataType && isleaftype( containertype ) && !containertype.mutable
+                if containertype != Any && typeof( containertype ) == DataType && !containertype.mutable
                     msg( ctx, 2, string( s.args[1]) * " is of an immutable type " * string( containertype ) )
                 end
             end
@@ -248,6 +248,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             registersymboluse( s, ctx )
         end
         vi = VarInfo( ctx.line )
+        @lintpragma( "Ignore incompatible type comparison" )
         if RHStype == Any || length( syms ) == 1
             rhst = RHStype
         elseif typeof( RHStype ) <: Tuple && length( RHStype ) == length( syms )

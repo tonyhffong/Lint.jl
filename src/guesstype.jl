@@ -50,14 +50,14 @@ function guesstype( ex, ctx::LintContext )
             if typeof( x ) == DataType || typeof( x ) == (DataType,)
                 return x
             else
-                tmp = Any
+                tmp = x
                 try
                     tmp = eval( x )
                 end
                 if typeof( tmp ) == DataType || typeof( tmp ) == (DataType,)
                     return tmp
                 else
-                    return Any
+                    return x
                 end
             end
         end
