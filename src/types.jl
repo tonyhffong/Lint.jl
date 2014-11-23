@@ -8,7 +8,7 @@ function linttype( ex::Expr, ctx::LintContext )
     processCurly = (sube)->begin
         for i in 2:length(sube.args)
             adt= sube.args[i]
-            if typeof( adt )== Symbol
+            if typeof( adt )== Symbol && adt != :T
                 typefound = in( adt, knowntypes )
                 if !typefound
                     for j in 1:length(ctx.callstack)
@@ -27,17 +27,19 @@ function linttype( ex::Expr, ctx::LintContext )
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
 
-                typefound = in( temptype, knowntypes )
-                if !typefound
-                    for j in 1:length(ctx.callstack)
-                        if in( temptype, ctx.callstack[j].types )
-                            typefound = true
-                            break
+                if temptype != :T
+                    typefound = in( temptype, knowntypes )
+                    if !typefound
+                        for j in 1:length(ctx.callstack)
+                            if in( temptype, ctx.callstack[j].types )
+                                typefound = true
+                                break
+                            end
                         end
                     end
-                end
-                if typefound
-                    msg( ctx, 2, "You should use {T<:...} instead of a known type " * string(temptype) * " in parametric data type")
+                    if typefound
+                        msg( ctx, 2, "You should use {T<:...} instead of a known type " * string(temptype) * " in parametric data type")
+                    end
                 end
                 if in( typeconstraint, knowntypes )
                     dt = eval( typeconstraint )
