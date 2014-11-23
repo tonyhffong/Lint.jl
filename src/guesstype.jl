@@ -298,7 +298,7 @@ function guesstype( ex, ctx::LintContext )
         return ret
     end
 
-    if isexpr( ex, :ref ) # it could be a ref a[b] or an array Int[1,2,3]
+    if isexpr( ex, :ref ) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
         if typeof( ex.args[1] ) == Symbol &&
             length( string( ex.args[1] ) ) >= 3 &&
             isupper( string( ex.args[1] )[1] ) # assume an array
@@ -311,7 +311,9 @@ function guesstype( ex, ctx::LintContext )
             end
         else
             partyp = guesstype( ex.args[1], ctx )
-            if partyp <: UnitRange
+            if partyp == DataType
+                return Array( elt, 1 )
+            elseif partyp <: UnitRange
                 ktypeactual = guesstype( ex.args[2], ctx )
                 if ktypeactual <: Integer
                     return eltype( partyp )
