@@ -296,14 +296,16 @@ function lintlambda( ex::Expr, ctx::LintContext )
                 resolveArguments( kw )
             end
         =#
-        elseif sube.head == :(=) || sube.head == :kw
-            resolveArguments( sube.args[1] )
-        elseif sube.head == :(::)
-            if length( sube.args ) > 1
+        elseif isexpr( sube, Symbol[ :(=), :(kw), :(::), :(...) ] )
+            if sube.head == :(=) || sube.head == :kw
                 resolveArguments( sube.args[1] )
+            elseif sube.head == :(::)
+                if length( sube.args ) > 1
+                    resolveArguments( sube.args[1] )
+                end
+            elseif sube.head == :(...)
+                resolveArguments( sube.args[1])
             end
-        elseif sube.head == :(...)
-            resolveArguments( sube.args[1])
         else
             msg( ctx, 2, "Lint does not understand: " *string( sube ) * " as an argument.")
         end
@@ -311,7 +313,7 @@ function lintlambda( ex::Expr, ctx::LintContext )
 
     if typeof( ex.args[1] ) == Symbol
         resolveArguments( ex.args[1] )
-    elseif ex.args[1].head == :tuple
+    elseif isexpr( ex.args[1], :tuple )
         for i = 1:length(ex.args[1].args)
             resolveArguments( ex.args[1].args[i] )
         end
