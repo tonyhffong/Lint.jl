@@ -54,7 +54,7 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
-    if ex.args[1] == symbol( "@doc" ) # see Docile.jl
+    if ex.args[1] == symbol( "@doc" ) && length( ex.args ) >= 2 # see Docile.jl
         if isexpr( ex.args[2], :(->) )
             lintexpr( ex.args[2].args[2], ctx ) # no need to lint the doc string
             return
