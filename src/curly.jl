@@ -21,7 +21,7 @@ function lintcurly( ex::Expr, ctx::LintContext )
             msg( ctx, 2, "Probably illegal use of " * string(a) * " inside curly.")
         else
             t = guesstype( a, ctx )
-            if t != Any && typeof( t ) != DataType && typeof( t ) != (DataType,) && !( t <: Integer )
+            if t != Any && t != () && typeof( t ) != DataType && typeof( t ) != (DataType,) && !( t <: Integer )
                 msg( ctx, 2, "Probably illegal use of " * string(a) * " inside curly.")
             end
             lintexpr( a, ctx )
