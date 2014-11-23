@@ -43,16 +43,36 @@ function guesstype( ex, ctx::LintContext )
         return t
     end
     if t==Symbol # check if we have seen it
+        if ex == :nothing
+            return Nothing
+        end
+        checkret = x -> begin
+            if typeof( x ) == DataType || typeof( x ) == (DataType,)
+                return x
+            else
+                tmp = Any
+                try
+                    tmp = eval( x )
+                end
+                if typeof( tmp ) == DataType || typeof( tmp ) == (DataType,)
+                    return tmp
+                else
+                    return Any
+                end
+            end
+        end
         stacktop = ctx.callstack[end]
         sym = ex
         for i in length(stacktop.localvars):-1:1
             if haskey( stacktop.localvars[i], sym )
-                return stacktop.localvars[i][sym].typeactual
+                ret = stacktop.localvars[i][sym].typeactual
+                return checkret( ret )
             end
         end
         for i in length(stacktop.localarguments):-1:1
             if haskey( stacktop.localarguments[i], sym )
-                return stacktop.localarguments[i][sym].typeactual
+                ret = stacktop.localarguments[i][sym].typeactual
+                return checkret( ret )
             end
         end
         for i in length( ctx.callstack):-1:1
@@ -291,14 +311,27 @@ function guesstype( ex, ctx::LintContext )
             end
         else
             partyp = guesstype( ex.args[1], ctx )
-            if partyp <: Array
+            if partyp <: UnitRange
+                ktypeactual = guesstype( ex.args[2], ctx )
+                if ktypeactual <: Integer
+                    return eltype( partyp )
+                elseif isexpr( ex.args[2], :(:) ) # range too
+                    return partyp
+                else
+                    return Any
+                end
+            elseif partyp <: AbstractArray
                 eletyp = eltype( partyp )
                 try
                     nd = ndims( partyp ) # This may throw if we couldn't infer the dimension
                     tmpdim = nd - (length( ex.args )-1)
                     if tmpdim < 0
-                        msg( ctx, 2, string( ex ) * " has more indices than dimensions")
-                        return Any
+                        if nd == 0 && ex.args[2] == 1 # ok to do A[1] for a 0-dimensional array
+                            return eletyp
+                        else
+                            msg( ctx, 2, string( ex ) * " has more indices than dimensions")
+                            return Any
+                        end
                     end
 
                     for i in 2:length( ex.args )
