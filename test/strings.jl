@@ -25,3 +25,11 @@ end
 """
 msgs = lintstr( s )
 @test( contains( msgs[1].message, "typeof( b ) == ASCIIString" ) )
+s = """
+function f()
+    b = repeat( " ", 10 )
+    b[ :start ]
+end
+"""
+msgs = lintstr( s )
+@test( contains( msgs[1].message, "string[] expects Integer, provided Symbol" ) )

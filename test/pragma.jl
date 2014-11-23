@@ -87,3 +87,14 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "@lintpragma must be called using only string literals" ) )
+
+s = """
+function f(x)
+    local a = 1
+    local b = 2
+    @lintpragma( "Ignore unused a")
+    return x+a+b
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "Unused @lintpragma Ignore unused a" ) )

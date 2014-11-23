@@ -132,3 +132,23 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "has apparent type DataType, not a container"))
+
+s = """
+function f()
+    d = Dict(:a=>1, :b=>"" )
+    @lintpragma( "Info type d" )
+    return d
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "typeof( d ) == Dict" ) )
+
+s = """
+function f()
+    d = Dict{Symbol,Any}(:a=>1, :b=>"" )
+    @lintpragma( "Info type d" )
+    return d
+end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "typeof( d ) == Dict" ) )

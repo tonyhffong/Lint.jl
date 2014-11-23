@@ -235,3 +235,12 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+s = """
+type MyType{T}
+    b::T
+    MyType(x::T) = new( x )
+    MyType(x::Int) = MyType{T}( convert( T, x ) )
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )

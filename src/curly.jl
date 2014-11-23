@@ -11,10 +11,6 @@ function lintcurly( ex::Expr, ctx::LintContext )
         a = ex.args[i]
         if isexpr( a, :parameters ) # only used for Traits.jl, AFAIK
             continue # grandfathered. We worry about linting this later
-        elseif isexpr( a, :(<:) )
-            if typeof( a.args[1] ) != Symbol && !isexpr( a.args[2], :($) )
-                msg( ctx, 2, "Left of <: should be just a symbol inside curly" )
-            end
         elseif isexpr( a, :($) )
             continue # grandfathered
         elseif typeof( a ) == QuoteNode || isexpr( a, :quote )

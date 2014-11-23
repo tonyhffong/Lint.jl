@@ -8,7 +8,7 @@ function linttype( ex::Expr, ctx::LintContext )
     processCurly = (sube)->begin
         for i in 2:length(sube.args)
             adt= sube.args[i]
-            if typeof( adt )== Symbol && adt != :T
+            if typeof( adt )== Symbol
                 typefound = in( adt, knowntypes )
                 if !typefound
                     for j in 1:length(ctx.callstack)
@@ -18,11 +18,10 @@ function linttype( ex::Expr, ctx::LintContext )
                         end
                     end
                 end
-                if typefound
+                if typefound && adt != :T
                     msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducing it as a new name for an algebric data type, unrelated to the type " * string(adt))
-                else
-                    push!( ctx.callstack[end].types, adt )
                 end
+                push!( ctx.callstack[end].types, adt )
             elseif isexpr( adt, :(<:) )
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]

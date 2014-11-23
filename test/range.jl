@@ -18,3 +18,18 @@ end
 """
 msgs = lintstr( s )
 @test( isempty( msgs ) )
+
+s = """
+function f( r::UnitRange )
+    a = r[2]
+    b = r[3:4]
+    @lintpragma( "Info type r" )
+    @lintpragma( "Info type a" )
+    @lintpragma( "Info type b" )
+    (a,b)
+end
+"""
+msgs = lintstr( s )
+@test( contains( msgs[1].message, "typeof( r ) == UnitRange" ) )
+@test( contains( msgs[2].message, "typeof( a ) == Any" ) )
+@test( contains( msgs[3].message, "typeof( b ) == UnitRange" ) )
