@@ -135,12 +135,23 @@ function guesstype( ex, ctx::LintContext )
     end
 
     # another detection for constructor calling another constructor
+    # A() = A(default)
     if isexpr( ex, :call ) && symbol( ctx.scope ) == ex.args[1]
         found = false
         for i = length( ctx.callstack ):-1:1
             found = in( ex.args[1], ctx.callstack[i].types )
             if found
                 return ex.args[1]
+            end
+        end
+    end
+    # A() = A{T}(default)
+    if isexpr( ex, :call ) && isexpr( ex.args[1], :curly ) && symbol( ctx.scope ) == ex.args[1].args[1]
+        found = false
+        for i = length( ctx.callstack ):-1:1
+            found = in( ex.args[1].args[1], ctx.callstack[i].types )
+            if found
+                return ex.args[1].args[1]
             end
         end
     end
