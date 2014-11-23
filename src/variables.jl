@@ -231,7 +231,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         if typeof( s ) != Symbol # a.b or a[b]
             if isexpr( s, [ :(.), :ref ] )
                 containertype = guesstype( s.args[1], ctx )
-                if containertype != Any && typeof( containertype ) == DataType && !containertype.mutable
+                if containertype != Any && typeof( containertype ) == DataType && isleaftype( containertype ) && !containertype.mutable
                     msg( ctx, 2, string( s.args[1]) * " is of an immutable type " * string( containertype ) )
                 end
             end
@@ -291,7 +291,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 if haskey( ctx.callstack[end].localvars[i], s )
                     found = true
                     prevvi = ctx.callstack[end].localvars[i][s]
-                    if !isAnyOrTupleAny( vi.typeactual ) && !( vi.typeactual <: prevvi.typeactual ) &&
+                    if !isAnyOrTupleAny( vi.typeactual ) && typeof( vi.typeactual ) != Symbol && !( vi.typeactual <: prevvi.typeactual ) &&
                         !( vi.typeactual == String && prevvi.typeactual <: vi.typeactual ) &&
                         !pragmaexists( "Ignore unstable type variable " * string( s ), ctx )
                         msg( ctx, 1, "Previously used " * string( s ) * " has apparent type " * string( prevvi.typeactual ) * ", but now assigned " * string( vi.typeactual ) )
