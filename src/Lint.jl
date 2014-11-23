@@ -83,7 +83,7 @@ function lintstr( str::String, ctx :: LintContext = LintContext(), lineoffset = 
         else
             linebreakloc = linecharc[ linerange.start ]
         end
-        if linebreakloc == i || isempty( strip( SubString( str, i, linebreakloc-1 ) ) )# empty line
+        if linebreakloc == i || isempty( strip( str[ i:(linebreakloc-1) ] ) )# empty line
             i = linebreakloc + 1
             continue
         end
