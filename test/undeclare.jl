@@ -61,3 +61,11 @@ end
 """
 msgs = lintstr( s )
 @test( isempty(msgs) )
+
+s = """
+function f()
+    open( readall, "tmp.txt" )
+end
+"""
+msgs = lintstr( s )
+@test( isempty(msgs) )

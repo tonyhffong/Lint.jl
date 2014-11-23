@@ -301,14 +301,6 @@ function guesstype( ex, ctx::LintContext )
         return Dict
     end
 
-    if isexpr( ex, :call ) && isexpr( ex.args[1], :curly ) && ex.args[1].args[1] == :Dict
-        ret = Dict
-        try
-            ret = Dict{ eval( Main, ex.args[1].args[2] ), eval( Main, ex.args[1].args[3] ) }
-        end
-        return ret
-    end
-
     if isexpr( ex, :ref ) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
         if isexpr( ex.args[1], :curly ) ||
             typeof( ex.args[1] ) == Symbol &&
