@@ -8,3 +8,13 @@ if VERSION < v"0.4.0-dev+1830"
 else
     @test isempty( msgs )
 end
+
+s = """
+if VERSION < v"0.4-"
+    s = symbol( "end" )
+else
+    s = Symbol( "end" )
+end
+"""
+msgs = lintstr( s )
+@test isempty( msgs )

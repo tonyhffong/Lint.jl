@@ -96,6 +96,7 @@ using Lint
 * Catch silly curly bracket misuse/abuse e.g. Dict{ :Symbol, Any }
 * Understands and checks basic `@doc`
 * Catch assigning `a.b = something` when `a` is proven to be of an immutable type, e.g. `Complex`
+* Follow VERSION if-statements to properly lint based on version-appropriate standard
 
 ## @lintpragma: steering Lint-time behavior
 You can insert @lintpragma to suppress or generate messages. At runtime, @lintpragma is a no-op, so it gives
@@ -130,6 +131,41 @@ Lint message generation (do not include the square brackets)
 The macro also supports lint-time terminal output that generates no Lint message:
 * `@lintpragma( "Print type [expression]")`. Just print out the type
 * `@lintpragma( "Print me [any text]")`. Lint-time printing
+
+## VERSION branch
+
+As julia evolves, some coding style that is an error becomes valid (and vice versa). It is common to use
+VERSION if-statements to implement cross-version packages. As long as the if statement is simple,
+Lint can pick them up and suppress version-dependent errors that are not reachable in the current version.
+
+Examples:
+```julia
+# lint won't complaint about missing `Base.Dates` in 0.4 or missing `Dates` in 0.3
+if VERSION < v"0.4-"
+    using Dates
+else
+    using Base.Dates
+end
+```
+
+```julia
+# this passes lint in 0.3 but it generates an INFO in 0.4
+s = symbol( "end" )
+```
+
+```julia
+# this is an error 0.3 but it passes in 0.4
+s = Symbol( "end" )
+```
+
+```julia
+# this will lint clean cross versions
+if VERSION < v"0.4-"
+    s = symbol( "end" )
+else
+    s = Symbol( "end" )
+end
+```
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing
