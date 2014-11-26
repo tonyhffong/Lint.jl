@@ -279,3 +279,13 @@ end
 """
 msgs = lintstr(s)
 @test contains( msgs[1].message, "Comparing apparently incompatible type" )
+
+s = """
+function f( X::Int )
+    Y = X+1
+    return Y
+end
+"""
+msgs = lintstr(s)
+@test contains( msgs[1].message, "Julia style recommends arguments start in lower case" )
+@test contains( msgs[2].message, "Julia style recommends variables start in lower case" )

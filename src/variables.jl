@@ -143,6 +143,9 @@ function lintlocal( ex::Expr, ctx::LintContext )
     n = length(ctx.callstack[end].localvars)
     for sube in ex.args
         if typeof(sube)==Symbol
+            if isupper( string(sube)[1] )
+                msg( ctx, 0, "Julia style recommends variables start in lower case: " * string(sube) )
+            end
             ctx.callstack[end].localvars[n][ sube ] = VarInfo( ctx.line )
             continue
         end
@@ -200,33 +203,32 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     typeassert = Dict{ Symbol, Any }()
     resolveLHSsymbol( ex.args[1], syms, ctx, typeassert )
     ntuple = length( syms )
-    RHStype = guesstype( ex.args[2], ctx )
+    rhstype = guesstype( ex.args[2], ctx )
 
     if isForLoop
-        if RHStype <: Number
+        if rhstype <: Number
             msg( ctx, 0, "Iteration works for a number but it may be a typo." )
         end
 
-        if RHStype <: Tuple
-            RHStype = Any
-        elseif RHStype <: Set || RHStype <: Array || RHStype <: Range || RHStype <: Enumerate
-            RHStype = eltype( RHStype )
-        elseif RHStype <: Associative
-            RHStype = ( keytype( RHStype ), valuetype( RHStype ) )
+        if rhstype <: Tuple
+            rhstype = Any
+        elseif rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
+            rhstype = eltype( rhstype )
+        elseif rhstype <: Associative
+            rhstype = ( keytype( rhstype ), valuetype( rhstype ) )
         end
 
-        if typeof( RHStype ) <: Tuple && length( RHStype ) != ntuple
-            msg( ctx, 0, "Iteration generates tuples of "*string(RHStype)*". N of variables used: "* string( ntuple ) )
+        if typeof( rhstype ) <: Tuple && length( rhstype ) != ntuple
+            msg( ctx, 0, "Iteration generates tuples of "*string(rhstype)*". N of variables used: "* string( ntuple ) )
         end
     end
 
-    if typeof( RHStype ) <: Tuple && length( RHStype ) != ntuple && !isForLoop
+    if typeof( rhstype ) <: Tuple && length( rhstype ) != ntuple && !isForLoop
         if length( syms ) > 1
-            msg( ctx, 2, "RHS is a tuple of "*string(RHStype)*". N of variables used: "* string( ntuple ) )
+            msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( ntuple ) )
         end
     end
 
-    @lintpragma( "Ignore unstable type variable rhst")
     for (symidx, s) in enumerate( syms )
         if typeof( s ) != Symbol # a.b or a[b]
             if isexpr( s, [ :(.), :ref ] )
@@ -244,15 +246,19 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         if s == :call
             msg( ctx, 2, "You should not use '"*string(s)*"' as a variable name.")
         end
+        if isupper( string(s)[1] ) && !isConst && !isGlobal
+            msg( ctx, 0, "Julia style recommends variables start in lower case: " * string( s ) )
+        end
+
         if ex.head != :(=)
             registersymboluse( s, ctx )
         end
         vi = VarInfo( ctx.line )
         @lintpragma( "Ignore incompatible type comparison" )
-        if RHStype == Any || length( syms ) == 1
-            rhst = RHStype
-        elseif typeof( RHStype ) <: Tuple && length( RHStype ) == length( syms )
-            rhst = RHStype[ symidx ]
+        if rhstype == Any || length( syms ) == 1
+            rhst = rhstype
+        elseif typeof( rhstype ) <: Tuple && length( rhstype ) == length( syms )
+            rhst = rhstype[ symidx ]
         else
             rhst = Any
         end
@@ -261,8 +267,8 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 dt = eval( typeassert[ s ] )
                 if typeof( dt ) == DataType
                     vi.typeactual = dt
-                    if !isAnyOrTupleAny( dt ) && !isAnyOrTupleAny( RHStype ) && !( RHStype <: dt )
-                        msg( ctx, 0, "Assert " * string(s) * " type= " * string( dt ) * " but assign a value of " * string( RHStype ) )
+                    if !isAnyOrTupleAny( dt ) && !isAnyOrTupleAny( rhstype ) && !( rhstype <: dt )
+                        msg( ctx, 0, "Assert " * string(s) * " type= " * string( dt ) * " but assign a value of " * string( rhstype ) )
                     end
                 else
                     vi.typeexpr = typeassert[ s ]
@@ -271,7 +277,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 vi.typeactual = rhst
             end
         catch er
-            msg( ctx, 1, string( er )* " \n"* string( ex )* "\n Symbol=" * string( s ) * "\n RHStype="* string( rhst ) )
+            msg( ctx, 1, string( er )* " \n"* string( ex )* "\n Symbol=" * string( s ) * "\n rhstype="* string( rhst ) )
             if haskey( typeassert, s )
                 vi.typeexpr = typeassert[s]
             end

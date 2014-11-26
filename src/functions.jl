@@ -129,6 +129,9 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
             if position != 0 && optionalposition != 0
                 msg( ctx, 2, "You cannot have non-default argument following default arguments")
             end
+            if isupper( string(sube)[1] )
+                msg( ctx, 0, "Julia style recommends arguments start in lower case: " * string(sube) )
+            end
             push!( argsSeen, sube )
             if isstaged
                 typeassert[ sube ] = DataType
@@ -164,9 +167,9 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
             end
             sym = resolveArguments( sube.args[1], 0 )
             if !isstaged
-                RHStype = guesstype( sube.args[2], ctx )
+                rhstype = guesstype( sube.args[2], ctx )
                 if typeof( sym ) == Symbol
-                    typeRHShints[ sym ] = RHStype
+                    typeRHShints[ sym ] = rhstype
                 end
             end
         elseif sube.head == :(::)

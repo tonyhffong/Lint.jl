@@ -128,10 +128,10 @@ end
 
 s = """
 function f()
-    X1 = zeros(100, 100)
-    X2 = Array(Float64, (100, 100))
-    X1[1, 1]
-    X2[1, 1]
+    x1 = zeros(100, 100)
+    x2 = Array(Float64, (100, 100))
+    x1[1, 1]
+    x2[1, 1]
 end
 """
 msgs = lintstr( s )

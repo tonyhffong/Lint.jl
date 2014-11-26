@@ -146,9 +146,9 @@ msgs = lintstr(s)
 
 s = """
 n = 32
-A = Array{Int32, n } # bug is here
+a = Array{Int32, n } # bug is here
 for i in 1:n
-    A[i] = i
+    a[i] = i
 end
 """
 msgs = lintstr(s)

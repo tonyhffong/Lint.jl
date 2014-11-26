@@ -244,3 +244,12 @@ end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+
+s = """
+type myType{T}
+    b::T
+    myType(x::T) = new( x )
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Julia style recommends type names start with an upper case"))

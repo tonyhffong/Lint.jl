@@ -68,6 +68,9 @@ function linttype( ex::Expr, ctx::LintContext )
         end
     end
     if typename != symbol( "" )
+        if islower( string( typename )[1] )
+            msg( ctx, 0, "Julia style recommends type names start with an upper case: " * string( typename ) )
+        end
         push!( ctx.callstack[end-1].types, typename )
     end
 
