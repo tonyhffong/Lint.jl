@@ -374,16 +374,42 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
         end
         known=false
 
-        skiplist = Int[]
-        if ex.args[1] == :Symbol
-            msg( ctx, 2, "You want symbol(), i.e. symbol conversion, instead of a non-existent constructor" )
-        elseif ex.args[1] == :String
+        # deprecation of specialized version of constructors
+        deprector = Any[
+        ( :symbol  , :Symbol ) ,
+        ( :uint    , :UInt)    ,
+        ( :uint8   , :UInt8)   ,
+        ( :uint16  , :UInt16)  ,
+        ( :uint32  , :UInt32)  ,
+        ( :uint64  , :UInt64)  ,
+        ( :uint128 , :UInt128) ,
+        ( :float16 , :Float16) ,
+        ( :float32 , :Float32) ,
+        ( :float64 , :Float64) ,
+        ( :int     , :Int)     ,
+        ( :int8    , :Int8)    ,
+        ( :int16   , :Int16)   ,
+        ( :int32   , :Int32)   ,
+        ( :int64   , :Int64)   ,
+        ( :int128  , :Int128)
+        ]
+        versionreachable = ctx.versionreachable( VERSION )
+        for row in deprector
+            if VERSION < v"0.4.0-dev+1830" && versionreachable && ex.args[1] == row[2]
+                msg( ctx, 2, "Though valid in 0.4, you want " * string( row[1] ) * "() instead of " * string( row[2] ) * "()" )
+            end
+            if VERSION >= v"0.4.0-dev+1830" && versionreachable && ex.args[1] == row[1]
+                msg( ctx, 0, "In 0.4+, replace " * string( row[1] ) * "() with " * string( row[2] ) * "()" )
+            end
+        end
+        if ex.args[1] == :String
             msg( ctx, 2, "You want string(), i.e. string conversion, instead of a non-existent constructor" )
         elseif ex.args[1]==:(+)
             lintplus( ex, ctx )
             known = true
         end
 
+        skiplist = Int[]
         global commoncollmethods
 
         if typeof( ex.args[1] ) == Symbol && haskey( commoncollmethods, ex.args[1] )

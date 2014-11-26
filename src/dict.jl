@@ -2,11 +2,11 @@ function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
     @lintpragma( "Ignore unused ex")
 
     if !typed
-        if VERSION < v"0.4-"
+        if VERSION < v"0.4-" && ctx.versionreachable( VERSION )
             msg( ctx, 0, "dictionary [a=>b,...], may be deprecated by Julia 0.4. Use @compat Dict(a=>b,...).")
         end
     else
-        if VERSION < v"0.4-"
+        if VERSION < v"0.4-" && ctx.versionreachable( VERSION )
             msg( ctx, 0, "(K=>V)[a=>b,...] may be deprecated by Julia 0.4. Use @compat Dict{K,V}(a=>b,...).")
         end
     end

@@ -2,4 +2,9 @@ s = """
 s = Symbol( "abc" )
 """
 msgs = lintstr( s )
-@test( contains( msgs[1].message, "symbol conversion" ) )
+
+if VERSION < v"0.4.0-dev+1830"
+    @test( contains( msgs[1].message, "symbol() instead of Symbol" ) )
+else
+    @test isempty( msgs )
+end

@@ -21,11 +21,79 @@ function lintifexpr( ex::Expr, ctx::LintContext )
               isexpr( ex.args[2].args[2], :call ) && ex.args[2].args[2].args[1] == :(!) )
             msg( ctx, 0, "The 1st statement under the true-branch is a boolean expression. Typo?")
         end
+        (verconstraint1, verconstraint2) = versionconstraint( ex.args[1] )
+        if verconstraint1 != nothing
+            tmpvtest = ctx.versionreachable
+            ctx.versionreachable = _->( tmpvtest(_) && verconstraint1(_) )
+        end
         lintexpr( ex.args[2], ctx )
+        if verconstraint1 != nothing
+            ctx.versionreachable = tmpvtest
+        end
         if length(ex.args) > 2
+            if verconstraint2 != nothing
+                tmpvtest = ctx.versionreachable
+                ctx.versionreachable = _->( tmpvtest(_) && verconstraint2(_) )
+            end
             lintexpr( ex.args[3], ctx )
+            if verconstraint2 != nothing
+                ctx.versionreachable = tmpvtest
+            end
         end
     end
+end
+
+# return a duplet of functions, the true branch version predicate and the false-branch version predicate
+# if none exists, return (nothing, nothing)
+function versionconstraint( ex )
+    if isexpr( ex, :comparison )
+        if in( :VERSION, ex.args )
+            for i = 1:2:length( ex.args )
+                a = ex.args[i]
+                if a == :VERSION
+                    continue
+                end
+                if !isexpr( a, :macrocall ) || a.args[1] != symbol( "@v_str" ) || !( typeof( a.args[2] ) <: String )
+                    return (nothing, nothing )
+                end
+            end
+            localex = deepcopy( ex )
+            for i in 1:length(localex.args)
+                if localex.args[i] == :VERSION
+                    localex.args[1] = :_
+                end
+            end
+            l = eval( Main, Expr( :(->), :_, localex ) )
+            return ( l, _ -> !(l(_)) )
+        else
+            return ( nothing, nothing )
+        end
+    elseif isexpr( ex, :(&&) )
+        vc1 = versionconstraint( ex.args[1] )
+        vc2 = versionconstraint( ex.args[2] )
+        if vc1[1] != nothing
+            if vc2[1] != nothing
+                return (_->vc1[1](_) && vc2[1](_), nothing )
+            else
+                return (vc1[1], nothing )
+            end
+        elseif vc2[1] != nothing
+            return( vc2[1], nothing )
+        end
+    elseif isexpr( ex, :(||) )
+        vc1 = versionconstraint( ex.args[1] )
+        vc2 = versionconstraint( ex.args[2] )
+        if vc1[2] != nothing
+            if vc2[2] != nothing
+                return (nothing, _->vc1[2](_) && vc2[2](_) )
+            else
+                return (nothing, vc1[2] )
+            end
+        elseif vc2[2] != nothing
+            return( nothing, vc2[2] )
+        end
+    end
+    return ( nothing, nothing )
 end
 
 function lintboolean( ex, ctx::LintContext )

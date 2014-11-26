@@ -32,7 +32,7 @@ function lintusing( ex::Expr, ctx::LintContext )
             ctx.callstack[end].declglobs[ s ] = @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
         end
     end
-    if ex.args[1] != :(.)
+    if ex.args[1] != :(.) && ctx.versionreachable( VERSION )
         m = nothing
         path = join( map( string, ex.args ), "." )
         try
@@ -77,6 +77,9 @@ end
 function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
     if ctx.functionLvl > 0
         msg( ctx, 2, "import is not allowed inside function definitions.")
+    end
+    if !ctx.versionreachable( VERSION )
+        return
     end
     problem = false
     m = nothing

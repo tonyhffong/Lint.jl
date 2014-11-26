@@ -147,10 +147,11 @@ type LintContext
     quoteLvl     :: Int
     callstack    :: Array{ Any, 1 }
     messages     :: Array{ LintMessage, 1 }
+    versionreachable:: Function # VERSION -> true means this code is reachable by VERSION
     ignoreState  :: LintIgnoreState
     LintContext() = new( "none", 0, 1, "", false, ".",
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0, 0,
-            Any[ LintStack( true ) ], LintMessage[], LintIgnoreState() )
+            Any[ LintStack( true ) ], LintMessage[], _ -> true, LintIgnoreState() )
 end
 
 function pushcallstack( ctx::LintContext )
