@@ -135,4 +135,4 @@ function f()
 end
 """
 msgs = lintstr( s )
-@test( contains( msgs[1].message, "typeof( y ) == Float64" ) )
+@test( isempty( msgs ) )
