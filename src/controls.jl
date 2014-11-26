@@ -80,6 +80,8 @@ function versionconstraint( ex )
             end
         elseif vc2[1] != nothing
             push!( arr, vc2[1] )
+        else
+            push!( arr, nothing )
         end
         if vc1[2] != nothing && vc2[2] != nothing
             push!( arr, _->vc1[2](_) || vc2[2](_) )
