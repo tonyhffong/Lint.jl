@@ -224,7 +224,11 @@ function guesstype( ex, ctx::LintContext )
     if isexpr( ex, :call ) && ex.args[1] == :Array
         ret = Array
         try
-            ret = Array{ eval( Main, ex.args[2] ), length(ex.args)-2 }
+            if length(ex.args) == 3 && isexpr( ex.args[3], :tuple )
+                ret = Array{ eval( Main, ex.args[2] ), length(ex.args[3].args) }
+            else
+                ret = Array{ eval( Main, ex.args[2] ), length(ex.args)-2 }
+            end
         catch
             ret = Array{ Any, length(ex.args)-2 }
         end
