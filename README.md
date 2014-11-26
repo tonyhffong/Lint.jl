@@ -132,6 +132,9 @@ The macro also supports lint-time terminal output that generates no Lint message
 * `@lintpragma( "Print type [expression]")`. Just print out the type
 * `@lintpragma( "Print me [any text]")`. Lint-time printing
 
+Useful version tracing tool
+* `@lintpragma( "Info version [version]" )`. lint-time version reachability test
+
 ## VERSION branch
 
 As julia evolves, some coding style that is an error becomes valid (and vice versa). It is common to use
@@ -166,6 +169,20 @@ else
     s = Symbol( "end" )
 end
 ```
+
+You can directly test for version reachability by inserting lint-pragmas
+like so
+```julia
+if VERSION >= v"0.4-"
+    @lintpragma( "Info version 0.3")
+    @lintpragma( "Info version 0.4.0-dev+1833")
+else
+    @lintpragma( "Info version 0.3")
+    @lintpragma( "Info version 0.4.0-dev+1833")
+end
+```
+You will see line-by-line reachability in your output. See test/versions.jl
+for further examples.
 
 ## Current false positives
 * Because macros can generate new symbols on the fly. Lint will have a hard time dealing
