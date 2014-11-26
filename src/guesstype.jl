@@ -452,6 +452,23 @@ function guesstype( ex, ctx::LintContext )
                 if ktypeactual != Any && !( ktypeactual <: Integer ) && !( ktypeactual <: Range )
                     msg( ctx, 2, "string[] expects Integer, provided " * string( ktypeactual ) )
                 end
+                if ktypeactual <: Integer
+                    return Char
+                end
+                if ktypeactual <: Range
+                    return partyp
+                end
+            elseif partyp <: Tuple
+                if isempty( partyp )
+                    return Any
+                end
+                if length( partyp ) == 1 || partyp[1].name.name == :Vararg
+                    return eval( Main, partyp[1].name.name )
+                end
+                elt = partyp[1]
+                if all( x->x == elt, partyp )
+                    return elt
+                end
             elseif partyp != Any
                 msg( ctx, 2, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
             end
