@@ -143,7 +143,7 @@ Lint can pick them up and suppress version-dependent errors that are not reachab
 
 Examples:
 ```julia
-# lint won't complaint about missing `Base.Dates` in 0.4 or missing `Dates` in 0.3
+# lint won't complaint about missing `Base.Dates` in 0.3 or missing `Dates` in 0.4
 if VERSION < v"0.4-"
     using Dates
 else
