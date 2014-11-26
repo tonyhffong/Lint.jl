@@ -174,10 +174,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
                 sym = resolveArguments( sube.args[1], 0 )
                 if !isstaged
                     if typeof( sym ) == Symbol
-                        dt = Any
-                        try
-                            dt = eval( sube.args[2] )
-                        end
+                        dt = parsetype( sube.args[2] )
                         typeassert[ sym ] = dt
                     end
                 end

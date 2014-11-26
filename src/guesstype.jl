@@ -34,6 +34,56 @@ function isAnyOrTupleAny( x )
     return false
 end
 
+# ex should be a type. figure out what it is
+function parsetype( ex )
+    ret = Any
+    if typeof( ex ) <: Symbol
+        try
+            ret = eval( Main, ex )
+        end
+        return ret
+    elseif typeof( ex ) <: Expr
+        if isexpr( ex, :curly )
+            if ex.args[1] == :Array
+                elt = Any
+                if length( ex.args ) == 1
+                    return Array
+                elseif length( ex.args ) >= 2
+                    elt = Any
+                    try
+                        elt = eval( Main, ex.args[2] )
+                    end
+                    if length(ex.args ) == 2
+                        return Array{ elt }
+                    else
+                        if typeof( ex.args[3] ) <: Integer
+                            return Array{ elt, ex.args[3] }
+                        else
+                            return Array{ elt }
+                        end
+                    end
+                end
+            elseif ex.args[1] == :Dict
+                if length( ex.args ) == 1
+                    return Dict
+                elseif length( ex.args ) == 3
+                    kt = parsetype( ex.args[2] )
+                    vt = parsetype( ex.args[3] )
+                    return Dict{kt, vt}
+                end
+            elseif ex.args[1] == :Vector
+                if length( ex.args ) != 2
+                    return Vector
+                else
+                    vt = parsetype( ex.args[2] )
+                    return Vector{vt}
+                end
+            end
+        end
+    end
+    return ret
+end
+
 function guesstype( ex, ctx::LintContext )
     t = typeof( ex )
     if t <: Number
@@ -206,10 +256,7 @@ function guesstype( ex, ctx::LintContext )
     end
 
     if isexpr( ex, :call ) && isexpr( ex.args[1], :curly )
-        ret=Any
-        try
-            ret = eval( Main, ex.args[1] )
-        end
+        ret=parsetype( ex.args[1] )
         return ret
     end
 
@@ -223,14 +270,28 @@ function guesstype( ex, ctx::LintContext )
 
     if isexpr( ex, :call ) && ex.args[1] == :Array
         ret = Array
+        elt = Any
         try
-            if length(ex.args) == 3 && isexpr( ex.args[3], :tuple )
-                ret = Array{ eval( Main, ex.args[2] ), length(ex.args[3].args) }
+            elt = eval( Main, ex.args[2] )
+        end
+
+        try
+            if length(ex.args) == 3
+                if isexpr( ex.args[3], :tuple )
+                    ret = Array{ elt, length(ex.args[3].args) }
+                else
+                    lastargtype = guesstype( ex.args[3], ctx )
+                    if lastargtype <: Integer
+                        ret = Array{ elt, 1 }
+                    elseif lastargtype <: Tuple && all( x->x<:Integer, lastargtype )
+                        ret = Array{ elt, length( lastargtype ) }
+                    else
+                        ret = Array{ elt }
+                    end
+                end
             else
-                ret = Array{ eval( Main, ex.args[2] ), length(ex.args)-2 }
+                ret = Array{ elt, length(ex.args)-2 }
             end
-        catch
-            ret = Array{ Any, length(ex.args)-2 }
         end
         return ret
     end
@@ -272,6 +333,24 @@ function guesstype( ex, ctx::LintContext )
         return Int
     end
 
+    if isexpr( ex, :call ) && in( ex.args[1], [:size] )
+        fst = guesstype( ex.args[2], ctx)
+        if fst <: Array
+            ret = Any
+            try
+                nd = ndims( fst )
+                if nd == 1
+                    ret = Integer
+                else
+                    @lintpragma( "Ignore unused i" )
+                    ret = tuple( DataType[ Integer for i=1:nd ]... )
+                end
+            end
+            return ret
+        end
+        return Any
+    end
+
     if isexpr( ex, :call ) && ex.args[1] == :reshape
         sig = Any[]
         for i = 2:length(ex.args)
@@ -310,13 +389,8 @@ function guesstype( ex, ctx::LintContext )
             typeof( ex.args[1] ) == Symbol &&
             length( string( ex.args[1] ) ) >= 3 &&
             isupper( string( ex.args[1] )[1] ) # assume an array
-            elt = Any
-            try
-                elt = eval( Main, ex.args[1] )
-            end
-            if typeof( elt ) == DataType
-                return Array{ elt, 1 }
-            end
+            elt = parsetype( ex.args[1] )
+            return Array{ elt, 1 }
         else
             partyp = guesstype( ex.args[1], ctx )
             if partyp <: UnitRange
