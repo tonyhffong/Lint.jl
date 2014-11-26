@@ -71,27 +71,49 @@ function versionconstraint( ex )
     elseif isexpr( ex, :(&&) )
         vc1 = versionconstraint( ex.args[1] )
         vc2 = versionconstraint( ex.args[2] )
+        arr = Any[]
         if vc1[1] != nothing
             if vc2[1] != nothing
-                return (_->vc1[1](_) && vc2[1](_), nothing )
+                push!( arr, _->vc1[1](_) && vc2[1](_) )
             else
-                return (vc1[1], nothing )
+                push!( arr, vc1[1] )
             end
         elseif vc2[1] != nothing
-            return( vc2[1], nothing )
+            push!( arr, vc2[1] )
         end
+        if vc1[2] != nothing && vc2[2] != nothing
+            push!( arr, _->vc1[2](_) || vc2[2](_) )
+        else
+            push!( arr, nothing )
+        end
+        return tuple( arr... )
     elseif isexpr( ex, :(||) )
         vc1 = versionconstraint( ex.args[1] )
         vc2 = versionconstraint( ex.args[2] )
+        arr = Any[]
+        if vc1[1] != nothing && vc2[1] != nothing
+                push!( arr, _->vc1[1](_) || vc2[1](_) )
+        else
+            push!( arr, nothing )
+        end
+
         if vc1[2] != nothing
             if vc2[2] != nothing
-                return (nothing, _->vc1[2](_) && vc2[2](_) )
+                push!( arr, _->vc1[2](_) && vc2[2](_) )
             else
-                return (nothing, vc1[2] )
+                push!( arr, vc1[2] )
             end
-        elseif vc2[2] != nothing
-            return( nothing, vc2[2] )
+        else
+            if vc2[2] != nothing
+                push!( arr, vc2[2] )
+            else
+                push!( arr, nothing )
+            end
         end
+        return tuple( arr... )
+    elseif isexpr( ex, :call ) && ex.args[1] == :(!)
+        (v1,v2) = versionconstraint( ex.args[2] )
+        return ( v2, v1 )
     end
     return ( nothing, nothing )
 end

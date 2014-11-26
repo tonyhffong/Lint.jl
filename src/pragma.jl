@@ -5,11 +5,11 @@ end
 
 function lintlintpragma( ex::Expr, ctx::LintContext )
     if typeof( ex.args[2] ) <: String
-        m = match( r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)) +(.+)"s, ex.args[2] )
+        m = match( r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)|(version)) +(.+)"s, ex.args[2] )
         if m != nothing
             action = m.captures[1]
             infotype = m.captures[6]
-            rest = m.captures[9]
+            rest = m.captures[10]
             if infotype == "type"
                 var = parse( rest )
                 if isexpr( var, :incomplete )
@@ -20,6 +20,14 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
                 end
             elseif infotype == "me"
                 str = rest
+            elseif infotype == "version"
+                v = convert( VersionNumber, rest )
+                reachable = ctx.versionreachable( v )
+                if reachable
+                    str = "Reachable by " * string(v)
+                else
+                    str = "Unreachable by " * string(v)
+                end
             end
 
             if action == "Print"
