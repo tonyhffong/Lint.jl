@@ -289,3 +289,14 @@ end
 msgs = lintstr(s)
 @test contains( msgs[1].message, "Julia style recommends arguments start in lower case" )
 @test contains( msgs[2].message, "Julia style recommends variables start in lower case" )
+
+s="""
+function f1(a::Float64, b::Float64)
+  function f2(x::Float64, a=a)
+    x + a^2
+  end
+  return f2(b)
+end
+"""
+msgs = lintstr(s)
+@test( isempty( msgs ) )

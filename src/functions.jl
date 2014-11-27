@@ -172,6 +172,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
                     typeRHShints[ sym ] = rhstype
                 end
             end
+            lintexpr( sube.args[2], ctx )
         elseif sube.head == :(::)
             if length( sube.args ) > 1
                 sym = resolveArguments( sube.args[1], 0 )
