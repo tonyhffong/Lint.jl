@@ -191,7 +191,7 @@ end
 """
 msgs = lintstr(s)
 @assert( contains( msgs[1].message, "typeof( a ) == Array{Any,1}" ) )
-@assert( contains( msgs[2].message, "typeof( n ) == Integer" ) )
+@assert( contains( msgs[2].message, "typeof( n ) == Int" ) )
 @assert( contains( msgs[3].message, "typeof( tmp ) == Array{Any,1}" ) )
 @assert( contains( msgs[4].message, "typeof( T ) == DataType" ) )
 @assert( contains( msgs[5].message, "typeof( tmp2 ) == Array{Any,1}" ) )

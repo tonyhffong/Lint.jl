@@ -136,3 +136,11 @@ end
 """
 msgs = lintstr( s )
 @test( isempty( msgs ) )
+
+s = """
+function f(y::Array{Float64, 3}, x1::Int64)
+    reshape(y[:, x1, :]', size(y, 1), size(y, 3)')
+end
+"""
+msgs = lintstr( s )
+@test( isempty( msgs ) )
