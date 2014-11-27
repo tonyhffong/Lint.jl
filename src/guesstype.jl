@@ -386,9 +386,10 @@ function guesstype( ex, ctx::LintContext )
 
     if isexpr( ex, :ref ) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
         if isexpr( ex.args[1], :curly ) ||
-            typeof( ex.args[1] ) == Symbol &&
+            typeof( ex.args[1] ) == Symbol && # this part has HUGE code smell
             length( string( ex.args[1] ) ) >= 3 &&
-            isupper( string( ex.args[1] )[1] ) # assume an array
+            isupper( string( ex.args[1] )[1] ) &&
+            !isupper( string( ex.args[1] )[2] )
             elt = parsetype( ex.args[1] )
             return Array{ elt, 1 }
         else
