@@ -339,11 +339,11 @@ function guesstype( ex, ctx::LintContext )
             ret = Any
             try
                 nd = ndims( fst )
-                if nd == 1
-                    ret = Integer
+                if nd == 1 || length( ex.args ) == 3
+                    ret = Int
                 else
                     @lintpragma( "Ignore unused i" )
-                    ret = tuple( DataType[ Integer for i=1:nd ]... )
+                    ret = tuple( DataType[ Int for i=1:nd ]... )
                 end
             end
             return ret
