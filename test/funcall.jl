@@ -298,8 +298,7 @@ function f( X::Int )
 end
 """
 msgs = lintstr(s)
-@test contains( msgs[1].message, "Julia style recommends arguments start in lower case" )
-@test contains( msgs[2].message, "Julia style recommends variables start in lower case" )
+@test isempty( msgs )
 
 s="""
 function f1(a::Float64, b::Float64)

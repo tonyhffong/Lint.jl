@@ -32,97 +32,109 @@ function pushVarScope( ctx::LintContext )
     push!( ctx.callstack[ end ].localusedvars, Set{Symbol}() )
 end
 
+# returns
+# :var - a non-DataType value
+# :DataType
+# :Any - don't know, could be either (with lint warnings, if strict)
+
+# if strict == false, it won't generate lint warnings, just return :Any
+
 function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
     global knownsyms
     stacktop = ctx.callstack[end]
 
-    str = string(sym)
+    #println(sym)
+    #println( stacktop.localvars )
+    for i in length(stacktop.localvars):-1:1
+        if haskey( stacktop.localvars[i], sym )
+            push!( stacktop.localusedvars[i], sym )
+            return :var
+        end
+    end
 
+    for i in length(stacktop.localarguments):-1:1
+        if haskey( stacktop.localarguments[i], sym )
+            push!( stacktop.localusedargs[i], sym )
+            return :var
+        end
+    end
+
+    str = string(sym)
     if isupper( str[1] )
         @lintpragma( "Ignore incompatible type comparison" )
         t = nothing
         try
-            tmp = eval( sym )
+            tmp = eval( Main, sym )
             t = typeof(tmp)
         catch
             t = nothing
         end
         if t == DataType
-            return
-        end
-    end
-
-    #println(sym)
-    #println( stacktop.localvars )
-    found = false
-    for i in length(stacktop.localvars):-1:1
-        if haskey( stacktop.localvars[i], sym )
-            push!( stacktop.localusedvars[i], sym )
-            found = true
-            break
-        end
-    end
-    if !found
-        for i in length(stacktop.localarguments):-1:1
-            if haskey( stacktop.localarguments[i], sym )
-                push!( stacktop.localusedargs[i], sym )
-                found = true
-                break
-            end
+            return :DataType
+        elseif t != nothing
+            return :var
         end
     end
 
     # a bunch of whitelist to just grandfather-in
-    if !found && in( sym, knownsyms ) || !strict
-        return
+    if in( sym, knowntypes )
+        return :DataType
+    end
+    if in( sym, knownsyms )
+        return :var
     end
 
-    if !found
-        for i in length(ctx.callstack):-1:1
-            found = haskey( ctx.callstack[i].declglobs, sym ) ||
-                in( sym, ctx.callstack[i].functions ) ||
-                in( sym, ctx.callstack[i].types ) ||
-                in( sym, ctx.callstack[i].modules ) ||
-                in( sym, ctx.callstack[i].imports )
-
-            if found
-                # if in looking up variables we found global, from then
-                # on we treat the variable as if we have had declared "global"
-                # within the scope block
-                if i != length(ctx.callstack) &&
-                    haskey( ctx.callstack[i].declglobs, sym )
-                    ctx.callstack[end].declglobs[ sym ] = ctx.callstack[i].declglobs[sym]
-                end
-                break
-            end
+    found = false
+    ret = :var
+    for i in length(ctx.callstack):-1:1
+        if in( sym, ctx.callstack[i].types )
+            found = true
+            ret = :DataType
+        elseif haskey( ctx.callstack[i].declglobs, sym ) ||
+            in( sym, ctx.callstack[i].functions ) ||
+            in( sym, ctx.callstack[i].modules ) ||
+            in( sym, ctx.callstack[i].imports )
+            found = true
         end
-    end
 
-    if !found
-        maybefunc = nothing
-        t = nothing
-        try
-            maybefunc = eval( sym )
-            t = typeof(maybefunc)
-        catch
-            t = nothing
-        end
-        found = (t == Function)
         if found
-            ctx.callstack[end].declglobs[ sym ] = @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+            # if in looking up variables we found global, from then
+            # on we treat the variable as if we have had declared "global"
+            # within the scope block
+            if i != length(ctx.callstack) &&
+                haskey( ctx.callstack[i].declglobs, sym )
+                ctx.callstack[end].declglobs[ sym ] = ctx.callstack[i].declglobs[sym]
+            end
+            return ret
         end
     end
 
-    if !found
-        if pragmaexists( "Ignore use of undeclared variable " * string( sym ), ctx )
-            return
-        end
-        if ctx.quoteLvl == 0
-            msg( ctx, 2, "Use of undeclared symbol " *string(sym))
-        elseif ctx.isstaged
-            msg( ctx, 0, "Use of undeclared symbol " *string(sym))
-        end
+    maybefunc = nothing
+    t = nothing
+    try
+        maybefunc = eval( Main, sym )
+        t = typeof(maybefunc)
+    catch
+        t = nothing
     end
+    if t == Function
+        ctx.callstack[end].declglobs[ sym ] = @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+        return :var
+    end
+
+    if !strict
+        return :Any
+    end
+
+    if pragmaexists( "Ignore use of undeclared variable " * string( sym ), ctx )
+        return :Any
+    end
+    if ctx.quoteLvl == 0
+        msg( ctx, 2, "Use of undeclared symbol " *string(sym))
+    elseif ctx.isstaged
+        msg( ctx, 0, "Use of undeclared symbol " *string(sym))
+    end
+    return :Any
 end
 
 function lintglobal( ex::Expr, ctx::LintContext )
@@ -143,9 +155,6 @@ function lintlocal( ex::Expr, ctx::LintContext )
     n = length(ctx.callstack[end].localvars)
     for sube in ex.args
         if typeof(sube)==Symbol
-            if isupper( string(sube)[1] )
-                msg( ctx, 0, "Julia style recommends variables start in lower case: " * string(sube) )
-            end
             ctx.callstack[end].localvars[n][ sube ] = VarInfo( ctx.line )
             continue
         end
@@ -159,7 +168,7 @@ function lintlocal( ex::Expr, ctx::LintContext )
             sym = sube.args[1]
             vi = VarInfo( ctx.line )
             try
-                dt = eval( sube.args[2] )
+                dt = eval( Main, sube.args[2] )
                 if typeof( dt ) == DataType
                     vi.typeactual = dt
                 else
@@ -246,10 +255,8 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         if s == :call
             msg( ctx, 2, "You should not use '"*string(s)*"' as a variable name.")
         end
-        if isupper( string(s)[1] ) && !isConst && !isGlobal
-            msg( ctx, 0, "Julia style recommends variables start in lower case: " * string( s ) )
-        end
 
+        # +=, -=, *=, etc.
         if ex.head != :(=)
             registersymboluse( s, ctx )
         end
@@ -264,7 +271,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         end
         try
             if haskey( typeassert, s )
-                dt = eval( typeassert[ s ] )
+                dt = eval( Main, typeassert[ s ] )
                 if typeof( dt ) == DataType
                     vi.typeactual = dt
                     if !isAnyOrTupleAny( dt ) && !isAnyOrTupleAny( rhstype ) && !( rhstype <: dt )

@@ -129,9 +129,6 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
             if position != 0 && optionalposition != 0
                 msg( ctx, 2, "You cannot have non-default argument following default arguments")
             end
-            if isupper( string(sube)[1] )
-                msg( ctx, 0, "Julia style recommends arguments start in lower case: " * string(sube) )
-            end
             push!( argsSeen, sube )
             if isstaged
                 typeassert[ sube ] = DataType

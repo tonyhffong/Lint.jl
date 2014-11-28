@@ -385,94 +385,101 @@ function guesstype( ex, ctx::LintContext )
     end
 
     if isexpr( ex, :ref ) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
-        if isexpr( ex.args[1], :curly ) ||
-            typeof( ex.args[1] ) == Symbol && # this part has HUGE code smell
-            length( string( ex.args[1] ) ) >= 3 &&
-            isupper( string( ex.args[1] )[1] ) &&
-            !isupper( string( ex.args[1] )[2] )
+        if isexpr( ex.args[1], :curly ) # must be a datatype, right?
             elt = parsetype( ex.args[1] )
             return Array{ elt, 1 }
-        else
-            partyp = guesstype( ex.args[1], ctx )
-            if partyp <: UnitRange
-                ktypeactual = guesstype( ex.args[2], ctx )
-                if ktypeactual <: Integer
-                    return eltype( partyp )
-                elseif isexpr( ex.args[2], :(:) ) # range too
-                    return partyp
-                else
-                    return Any
-                end
-            elseif partyp <: AbstractArray
-                eletyp = eltype( partyp )
-                try
-                    nd = ndims( partyp ) # This may throw if we couldn't infer the dimension
-                    tmpdim = nd - (length( ex.args )-1)
-                    if tmpdim < 0
-                        if nd == 0 && ex.args[2] == 1 # ok to do A[1] for a 0-dimensional array
-                            return eletyp
-                        else
-                            msg( ctx, 2, string( ex ) * " has more indices than dimensions")
-                            return Any
-                        end
-                    end
+        end
 
-                    for i in 2:length( ex.args )
-                        if ex.args[i] == :(:)
-                            tmpdim += 1
-                        end
-                    end
-                    if tmpdim != 0
-                        return Array{ eletyp, tmpdim } # is this strictly right?
-                    else
-                        return eletyp
-                    end
-                end
+        if typeof( ex.args[1] ) == Symbol
+            what = registersymboluse( ex.args[1], ctx, false )
+            if what == :DataType
+                elt = parsetype( ex.args[1] )
+                return Array{ elt, 1 }
+            elseif what == :Any
+                msg( ctx, 1, "Lint cannot determine if " * string( ex.args[1] ) * " is a DataType or not" )
                 return Any
-            elseif typeof( partyp ) == (DataType,) # e.g. (Int,), (Int...,), (DataType,...)
-                fst = partyp[1]
-                try
-                    if fst.name.name == :Vararg
-                        return fst.parameters[1]
-                    else
-                        return fst
-                    end
-                catch
-                    return Any
-                end
-            elseif partyp <: Associative
-                ktypeexpect = keytype( partyp )
-                vtypeexpect = valuetype( partyp )
-                ktypeactual = guesstype( ex.args[2], ctx )
-                if ktypeactual != Any && !( ktypeactual <: ktypeexpect )
-                    msg( ctx, 2, "Key type expects " * string( ktypeexpect ) * ", provided " * string( ktypeactual ) )
-                end
-                return vtypeexpect
-            elseif partyp <: String
-                ktypeactual = guesstype( ex.args[2], ctx )
-                if ktypeactual != Any && !( ktypeactual <: Integer ) && !( ktypeactual <: Range )
-                    msg( ctx, 2, "string[] expects Integer, provided " * string( ktypeactual ) )
-                end
-                if ktypeactual <: Integer
-                    return Char
-                end
-                if ktypeactual <: Range
-                    return partyp
-                end
-            elseif partyp <: Tuple
-                if isempty( partyp )
-                    return Any
-                end
-                if length( partyp ) == 1 || partyp[1].name.name == :Vararg
-                    return eval( Main, partyp[1].name.name )
-                end
-                elt = partyp[1]
-                if all( x->x == elt, partyp )
-                    return elt
-                end
-            elseif partyp != Any
-                msg( ctx, 2, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
             end
+        end
+        # not symbol, or symbol but it refers to a variable
+        partyp = guesstype( ex.args[1], ctx )
+        if partyp <: UnitRange
+            ktypeactual = guesstype( ex.args[2], ctx )
+            if ktypeactual <: Integer
+                return eltype( partyp )
+            elseif isexpr( ex.args[2], :(:) ) # range too
+                return partyp
+            else
+                return Any
+            end
+        elseif partyp <: AbstractArray
+            eletyp = eltype( partyp )
+            try
+                nd = ndims( partyp ) # This may throw if we couldn't infer the dimension
+                tmpdim = nd - (length( ex.args )-1)
+                if tmpdim < 0
+                    if nd == 0 && ex.args[2] == 1 # ok to do A[1] for a 0-dimensional array
+                        return eletyp
+                    else
+                        msg( ctx, 2, string( ex ) * " has more indices than dimensions")
+                        return Any
+                    end
+                end
+
+                for i in 2:length( ex.args )
+                    if ex.args[i] == :(:)
+                        tmpdim += 1
+                    end
+                end
+                if tmpdim != 0
+                    return Array{ eletyp, tmpdim } # is this strictly right?
+                else
+                    return eletyp
+                end
+            end
+            return Any
+        elseif typeof( partyp ) == (DataType,) # e.g. (Int,), (Int...,), (DataType,...)
+            fst = partyp[1]
+            try
+                if fst.name.name == :Vararg
+                    return fst.parameters[1]
+                else
+                    return fst
+                end
+            catch
+                return Any
+            end
+        elseif partyp <: Associative
+            ktypeexpect = keytype( partyp )
+            vtypeexpect = valuetype( partyp )
+            ktypeactual = guesstype( ex.args[2], ctx )
+            if ktypeactual != Any && !( ktypeactual <: ktypeexpect )
+                msg( ctx, 2, "Key type expects " * string( ktypeexpect ) * ", provided " * string( ktypeactual ) )
+            end
+            return vtypeexpect
+        elseif partyp <: String
+            ktypeactual = guesstype( ex.args[2], ctx )
+            if ktypeactual != Any && !( ktypeactual <: Integer ) && !( ktypeactual <: Range )
+                msg( ctx, 2, "string[] expects Integer, provided " * string( ktypeactual ) )
+            end
+            if ktypeactual <: Integer
+                return Char
+            end
+            if ktypeactual <: Range
+                return partyp
+            end
+        elseif partyp <: Tuple
+            if isempty( partyp )
+                return Any
+            end
+            if length( partyp ) == 1 || partyp[1].name.name == :Vararg
+                return eval( Main, partyp[1].name.name )
+            end
+            elt = partyp[1]
+            if all( x->x == elt, partyp )
+                return elt
+            end
+        elseif partyp != Any
+            msg( ctx, 2, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
         end
         return Any
     end
