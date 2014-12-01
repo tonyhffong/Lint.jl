@@ -310,3 +310,11 @@ end
 """
 msgs = lintstr(s)
 @test( isempty( msgs ) )
+
+s="""
+function f1(a::Float64; b=string(a))
+    string(a) * b
+end
+"""
+msgs = lintstr(s)
+@test( isempty( msgs ) )
