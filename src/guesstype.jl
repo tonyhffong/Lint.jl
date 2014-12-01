@@ -78,6 +78,13 @@ function parsetype( ex )
                     vt = parsetype( ex.args[2] )
                     return Vector{vt}
                 end
+            elseif ex.args[1] == :Complex
+                if length( ex.args ) != 2
+                    return Complex
+                else
+                    vt = parsetype( ex.args[2] )
+                    return Complex{vt}
+                end
             end
         end
     end
@@ -96,6 +103,7 @@ function guesstype( ex, ctx::LintContext )
         if ex == :nothing
             return Nothing
         end
+        # TODO: this should be a module function
         checkret = x -> begin
             if typeof( x ) == DataType || typeof( x ) == (DataType,)
                 return x
