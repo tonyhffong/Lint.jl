@@ -37,12 +37,16 @@ function lintblock( ex::Expr, ctx::LintContext )
         if typeof(sube) == Expr
             if sube.head == :line
                 ctx.line = sube.args[1]-1
+                #=
+                # We don't use the file argument since it is inaccurate
+                # as of 0.4.0-dev+1833
                 if length(sube.args)>1
                     file= string(sube.args[2])
                     if file != "none"
                         ctx.file = file
                     end
                 end
+                =#
                 continue
             elseif sube.head == :return && i != length(ex.args)
                 msg( ctx, 1, "Unreachable code after return" )
