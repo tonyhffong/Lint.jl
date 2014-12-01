@@ -58,6 +58,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
     end
 
     temporaryTypes = Any[]
+
     fname = symbol("")
     if ex.args[1].head == :tuple # anonymous
         # do nothing
@@ -130,6 +131,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
                 msg( ctx, 2, "You cannot have non-default argument following default arguments")
             end
             push!( argsSeen, sube )
+            stacktop.localarguments[end][sube] = VarInfo( ctx.line )
             if isstaged
                 typeassert[ sube ] = DataType
             end
@@ -206,13 +208,21 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
         return nothing
     end
 
+    params = nothing
     for i = (fname == symbol("") ? 1 : 2 ):length(ex.args[1].args)
+        if isexpr( ex.args[1].args[i], :parameters )
+            params = ex.args[1].args[i]
+            continue
+        end
         resolveArguments( ex.args[1].args[i], i )
+    end
+    if params != nothing
+        resolveArguments( params, 1 )
     end
 
     for s in argsSeen
-        vi = VarInfo( ctx.line )
         try
+            vi = stacktop.localarguments[end][s]
             if haskey( typeassert, s )
                 dt = eval( typeassert[ s ] )
                 if typeof(dt ) == DataType || typeof(dt ) == (DataType,)
@@ -226,7 +236,6 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
                 vi.typeactual = typeRHShints[s]
             end
         end
-        stacktop.localarguments[end][s] = vi
     end
 
     prev_isstaged = ctx.isstaged
