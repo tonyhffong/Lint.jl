@@ -2,21 +2,23 @@ function popVarScope( ctx::LintContext; checkargs::Bool=false )
     tmpline = ctx.line
     stacktop = ctx.callstack[end]
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
-    for v in unused
-        if !pragmaexists( "Ignore unused " * string( v ), ctx )
-            ctx.line = stacktop.localvars[end][ v ].line
-            msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
-        end
-    end
-    if checkargs
-        unusedargs = setdiff( keys( stacktop.localarguments[end] ), stacktop.localusedargs[end] )
-        for v in unusedargs
-            if v == :_ # grandfathered
-                continue
-            end
+    if ctx.quoteLvl == 0
+        for v in unused
             if !pragmaexists( "Ignore unused " * string( v ), ctx )
-                ctx.line = stacktop.localarguments[end][ v ].line
-                msg( ctx, 0, "Argument declared but not used: " * string( v ) )
+                ctx.line = stacktop.localvars[end][ v ].line
+                msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
+            end
+        end
+        if checkargs
+            unusedargs = setdiff( keys( stacktop.localarguments[end] ), stacktop.localusedargs[end] )
+            for v in unusedargs
+                if v == :_ # grandfathered
+                    continue
+                end
+                if !pragmaexists( "Ignore unused " * string( v ), ctx )
+                    ctx.line = stacktop.localarguments[end][ v ].line
+                    msg( ctx, 0, "Argument declared but not used: " * string( v ) )
+                end
             end
         end
     end
