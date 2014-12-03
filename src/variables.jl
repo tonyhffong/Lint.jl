@@ -48,6 +48,10 @@ function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
     for i in length(stacktop.localvars):-1:1
         if haskey( stacktop.localvars[i], sym )
             push!( stacktop.localusedvars[i], sym )
+            # TODO: This is not quite right. We need to check type
+            # on the sym. If it's DataType, return :DataType
+            # if Any, return :Any
+            # otherwise, :var
             return :var
         end
     end
@@ -55,6 +59,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
     for i in length(stacktop.localarguments):-1:1
         if haskey( stacktop.localarguments[i], sym )
             push!( stacktop.localusedargs[i], sym )
+            # TODO: we need to check type
             return :var
         end
     end
@@ -211,7 +216,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     syms = Any[]
     typeassert = Dict{ Symbol, Any }()
     resolveLHSsymbol( ex.args[1], syms, ctx, typeassert )
-    ntuple = length( syms )
+    tuplelen = length( syms )
     rhstype = guesstype( ex.args[2], ctx )
 
     if isForLoop
@@ -227,14 +232,14 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             rhstype = ( keytype( rhstype ), valuetype( rhstype ) )
         end
 
-        if typeof( rhstype ) <: Tuple && length( rhstype ) != ntuple
-            msg( ctx, 0, "Iteration generates tuples of "*string(rhstype)*". N of variables used: "* string( ntuple ) )
+        if typeof( rhstype ) <: Tuple && length( rhstype ) != tuplelen
+            msg( ctx, 0, "Iteration generates tuples of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
         end
     end
 
-    if typeof( rhstype ) <: Tuple && length( rhstype ) != ntuple && !isForLoop
+    if typeof( rhstype ) <: Tuple && length( rhstype ) != tuplelen && !isForLoop
         if length( syms ) > 1
-            msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( ntuple ) )
+            msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
         end
     end
 
@@ -254,6 +259,8 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         end
         if s == :call
             msg( ctx, 2, "You should not use '"*string(s)*"' as a variable name.")
+        elseif in( s, knownsyms )
+            msg( ctx, 1, "Core/Main export '" * string(s) *"' and should not be overriden")
         end
 
         # +=, -=, *=, etc.

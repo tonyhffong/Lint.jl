@@ -11,12 +11,12 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
             infotype = m.captures[6]
             rest = m.captures[10]
             if infotype == "type"
-                var = parse( rest )
-                if isexpr( var, :incomplete )
+                v = parse( rest )
+                if isexpr( v, :incomplete )
                     msg( ctx, 2, "Incomplete expression " * rest )
                     str = ""
                 else
-                    str = "typeof( " * rest * " ) == " * string( guesstype( var, ctx ) )
+                    str = "typeof( " * rest * " ) == " * string( guesstype( v, ctx ) )
                 end
             elseif infotype == "me"
                 str = rest
