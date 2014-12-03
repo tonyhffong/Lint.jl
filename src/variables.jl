@@ -260,7 +260,13 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         if s == :call
             msg( ctx, 2, "You should not use '"*string(s)*"' as a variable name.")
         elseif in( s, knownsyms )
-            msg( ctx, 1, "Core/Main export '" * string(s) *"' and should not be overriden")
+            if in( s, [ :e, :pi, :eu, :catalan, :eulergamma, :golden, :π, :γ, :φ ] )
+                if ctx.file != "constants.jl"
+                    msg( ctx, 1, "You are redefining a mathematical constant " * string(s) )
+                end
+            else
+                msg( ctx, 1, "\"$s\" as a local variable might cause confusion with a synonymous export from Base" )
+            end
         end
 
         # +=, -=, *=, etc.
@@ -294,12 +300,6 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             msg( ctx, 1, string( er )* " \n"* string( ex )* "\n Symbol=" * string( s ) * "\n rhstype="* string( rhst ) )
             if haskey( typeassert, s )
                 vi.typeexpr = typeassert[s]
-            end
-        end
-
-        if in( s, [ :e, :pi, :eu, :catalan, :eulergamma, :golden, :π, :γ, :φ ] )
-            if ctx.file != "constants.jl"
-                msg( ctx, 1, "You are redefining a mathematical constant " * string(s) )
             end
         end
 

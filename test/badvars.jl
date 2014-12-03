@@ -14,4 +14,4 @@ function f()
 end
 """
 msgs = lintstr( s )
-@test contains( msgs[1].message, "Core/Main export 'var' and should not be overriden")
+@test contains( msgs[1].message, "\"var\" as a local variable might cause confusion" )
