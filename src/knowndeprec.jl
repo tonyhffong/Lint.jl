@@ -255,7 +255,3 @@ function funcMatchesDeprecateInfo( sig, di::DeprecateInfo )
     end
     return true
 end
-
-if isempty( deprecates )
-    initDeprecateInfo()
-end

@@ -32,6 +32,7 @@ include( "dict.jl")
 include( "ref.jl")
 include( "curly.jl" )
 include( "misc.jl")
+include( "init.jl" )
 
 function lintpkg( pkg::String; returnMsgs::Bool = false )
     p = joinpath( Pkg.dir( pkg ), "src", pkg * ".jl" )
@@ -241,5 +242,3 @@ function lintexpr( ex::Any, ctx::LintContext )
 end
 
 end
-
-Lint.initcommoncollfuncs()
