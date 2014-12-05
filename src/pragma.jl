@@ -4,6 +4,10 @@ type PragmaInfo
 end
 
 function lintlintpragma( ex::Expr, ctx::LintContext )
+    if !ctx.versionreachable( VERSION )
+        return
+    end
+
     if typeof( ex.args[2] ) <: String
         m = match( r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)|(version)) +(.+)"s, ex.args[2] )
         if m != nothing
