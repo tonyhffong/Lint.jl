@@ -486,8 +486,19 @@ function guesstype( ex, ctx::LintContext )
             if all( x->x == elt, partyp )
                 return elt
             end
+        #=
+        elseif isdefined( Main, :AbstractDataFrame ) && partyp <: AbstractDataFrame
+            ktypeactual = guesstype( ex.args[2], ctx )
+            if ktypeactual <: Symbol || ktypeactual <: Integer
+                return AbstractDataArray
+            else
+                return Any
+            end
+        =#
         elseif partyp != Any
-            msg( ctx, 2, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
+            if !pragmaexists( string( partyp ) * " is a container type", ctx )
+                msg( ctx, 2, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
+            end
         end
         return Any
     end
