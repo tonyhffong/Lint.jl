@@ -4,7 +4,7 @@ function popVarScope( ctx::LintContext; checkargs::Bool=false )
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
     if ctx.quoteLvl == 0
         for v in unused
-            if !pragmaexists( "Ignore unused " * string( v ), ctx )
+            if !pragmaexists( "Ignore unused " * string( v ), ctx ) && v != :_
                 ctx.line = stacktop.localvars[end][ v ].line
                 msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
             end
@@ -12,10 +12,7 @@ function popVarScope( ctx::LintContext; checkargs::Bool=false )
         if checkargs
             unusedargs = setdiff( keys( stacktop.localarguments[end] ), stacktop.localusedargs[end] )
             for v in unusedargs
-                if v == :_ # grandfathered
-                    continue
-                end
-                if !pragmaexists( "Ignore unused " * string( v ), ctx )
+                if !pragmaexists( "Ignore unused " * string( v ), ctx ) && v != :_
                     ctx.line = stacktop.localarguments[end][ v ].line
                     msg( ctx, 0, "Argument declared but not used: " * string( v ) )
                 end
