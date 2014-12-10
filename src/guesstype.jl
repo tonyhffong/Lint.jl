@@ -410,7 +410,9 @@ function guesstype( ex, ctx::LintContext )
         end
         # not symbol, or symbol but it refers to a variable
         partyp = guesstype( ex.args[1], ctx )
-        if partyp <: UnitRange
+        if typeof( partyp ) == Symbol # we are in a context of a constructor of a new type, so it's difficult to figure out the content
+            return Any
+        elseif partyp <: UnitRange
             ktypeactual = guesstype( ex.args[2], ctx )
             if ktypeactual <: Integer
                 return eltype( partyp )

@@ -170,6 +170,11 @@ type MyType
     b::Int
     MyType( x::Int,y::Int ) = new(x,y)
     MyType( x::Int ) = MyType( x, 0 )
+    function MyType()
+        v = new( 0, 0 )
+        v[2] = int( rand() * 5.0 ) # assume we'd define getindex somewhere
+        v
+    end
 end
 """
 msgs = lintstr(s)
