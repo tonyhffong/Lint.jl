@@ -429,7 +429,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                 end
             end
             try
-                which( getfield( Base, s ),  tuple( typesig... ) )
+                which( getfield( Main, s ),  tuple( typesig... ) )
             catch er
                 msg( ctx, 2, string(s) * ": " * string( er ) * "\nSignature: " * string( typesig ) )
             end
