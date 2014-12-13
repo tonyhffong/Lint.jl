@@ -8,12 +8,11 @@ end
 
 import Base.show
 function Base.show( io::IO, m::LintMessage )
-    s = @sprintf( "%20s ", m.file )
-    s = s * @sprintf( "[%-20s] ", m.scope )
-    s = s * @sprintf( "%4d ", m.line )
+    s = @sprintf( "%s:%d ", m.file, m.line )
+    s = s * @sprintf( "[%-15s] ", m.scope )
     arr = [ "INFO", "WARN", "ERROR", "FATAL" ]
     s = s * @sprintf( "%-5s  ", arr[ m.level+1 ] )
-    ident = min( 65, length(s) )
+    ident = min( 60, length(s) )
     lines = split(m.message, "\n")
     for (i,l) in enumerate(lines)
         if i==1
