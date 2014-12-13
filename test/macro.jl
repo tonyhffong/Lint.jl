@@ -40,3 +40,21 @@ end
 """
 msgs = lintstr( s )
 @assert( isempty( msgs ) )
+
+s = """
+macro mymacro(expr::Expr)
+    expr
+end
+"""
+msgs = lintstr( s )
+
+@assert( isempty( msgs ) )
+
+s = """
+macro mymacro(expr::Int)
+    expr
+end
+"""
+msgs = lintstr( s )
+
+@assert( contains( msgs[1].message, "macro arguments can only be Symbol/Expr" ) )

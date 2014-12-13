@@ -17,11 +17,13 @@ function lintmacro( ex::Expr, ctx::LintContext )
             end
         elseif sube.head == :(=) || sube.head == :kw
             resolveArguments( sube.args[1] )
-        elseif sube.head == :(::)
-            if length( sube.args ) > 1
-                resolveArguments( sube.args[1] )
-            end
         =#
+        elseif sube.head == :(::) && length( sube.args ) == 2
+            typeex = sube.args[2]
+            if  typeex != :Expr && typeex != :Symbol
+                msg( ctx, 2, "macro arguments can only be Symbol/Expr: " *string( sube ))
+            end
+            resolveArguments( sube.args[1] )
         elseif sube.head == :(...)
             resolveArguments( sube.args[1])
         #= # macro definition inside another macro? highly unlikely
