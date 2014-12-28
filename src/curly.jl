@@ -14,7 +14,9 @@ function lintcurly( ex::Expr, ctx::LintContext )
         elseif isexpr( a, :($) )
             continue # grandfathered
         elseif typeof( a ) == QuoteNode || isexpr( a, :quote )
-            msg( ctx, 1, "Probably illegal use of " * string(a) * " inside curly.")
+            if ex.args[1] != :Val
+                msg( ctx, 0, "Probably illegal use of " * string(a) * " inside curly.")
+            end
         else
             t = guesstype( a, ctx )
             if t == Symbol || t != Any && t != () && typeof( t ) != DataType && typeof( t ) != (DataType,) && !( t <: Integer )
