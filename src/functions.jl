@@ -182,7 +182,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
                             dt = parsetype( sube.args[2] )
                             typeassert[ sym ] = dt
                         catch er
-                            msg( ctx, 2, "Lint fails to parse " * string(subeargs[2]) * "\n" * string( er ) )
+                            msg( ctx, 2, "Lint fails to parse " * string(sube.args[2]) * "\n" * string( er ) )
                         end
                     end
                 end
