@@ -111,7 +111,7 @@ end
 
 Lint message suppression (do not include the square brackets)
 * `@lintpragma( "Ignore unused [variable name]" )`. Works for unused arguments also.
-* `@lintpragma( "Ignore unstable type variable [variable name]" )`
+* `@lintpragma( "Ignore unstable type variable [variable name]" )`. Ignore type instability warnings.
 * `@lintpragma( "Ignore deprecated [function name]" )`
 * `@lintpragma( "Ignore undefined module [module name]" )`. Useful to support Julia packages across 
     different Julia releases.
@@ -120,7 +120,7 @@ Lint message suppression (do not include the square brackets)
     arrays with uncertain/runtime-calculated dimension
 * `@lintpragma( "Ignore use of undeclared variable [variable name]" )`. Useful when using macros to
   generate symbols on the fly.
-* `@lintpragma( "Ignore incompatible type comparison" )`. Useful to silence deliberately type-unstable code
+* `@lintpragma( "Ignore incompatible type comparison" )`. Useful to silence deliberately different-type comparison
 
 Lint message generation (do not include the square brackets)
 * `@lintpragma( "Info type [expression]")`. Generate the best guess type of the expression during lint-time.
