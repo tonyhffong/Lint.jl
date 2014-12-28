@@ -177,8 +177,13 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
                 sym = resolveArguments( sube.args[1], 0 )
                 if !isstaged
                     if typeof( sym ) == Symbol
-                        dt = parsetype( sube.args[2] )
-                        typeassert[ sym ] = dt
+                        dt = Any
+                        try
+                            dt = parsetype( sube.args[2] )
+                            typeassert[ sym ] = dt
+                        catch er
+                            msg( ctx, 2, "Lint fails to parse " * string(subeargs[2]) * "\n" * string( er ) )
+                        end
                     end
                 end
                 lintfuncargtype( sube.args[2], ctx )
