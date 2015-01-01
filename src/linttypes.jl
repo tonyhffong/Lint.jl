@@ -43,7 +43,7 @@ function ==( m1::LintMessage, m2::LintMessage )
     m1.level == m2.level &&
     m1.scope == m2.scope &&
     m1.line == m2.line &&
-    m2.message == m2.message
+    m1.message == m2.message
 end
 
 type VarInfo
