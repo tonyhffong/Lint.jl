@@ -137,6 +137,10 @@ function lintexpr( ex::Any, ctx::LintContext )
 
     if ex.head == :block
         lintblock( ex, ctx )
+    elseif ex.head == :quote
+        ctx.quoteLvl += 1
+        lintexpr( ex.args[1], ctx )
+        ctx.quoteLvl -= 1
     elseif ex.head == :if
         lintifexpr( ex, ctx )
     elseif ex.head == :(=) && typeof(ex.args[1])==Expr && ex.args[1].head == :call
