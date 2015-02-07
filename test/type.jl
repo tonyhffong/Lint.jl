@@ -204,7 +204,16 @@ msgs = lintstr(s)
 s = """
 type MyType{T}
     b::T
-    MyType{T}(x::T) = new( T )
+    MyType{T}(x::T) = new( x )
+end
+"""
+msgs = lintstr(s)
+@assert( contains( msgs[1].message, "Constructor parameter (within curly brackets)" ) )
+
+s = """
+type MyType{T}
+    b::T
+    MyType{T<:Integer}(x::T) = new( x )
 end
 """
 msgs = lintstr(s)
