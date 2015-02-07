@@ -111,7 +111,7 @@ function linttype( ex::Expr, ctx::LintContext )
                     if typeof(fp) == Symbol && in( fp, typeparams )
                         msg( ctx, 2, "Constructor parameter (within curly brackets) "*string(fp)*" collides with a type parameter.")
                     end
-                    if isexpr( fp, :< ) && in( fp.args[1], typeparams )
+                    if isexpr( fp, :(<:) ) && in( fp.args[1], typeparams )
                         tmp = fp.args[1]
                         msg( ctx, 2, "Constructor parameter (within curly brackets) "*string(tmp)*" collides with a type parameter.")
                     end
