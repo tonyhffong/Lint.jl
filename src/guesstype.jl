@@ -22,7 +22,7 @@ function valuetype{T<:Associative}( ::Type{T} )
 end
 
 function eltype{T}( ::Type{Enumerate{T}})
-    (Int, eltype( T ) )
+    (Int, T )
 end
 
 function isAnyOrTupleAny( x )
