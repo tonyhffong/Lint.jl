@@ -63,13 +63,6 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "typeof( x ) == Array{Float64,1}" ) )
-s = """
-function f(x::Int)
-    push!( x, 1)
-end
-"""
-msgs = lintstr( s )
-@test( contains( msgs[1].message, "no method found") )
 
 s = """
 function f(x)
