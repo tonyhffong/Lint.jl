@@ -11,7 +11,7 @@ function initcommoncollfuncs()
             if mtch != nothing
                 if in( mtch.match, [ "hash", "show", "rand",
                     "isequal", "convert", "serialize", "isless",
-                    "writemime", "write", "Dict" ] )
+                    "writemime", "write", "Dict", "eltype" ] )
                     continue
                 end
                 s = symbol( mtch.match )
@@ -433,10 +433,12 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                     push!( typesig, guesstype( ex.args[i], ctx ) )
                 end
             end
-            try
-                which( getfield( Main, s ),  tuple( typesig... ) )
-            catch er
-                msg( ctx, 2, string(s) * ": " * string( er ) * "\nSignature: " * string( typesig ) )
+            if all( x->x != Any, typesig )
+                try
+                    which( getfield( Main, s ),  tuple( typesig... ) )
+                catch er
+                    msg( ctx, 2, string(s) * ": " * string( er ) * "\nSignature: " * string( tuple(typesig... ) ) )
+                end
             end
         end
 
