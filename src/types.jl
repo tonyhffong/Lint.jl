@@ -4,6 +4,7 @@ function linttype( ex::Expr, ctx::LintContext )
     if ctx.macroLvl ==0 && ctx.functionLvl == 0
         pushcallstack( ctx )
     end
+    typeparams = Symbol[]
 
     processCurly = (sube)->begin
         for i in 2:length(sube.args)
@@ -22,6 +23,7 @@ function linttype( ex::Expr, ctx::LintContext )
                     msg( ctx, 2, "You mean {T<:"*string( adt )*"}? You are introducing it as a new name for an algebric data type, unrelated to the type " * string(adt))
                 end
                 push!( ctx.callstack[end].types, adt )
+                push!( typeparams, adt )
             elseif isexpr( adt, :(<:) )
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
@@ -47,6 +49,7 @@ function linttype( ex::Expr, ctx::LintContext )
                     end
                 end
                 push!( ctx.callstack[end].types, temptype )
+                push!( typeparams, temptype )
             end
         end
     end
@@ -103,7 +106,16 @@ function linttype( ex::Expr, ctx::LintContext )
                 # if julia supports anonymous constructor syntactic sugar, remove this, and make sure ctx.scope is type name
                 msg( ctx, 2, "What is an anonymous function doing inside a type definition?")
             elseif isexpr( def.args[1].args[1], :curly )
-                msg( ctx, 2, "Parametric constructors (with curly brackets) should not be inner constructors. Define them outside type definition.")
+                for i in 2:length(def.args[1].args[1].args)
+                    fp = def.args[1].args[1].args[i]
+                    if typeof(fp) == Symbol && in( fp, typeparams )
+                        msg( ctx, 2, "Constructor parameter (within curly brackets) "*string(fp)*" collides with a type parameter.")
+                    end
+                    if isexpr( fp, :< ) && in( fp.args[1], typeparams )
+                        tmp = fp.args[1]
+                        msg( ctx, 2, "Constructor parameter (within curly brackets) "*string(tmp)*" collides with a type parameter.")
+                    end
+                end
             end
             push!( funcs, ( def, ctx.line ) )
         end

@@ -208,7 +208,16 @@ type MyType{T}
 end
 """
 msgs = lintstr(s)
-@assert( contains( msgs[1].message, "Parametric constructors (with curly brackets) should not be inner constructors." ) )
+@assert( contains( msgs[1].message, "Constructor parameter (within curly brackets)" ) )
+
+s = """
+type MyType{T}
+    b::T
+    MyType{S}(y::S) = new( convert(T,y) )
+end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
 
 s = """
 type MyType
