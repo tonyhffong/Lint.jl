@@ -312,12 +312,17 @@ function guesstype( ex, ctx::LintContext )
         if length( sig ) == 1
             return sig[1] # assume it's the same type, as in zeros{T}( A::AbstractArray{T,N} )
         end
+        elt = Any
+        try
+            elt = eval( Main, ex.args[2] )
+        end
         if sig[1] == DataType
-            ret = Array
-            try
-                ret = Array{ eval( Main, ex.args[2] ), length(ex.args)-2 }
-            catch
-                ret = Array{ Any, length(ex.args)-2 }
+            if length(sig) == 2 && isexpr(ex.args[3],:tuple)
+                ret = Array{ elt, length(ex.args[3].args ) }
+            elseif length(sig) == 2 && sig[2] <: Tuple && all( x->x <: Integer, sig[2] )
+                ret = Array{ elt, length( sig[2] ) }
+            else
+                ret = Array{ elt, length(ex.args)-2 }
             end
             return ret
         elseif all( y->y <: Integer, sig )
