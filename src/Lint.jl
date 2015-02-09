@@ -253,14 +253,22 @@ function lintserver(port)
         try
           while true
             line = readline(conn)
+            
             println(typeof(line))
             println(ispath(strip(line)))
             println(strip(line))
-            m = lintfile(strip(line), returnMsgs = true)
+            
+            if ispath(strip(line))
+                m = lintfile(strip(line), returnMsgs = true)
+            else
+                error("The string is not a file.")
+            end
+            
             for i in m
                 write(conn, string(i))
                 write(conn, "\n")
             end
+            
           end
         catch err
           print("connection ended with error $err")
