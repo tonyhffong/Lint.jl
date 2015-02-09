@@ -234,6 +234,9 @@ function lintexpr( ex::Any, ctx::LintContext )
         linttry( ex, ctx )
     elseif ex.head == :curly # e.g. Ptr{T}
         lintcurly( ex, ctx )
+    elseif ex.head in [ :(&&), :(||) ]
+        lintboolean( ex.args[1], ctx )
+        lintexpr( ex.args[2], ctx ) # do not enforce boolean. e.g. b==1 || error( "b must be 1!" )
     else
         for sube in ex.args
             if typeof(sube)== Expr

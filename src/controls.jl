@@ -19,7 +19,7 @@ function lintifexpr( ex::Expr, ctx::LintContext )
         if isexpr( ex.args[2], :block ) && length( ex.args[2].args ) >= 2 &&
             ( isexpr( ex.args[2].args[2], :comparison ) ||
               isexpr( ex.args[2].args[2], :call ) && ex.args[2].args[2].args[1] == :(!) ||
-              isexpr( ex.args[2].args[2], [ :(&&), :(||) ] ) && !isexpr(ex.args[2].args[2].args[end], [ :call, :return ] ) )
+              isexpr( ex.args[2].args[2], [ :(&&), :(||) ] ) && !isexpr(ex.args[2].args[2].args[end], [ :call, :error, :throw, :return ] ) )
             msg( ctx, 0, "The 1st statement under the true-branch is a boolean expression. Typo?")
         end
         (verconstraint1, verconstraint2) = versionconstraint( ex.args[1] )
@@ -130,12 +130,7 @@ function lintboolean( ex, ctx::LintContext )
             msg( ctx, 1, "Bit-wise " * string( ex.args[1]) * " in a boolean context. (&,|) do not have short-circuit behavior." )
         elseif ex.head == :(&&) || ex.head == :(||)
             n = length(ex.args)
-            for (i,a) in enumerate( ex.args )
-                if i == n # grandfather error and throw
-                    if isexpr( ex.args[i], :call ) && ex.args[i].args[1] in [ :error, :throw ]
-                        continue
-                    end
-                end
+            for a in ex.args
                 lintboolean( a, ctx )
             end
         elseif ex.head ==:call && ex.args[1] == :(!)
