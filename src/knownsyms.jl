@@ -22,11 +22,13 @@ function cacheknownsyms()
         try
             ok = isa( eval( Base, x ), DataType )
         end
+        ok
     end)
     union!( knowntypes, filter( names( Core ) ) do x
         ok = false
         try
             ok = isa( eval( Core, x ), DataType )
         end
+        ok
     end)
 end
