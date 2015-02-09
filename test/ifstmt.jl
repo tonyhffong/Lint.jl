@@ -106,3 +106,27 @@ end
 """
 msgs = lintstr(s )
 @test( contains( msgs[1].message, "The 1st statement under the true-branch is a boolean expression") )
+s = """
+function f(a, b)
+    if a == 1
+        ( b < 2 ) || error( "b needs to be < 2")
+        1
+    else
+        2
+    end
+end
+"""
+msgs = lintstr(s )
+@test( isempty( msgs ) )
+s = """
+function f(a, b)
+    if a == 1
+        ( b < 2 ) || return 3
+        1
+    else
+        2
+    end
+end
+"""
+msgs = lintstr(s )
+@test( isempty( msgs ) )
