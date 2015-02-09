@@ -6,8 +6,8 @@ type LintMessage
     message :: String
 end
 
-import Base.show
-function Base.show( io::IO, m::LintMessage )
+import Base.string
+function string( m::LintMessage )
     s = @sprintf( "%s:%d ", m.file, m.line )
     s = s * @sprintf( "[%-15s] ", m.scope )
     arr = [ "INFO", "WARN", "ERROR", "FATAL" ]
@@ -21,7 +21,12 @@ function Base.show( io::IO, m::LintMessage )
             s = s * "\n" *  (" " ^ ident) * l
         end
     end
-    print( io, s )
+    return s
+end
+
+import Base.show
+function Base.show( io::IO, m::LintMessage )
+    print( io, string(m) )
 end
 
 import Base.isless

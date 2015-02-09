@@ -6,7 +6,7 @@ using Base.Meta
 using Compat
 
 export LintMessage, LintContext, LintStack
-export lintfile, lintstr, lintpkg, @lintpragma
+export lintfile, lintstr, lintpkg, lintserver, @lintpragma
 export test_similarity_string
 
 const SIMILARITY_THRESHOLD = 10.0
@@ -245,6 +245,38 @@ function lintexpr( ex::Any, ctx::LintContext )
                 registersymboluse( sube, ctx )
             end
         end
+    end
+end
+
+function lintserver(port)
+    server = listen(port)
+    while true
+      conn = accept(server)
+      @async begin
+        try
+          while true
+            line = readline(conn)
+            
+            println(typeof(line))
+            println(ispath(strip(line)))
+            println(strip(line))
+            
+            if ispath(strip(line))
+                m = lintfile(strip(line), returnMsgs = true)
+            else
+                error("The string is not a file.")
+            end
+            
+            for i in m
+                write(conn, string(i))
+                write(conn, "\n")
+            end
+            
+          end
+        catch err
+          print("connection ended with error $err")
+        end
+      end
     end
 end
 
