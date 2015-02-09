@@ -243,7 +243,7 @@ You just need to put in the root symbol for a parametric type, for example
 
 ## Lintserver feature - experimental
 
-Lint now contains a function that such that Julia starts listening on a given port and returning lint messages to the connection.
+Lint now contains a function `lintesrver` making Julia start listening on a given port and returning lint messages to the connection.
 
 It has been tried out and the following example works on OS X, suggestions are welcome for other systems.
 
