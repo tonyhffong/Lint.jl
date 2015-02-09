@@ -240,3 +240,21 @@ push!( ctx.callstack[end].types, roottypesymbol )
 ```
 You just need to put in the root symbol for a parametric type, for example
 `:A` for `A{T<:Any}`.
+
+## Lintserver feature - experimental
+
+Lint now contains a function that such that Julia starts listening on a given port and returning lint messages to the connection.
+
+It has been tried out and the following example works on OS X, suggestions are welcome for other systems.
+
+### Example
+First open julia and do:
+````{julia}
+using Lint
+lintserver(2222)
+````
+Then, assuming you have a file named `test.jl` in your documents to be linted, from bash you can do:
+````{bash}
+(echo "~/Documents/test.jl"; sleep 2) | nc -w 2 localhost 2222
+````
+For the first time you might have to do that multiple times because the linting functions are being imported and compiled.
