@@ -177,6 +177,8 @@ function f(n)
     @lintpragma( "Info type c" )
     d = zeros( Float64, (1,2) )
     @lintpragma( "Info type d" )
+    e1 = zeros( 2 )
+    @lintpragma( "Info type e1" )
 end
 """
 msgs = lintstr(s)
@@ -184,6 +186,7 @@ msgs = lintstr(s)
 @test( contains( msgs[2].message, "typeof( b ) == Array{Float64,N}" ) )
 @test( contains( msgs[3].message, "typeof( c ) == Array{Float64,3}" ) )
 @test( contains( msgs[4].message, "typeof( d ) == Array{Float64,2}" ) )
+@test( contains( msgs[5].message, "typeof( e1 ) == Array{Float64,1}" ) )
 s = """
 function f()
     a = Array( Float64, ( 1,2,3 ) )

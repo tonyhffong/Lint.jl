@@ -309,9 +309,6 @@ function guesstype( ex, ctx::LintContext )
         for i = 2:length(ex.args)
             push!( sig, guesstype( ex.args[i], ctx ) )
         end
-        if length( sig ) == 1
-            return sig[1] # assume it's the same type, as in zeros{T}( A::AbstractArray{T,N} )
-        end
         elt = Any
         try
             elt = eval( Main, ex.args[2] )
@@ -327,6 +324,8 @@ function guesstype( ex, ctx::LintContext )
             return ret
         elseif all( y->y <: Integer, sig )
             return Array{ Float64, length( sig ) }
+        elseif length( sig ) == 1 && sig[1] <: Array
+            return sig[1]
         else
             return Array
         end
