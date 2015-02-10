@@ -58,3 +58,11 @@ end
 msgs = lintstr( s )
 
 @assert( contains( msgs[1].message, "macro arguments can only be Symbol/Expr" ) )
+
+s = """
+# using PyCall # we don't want to uncomment this
+@pyimport seaborn as sns
+@pyimport seaborn
+"""
+msgs = lintstr( s )
+@assert( isempty( msgs ) )

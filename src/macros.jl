@@ -73,6 +73,15 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
+    if ex.args[1] == symbol( "@pyimport" )
+        if length( ex.args ) == 2 && typeof( ex.args[2] ) == Symbol
+            ctx.callstack[end].localvars[end][ ex.args[2] ] = VarInfo( ctx.line )
+        elseif length( ex.args ) == 4 && ex.args[3] == :as && typeof( ex.args[4] ) == Symbol
+            ctx.callstack[end].localvars[end][ ex.args[4] ] = VarInfo( ctx.line )
+        end
+        return
+    end
+
     if ex.args[1] == symbol( "@compat" )
         if isexpr( ex.args[2], :call ) && ( ex.args[2].args[1]== :Dict ||
             isexpr( ex.args[2].args[1], :curly ) && ex.args[2].args[1].args[1] == :Dict )
