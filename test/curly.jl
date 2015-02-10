@@ -11,6 +11,12 @@ msgs = lintstr(s)
 @test( contains( msgs[1].message, "Probably illegal use of" ) )
 
 s = """
+a = Set{ ( Int, Int ) }()
+"""
+msgs = lintstr(s)
+@test( isempty( msgs ) )
+
+s = """
 b = :Symbol
 a = Dict{ b, Any}()
 """
