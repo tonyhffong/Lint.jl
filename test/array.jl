@@ -1,9 +1,24 @@
-@assert [[1,2],[3,4]] == [1,2,3,4]
-s = """
-r = [[1,2], [3,4]]
-"""
-msgs = lintstr( s )
-@test( contains( msgs[1].message, "Nested vcat" ) )
+if VERSION < v"0.4-"
+    @assert [[1,2],[3,4]] == [1,2,3,4]
+    s = """
+    r = [[1,2], [3,4]]
+    """
+    msgs = lintstr( s )
+    @test( contains( msgs[1].message, "Nested vcat" ) )
+else
+    @assert [[1;2];[3;4]] == [1;2;3;4]
+    s = """
+    r = [[1;2];[3;4]]
+    """
+    msgs = lintstr( s )
+    @test( contains( msgs[1].message, "Nested vcat" ) )
+
+    s = """
+    r = [[1,2],[3,4]]
+    """
+    msgs = lintstr( s )
+    @test( contains( msgs[1].message, "Nested vect" ) )
+end
 @assert [[1 2] [3 4]] == [1 2 3 4]
 s = """
 r = [[1 2]  [3 4]]

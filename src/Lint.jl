@@ -214,6 +214,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintdict( ex, ctx; typed=true )
     elseif ex.head == :vcat
         lintvcat( ex, ctx )
+    elseif ex.head == :vect # 0.4
+        lintvect( ex, ctx )
     elseif ex.head == :hcat
         linthcat( ex, ctx )
     elseif ex.head == :typed_hcat
@@ -256,22 +258,22 @@ function lintserver(port)
         try
           while true
             line = readline(conn)
-            
+
             println(typeof(line))
             println(ispath(strip(line)))
             println(strip(line))
-            
+
             if ispath(strip(line))
                 m = lintfile(strip(line), returnMsgs = true)
             else
                 error("The string is not a file.")
             end
-            
+
             for i in m
                 write(conn, string(i))
                 write(conn, "\n")
             end
-            
+
           end
         catch err
           print("connection ended with error $err")
