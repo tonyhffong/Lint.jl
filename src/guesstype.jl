@@ -21,8 +21,10 @@ function valuetype{T<:Associative}( ::Type{T} )
     valuetype( super( T ) )
 end
 
+if VERSION < v"0.4-"
 function eltype{T}( ::Type{Enumerate{T}})
     (Int, T )
+end
 end
 
 function isAnyOrTupleAny( x )
