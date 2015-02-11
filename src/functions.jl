@@ -411,7 +411,12 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                 msg( ctx, 2, "Though valid in 0.4, you want " * string( row[1] ) * "() instead of " * string( row[2] ) * "()" )
             end
             if VERSION >= v"0.4.0-dev+1830" && versionreachable && ex.args[1] == row[1]
-                msg( ctx, 0, "In 0.4+, replace " * string( row[1] ) * "() with " * string( row[2] ) * "()" )
+                repl = string( row[2] )
+                suffix = ""
+                if contains( repl, "Int" )
+                    suffix = ", or some of the other explicit conversion functions. (round, trunc, etc...)"
+                end
+                msg( ctx, 0, "In 0.4+, replace " * string( row[1] ) * "() with " * repl * "()" * suffix )
             end
         end
         if ex.args[1] == :String
