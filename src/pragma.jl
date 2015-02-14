@@ -9,19 +9,19 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
         if m != nothing
             action = m.captures[1]
             infotype = m.captures[6]
-            rest = m.captures[10]
+            rest_str = m.captures[10]
             if infotype == "type"
-                v = parse( rest )
+                v = parse( rest_str )
                 if isexpr( v, :incomplete )
-                    msg( ctx, 2, "Incomplete expression " * rest )
+                    msg( ctx, 2, "Incomplete expression " * rest_str )
                     str = ""
                 else
-                    str = "typeof( " * rest * " ) == " * string( guesstype( v, ctx ) )
+                    str = "typeof( " * rest_str * " ) == " * string( guesstype( v, ctx ) )
                 end
             elseif infotype == "me"
-                str = rest
+                str = rest_str
             elseif infotype == "version"
-                v = convert( VersionNumber, rest )
+                v = convert( VersionNumber, rest_str )
                 reachable = ctx.versionreachable( v )
                 if reachable
                     str = "Reachable by " * string(v)
