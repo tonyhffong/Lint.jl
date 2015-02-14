@@ -139,31 +139,7 @@ function lintboolean( ex, ctx::LintContext )
                 lintboolean( a, ctx )
             end
         elseif ex.head == :comparison
-            pos = 0
-            lefttype = Any
-            righttype = Any
-            for i in 2:2:length(ex.args)
-                if ex.args[i] == :(==)
-                    if pos != i-1
-                        pos = i-1
-                        lefttype = guesstype( ex.args[i-1], ctx )
-                    end
-                    righttype = guesstype( ex.args[i+1], ctx )
-                    if ctx.quoteLvl == 0 && lefttype != Any && righttype != Any &&
-                        #ex.args[i-1] != :Any &&
-                        #ex.args[i+1] != :Any &&
-                        #ex.args[i-1] != :DataType &&
-                        #ex.args[i+1] != :DataType &&
-                        !( lefttype <: righttype ) && !( righttype <: lefttype ) &&
-                        !pragmaexists( "Ignore incompatible type comparison", ctx )
-                        msg( ctx, 1, "Comparing apparently incompatible types (#" *
-                            string(i>>1) * ") LHS:" *string(lefttype)*
-                            " RHS:" * string(righttype) )
-                    end
-                    lefttype = righttype
-                    pos += 2
-                end
-            end
+            lintcomparison( ex, ctx )
         elseif ex.head == :call && ex.args[1] == :length
             msg( ctx, 2, "Incorrect usage of length() in a Boolean context. You want to use isempty().")
         end
@@ -177,6 +153,43 @@ function lintboolean( ex, ctx::LintContext )
         msg( ctx, 2, "Lint doesn't understand " * string( ex ) * " in a boolean context" )
     end
     lintexpr( ex, ctx )
+end
+
+function lintcomparison( ex::Expr, ctx::LintContext )
+    if ctx.quoteLvl != 0
+        return
+    end
+    pos = 0
+    lefttype = Any
+    righttype = Any
+    for i in 2:2:length(ex.args)
+        if ex.args[i] in [:(==), :(<), :(>), :(<=), :(>=), :(!=) ]
+            if pos != i-1
+                pos = i-1
+                lefttype = guesstype( ex.args[i-1], ctx )
+            end
+            righttype = guesstype( ex.args[i+1], ctx )
+            if lefttype != Any && righttype != Any
+                problem = false
+                if lefttype <: Number && righttype <: Number &&
+                        !( lefttype <: Real && righttype <: Real ) &&
+                        !in( ex.args[i], [ :(==), :(!=) ] ) # non-real comparison can only be == or !=
+                    problem = true
+                end
+                if !problem && ( !(lefttype <: Number) || !(righttype <: Number ) ) &&
+                     !( lefttype <: righttype ) && !( righttype <: lefttype )
+                    problem = true
+                end
+                if problem && !pragmaexists( "Ignore incompatible type comparison", ctx )
+                    msg( ctx, 1, "Comparing apparently incompatible types (#" *
+                        string(i>>1) * ") LHS:" *string(lefttype)*
+                        " RHS:" * string(righttype) )
+                end
+            end
+            lefttype = righttype
+            pos += 2
+        end
+    end
 end
 
 function lintfor( ex::Expr, ctx::LintContext )

@@ -289,6 +289,18 @@ function f( args::Float64... )
 end
 """
 msgs = lintstr(s)
+@test isempty( msgs )
+
+s = """
+function f( x::Symbol )
+    if x == "blah"
+        0
+    else
+        1
+    end
+end
+"""
+msgs = lintstr(s)
 @test contains( msgs[1].message, "Comparing apparently incompatible type" )
 
 s = """

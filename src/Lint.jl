@@ -176,6 +176,7 @@ function lintexpr( ex::Any, ctx::LintContext )
                 lintexpr( ex.args[i], ctx )
             end
         end
+        lintcomparison( ex, ctx )
     elseif ex.head == :type
         linttype( ex, ctx )
     elseif ex.head == :typealias

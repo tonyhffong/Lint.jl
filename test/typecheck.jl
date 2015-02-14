@@ -204,3 +204,16 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "typeof( a ) == Array{Complex{Float64},1}" ) )
+
+
+s = """
+    Complex(0.0,0.0) == 0
+"""
+msgs = lintstr(s)
+@test isempty( msgs )
+
+s = """
+    Complex(1.0,0.0) > 0
+"""
+msgs = lintstr(s)
+@test contains( msgs[1].message, "Comparing apparently incompatible type" )
