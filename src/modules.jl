@@ -93,6 +93,8 @@ function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
             m = eval( Main, parse( path ) )
             lastpart = ex.args[end]
         else
+            ctx.callstack[end].declglobs[ ex.args[1] ] = @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+            eval( Main, ex )
             lastpart = ex.args[end]
             m = eval( Main, parse( join(ex.args, "." ) ) )
         end

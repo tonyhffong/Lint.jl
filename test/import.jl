@@ -10,3 +10,10 @@ importall Lint
 """
 msgs = lintstr( s )
 @assert( isempty( msgs ) )
+
+s = """
+import Compat
+f = Compat.rewrite_dict( :(a=b) )
+"""
+msgs = lintstr( s )
+@assert( isempty( msgs ) )
