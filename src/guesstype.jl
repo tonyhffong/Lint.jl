@@ -21,7 +21,7 @@ function valuetype{T<:Associative}( ::Type{T} )
     valuetype( super( T ) )
 end
 
-if VERSION < v"0.4-"
+if VERSION < v"0.4-dev+3345"
 function eltype{T}( ::Type{Enumerate{T}})
     (Int, T )
 end
