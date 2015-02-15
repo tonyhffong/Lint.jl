@@ -209,6 +209,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintexpr( ex.args[1], ctx )
     elseif ex.head == :ref # it could be a ref a[b], or an array Int[1,2]
         lintref( ex, ctx )
+    elseif ex.head == :typed_vcat# it could be a ref a[b], or an array Int[1,2]
+        linttyped_vcat( ex, ctx )
     elseif ex.head == :dict # homogeneous dictionary
         lintdict( ex, ctx; typed=false )
     elseif ex.head == :typed_dict # mixed type dictionary
