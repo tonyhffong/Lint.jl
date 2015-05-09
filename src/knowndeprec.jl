@@ -103,7 +103,6 @@ function parseDeprecate( ex, lineabs )
         end
     elseif Meta.isexpr( ex, :macrocall ) && ex.args[1] == symbol("@deprecate")
         if typeof( ex.args[2] ) == Symbol
-            @assert typeof( ex.args[3] ) == Symbol
             funcname = ex.args[2]
             sig = nothing
             msg = string( ex.args[2], " is deprecated. Use ", ex.args[3], " instead." )
