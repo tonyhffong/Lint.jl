@@ -315,7 +315,7 @@ function guesstype( ex, ctx::LintContext )
         try
             elt = eval( Main, ex.args[2] )
         end
-        if sig[1] == DataType
+        if length(sig) >= 1 && sig[1] == DataType
             if length(sig) == 2 && isexpr(ex.args[3],:tuple)
                 ret = Array{ elt, length(ex.args[3].args ) }
             elseif length(sig) == 2 && sig[2] <: Tuple && all( x->x <: Integer, sig[2] )
