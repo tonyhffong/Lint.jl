@@ -248,7 +248,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     end
 
     if VERSION < v"0.4.0-dev+4139"
-        if rhstype <: Tuple && length( rhstype ) != tuplelen && !isForLoop
+        if typeof( rhstype ) != Symbol && rhstype <: Tuple && length( rhstype ) != tuplelen && !isForLoop
             if length( syms ) > 1
                 msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
             end
