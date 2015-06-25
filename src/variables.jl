@@ -228,10 +228,10 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         elseif rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
             rhstype = eltype( rhstype )
         elseif rhstype <: Associative
+            @lintpragma( "Ignore unstable type variable rhstype" )
             if VERSION < v"0.4.0-dev+4139"
                 rhstype = ( keytype( rhstype ), valuetype( rhstype ) )
             else
-                @lintpragma( "Ignore unstable type variable rhstype" )
                 rhstype = Tuple{ keytype( rhstype ), valuetype( rhstype ) }
             end
         end
@@ -297,6 +297,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             if rhstype == Any || length( syms ) == 1
                 rhst = rhstype
             elseif rhstype <: Tuple && length( rhstype ) == length( syms )
+                @lintpragma( "DataType is a container type")
                 rhst = rhstype[ symidx ]
             else
                 rhst = Any
