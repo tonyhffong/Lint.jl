@@ -30,7 +30,7 @@ msgs = lintstr(s)
 @test( isempty( msgs ) )
 
 s = """
-@traitfn ft1{X,Y; Cmp{X,Y}}(x::X,y::Y)  = x>y ? 5 : 6"
+@traitfn ft1{X,Y; Cmp{X,Y}}(x::X,y::Y)  = x>y ? 5 : 6
 """
 msgs = lintstr( s )
 @test( isempty( msgs ) )

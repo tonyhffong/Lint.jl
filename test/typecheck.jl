@@ -195,7 +195,11 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "typeof( s ) == (Int64,Int64,Int64)" ) )
+if VERSION < v"0.4.0-dev+4319"
+    @test( contains( msgs[1].message, "typeof( s ) == (Int64,Int64,Int64)" ) )
+else
+    @test( contains( msgs[1].message, "typeof( s ) == Tuple{Int64,Int64,Int64}" ) )
+end
 s = """
 function f()
     a = Complex{Float64}[]

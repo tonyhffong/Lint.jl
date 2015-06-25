@@ -31,5 +31,5 @@ stagedfunction f( args::Int... )
 end
 """
 msgs = lintstr(s)
-@test contains( msgs[1].message, "typeof( args ) == (DataType...,)")
+@test contains( msgs[1].message, "typeof( args ) == Tuple{Vararg{DataType}}")
 @test contains( msgs[2].message, "typeof( x ) == DataType" )

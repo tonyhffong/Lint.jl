@@ -267,8 +267,13 @@ function f( args...; dict... )
 end
 """
 msgs = lintstr(s)
-@test contains( msgs[1].message, "typeof( args ) == (Any...,)")
-@test contains( msgs[2].message, "typeof( dict ) == (Any...,)")
+if VERSION < v"0.4.0-dev+4139"
+    @test contains( msgs[1].message, "typeof( args ) == (Any...,)")
+    @test contains( msgs[2].message, "typeof( dict ) == (Any...,)")
+else
+    @test contains( msgs[1].message, "typeof( args ) == Tuple")
+    @test contains( msgs[2].message, "typeof( dict ) == Tuple")
+end
 
 s = """
 function f( args::Float64... )
@@ -277,7 +282,11 @@ function f( args::Float64... )
 end
 """
 msgs = lintstr(s)
-@test contains( msgs[1].message, "typeof( args ) == (Float64...,)")
+if VERSION < v"0.4.0-dev+4139"
+    @test contains( msgs[1].message, "typeof( args ) == (Float64...,)")
+else
+    @test contains( msgs[1].message, "typeof( args ) == Tuple{Vararg{Float64}}" )
+end
 
 s = """
 function f( args::Float64... )

@@ -49,7 +49,7 @@ msgs = lintstr( s )
 @test( contains( msgs[1].message, "has more indices than dimensions" ) )
 s = """
 function f( x::Array{Float64,2} )
-    y = x[:,1]
+    y = x[Colon(),1]
     for i in y
         println( i )
     end
@@ -155,7 +155,7 @@ msgs = lintstr( s )
 
 s = """
 function f(y::Array{Float64, 3}, x1::Int64)
-    reshape(y[:, x1, :]', size(y, 1), size(y, 3)')
+    reshape(y[Colon(), x1, Colon()]', size(y, 1), size(y, 3)')
 end
 """
 msgs = lintstr( s )

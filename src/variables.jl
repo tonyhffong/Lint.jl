@@ -228,17 +228,36 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         elseif rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
             rhstype = eltype( rhstype )
         elseif rhstype <: Associative
-            rhstype = ( keytype( rhstype ), valuetype( rhstype ) )
+            if VERSION < v"0.4.0-dev+4139"
+                rhstype = ( keytype( rhstype ), valuetype( rhstype ) )
+            else
+                @lintpragma( "Ignore unstable type variable rhstype" )
+                rhstype = Tuple{ keytype( rhstype ), valuetype( rhstype ) }
+            end
         end
 
-        if typeof( rhstype ) <: Tuple && length( rhstype ) != tuplelen
-            msg( ctx, 0, "Iteration generates tuples of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+        if VERSION < v"0.4.0-dev+4139"
+            if rhstype <: Tuple && length( rhstype ) != tuplelen
+                msg( ctx, 0, "Iteration generates tuples of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+            end
+        else
+            if rhstype <: Tuple && length( rhstype.parameters ) != tuplelen
+                msg( ctx, 0, "Iteration generates tuples of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+            end
         end
     end
 
-    if typeof( rhstype ) <: Tuple && length( rhstype ) != tuplelen && !isForLoop
-        if length( syms ) > 1
-            msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+    if VERSION < v"0.4.0-dev+4139"
+        if rhstype <: Tuple && length( rhstype ) != tuplelen && !isForLoop
+            if length( syms ) > 1
+                msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+            end
+        end
+    else
+        if typeof(rhstype) != Symbol && rhstype <: Tuple && length( rhstype.parameters ) != tuplelen && !isForLoop
+            if tuplelen > 1
+                msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+            end
         end
     end
 
@@ -274,12 +293,22 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
         end
         vi = VarInfo( ctx.line )
         @lintpragma( "Ignore incompatible type comparison" )
-        if rhstype == Any || length( syms ) == 1
-            rhst = rhstype
-        elseif typeof( rhstype ) <: Tuple && length( rhstype ) == length( syms )
-            rhst = rhstype[ symidx ]
+        if VERSION < v"0.4.0-dev+4139"
+            if rhstype == Any || length( syms ) == 1
+                rhst = rhstype
+            elseif rhstype <: Tuple && length( rhstype ) == length( syms )
+                rhst = rhstype[ symidx ]
+            else
+                rhst = Any
+            end
         else
-            rhst = Any
+            if rhstype == Any || length( syms ) == 1
+                rhst = rhstype
+            elseif rhstype <: Tuple && length( rhstype.parameters ) == length( syms )
+                rhst = rhstype.parameters[ symidx ]
+            else
+                rhst = Any
+            end
         end
         try
             if haskey( typeassert, s )

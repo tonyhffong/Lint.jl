@@ -197,12 +197,22 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
             end
             sym = resolveArguments( sube.args[1], 0 )
             if typeof(sym) == Symbol
-                if isstaged
-                    typeassert[ sym ] = (DataType...,)
-                elseif haskey( typeassert, sym )
-                    typeassert[ sym ] = (typeassert[sym]...,)
+                if VERSION < v"0.4.0-dev+4319"
+                    if isstaged
+                        typeassert[ sym ] = (DataType...,)
+                    elseif haskey( typeassert, sym )
+                        typeassert[ sym ] = (typeassert[sym]...,)
+                    else
+                        typeassert[ sym ] = (Any...,)
+                    end
                 else
-                    typeassert[ sym ] = (Any...,)
+                    if isstaged
+                        typeassert[ sym ] = Tuple{Vararg{DataType}}
+                    elseif haskey( typeassert, sym )
+                        typeassert[ sym ] = Tuple{Vararg{typeassert[sym]}}
+                    else
+                        typeassert[ sym ] = Tuple{Vararg{Any}}
+                    end
                 end
             end
         elseif sube.head == :($)
