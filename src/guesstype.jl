@@ -544,7 +544,7 @@ function guesstype( ex, ctx::LintContext )
             end
         =#
         elseif partyp != Any
-            if !pragmaexists( string( partyp ) * " is a container type", ctx )
+            if ctx.versionreachable( VERSION ) && !pragmaexists( string( partyp ) * " is a container type", ctx )
                 msg( ctx, 2, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
             end
         end
