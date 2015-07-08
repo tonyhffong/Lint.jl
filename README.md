@@ -41,7 +41,7 @@ using Lint
 @test isempty(lintpkg( "MyPackage", returnMsgs=true))
 ```
 
-## What it can find?
+## What can it find?
 * simple deadcode detection (e.g if true/false)
 * simple premature-return deadcode detection
 * Bitwise `&`, `|` being used in a Bool context. Suggest `&&` and `||`
