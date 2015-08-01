@@ -100,6 +100,19 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
+    if ex.args[1] == symbol( "@enum" )
+        for i in 2:length( ex.args )
+            if typeof( ex.args[i] ) == Symbol
+                vi = VarInfo( ctx.line )
+                ctx.callstack[1].declglobs[ ex.args[i] ] = vi
+            elseif isexpr( ex.args[i], :(=) ) && typeof( ex.args[i].args[1] ) == Symbol
+                vi = VarInfo( ctx.line )
+                ctx.callstack[1].declglobs[ ex.args[i].args[1] ] = vi
+            end
+        end
+        return
+    end
+
     ctx.macrocallLvl = ctx.macrocallLvl + 1
 
     # AST for things like

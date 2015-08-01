@@ -66,3 +66,9 @@ s = """
 """
 msgs = lintstr( s )
 @assert( isempty( msgs ) )
+
+s = """
+@enum Z3_lbool Z3_L_FALSE = -1 Z3_L_UNDEF Z3_L_TRUE
+"""
+msgs = lintstr( s )
+@assert( isempty( msgs ) )
