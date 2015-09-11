@@ -1,5 +1,5 @@
 commoncollections = DataType[ Array, AbstractArray, BitArray, Set, Associative ]
-commoncollmethods = Dict{ Symbol, Set{ DataType }} ()
+commoncollmethods = Dict{ Symbol, Set{ DataType }}()
 
 function initcommoncollfuncs()
     global commoncollmethods, commoncollections
