@@ -339,3 +339,12 @@ end
 """
 msgs = lintstr(s)
 @test( isempty( msgs ) )
+
+if VERSION >= v"0.4"
+    s = """
+    a = :b
+    f(; a => 1 )
+    """
+    msgs = lintstr(s)
+    @test( isempty( msgs ) )
+end

@@ -114,7 +114,7 @@ function expr_similar_score( e1::Expr, e2::Expr, base::Float64 = 1.0 )
     return score
 end
 
-function test_similarity_string( str::String )
+function test_similarity_string{T<:AbstractString}( str::T)
     i = start(str)
     firstexpr = nothing
     lastexpr = nothing
@@ -169,14 +169,14 @@ function lintlet( ex::Expr, ctx::LintContext )
     for j = 2:length(ex.args)
         # it's always assignment, or the parser would have thrown at the very start
         if isexpr( ex.args[j], :(=) ) && !isexpr( ex.args[j].args[1], :call )
-            lintassignment( ex.args[j], ctx; islocal = true )
+            lintassignment( ex.args[j], :(=), ctx; islocal = true )
         end
     end
     blk = ex.args[1]
     @assert( blk.head == :block )
     for i = 1:length(blk.args)
         if isexpr( blk.args[i], :(=) ) && !isexpr( blk.args[i].args[1], :call )
-            lintassignment( blk.args[i], ctx; islocal = true )
+            lintassignment( blk.args[i], :(=), ctx; islocal = true )
         else
             lintexpr( blk.args[i], ctx )
         end

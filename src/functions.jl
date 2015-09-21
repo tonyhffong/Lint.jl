@@ -14,7 +14,7 @@ function initcommoncollfuncs()
                     "writemime", "write", "Dict", "eltype", "push!" ] )
                     continue
                 end
-                s = symbol( mtch.match )
+                s = Symbol( mtch.match )
                 if !haskey( commoncollmethods, s )
                     commoncollmethods[s] = Set{ DataType }()
                 end
@@ -52,14 +52,19 @@ end
 # if ctorType isn't symbol( "" ) then we are in the context of
 # a constructor for a type. We would check
 # * if the function name matches the type name
-function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isstaged=false )
+function lintfunction( ex::Expr, ctx::LintContext; ctorType = Symbol( "" ), isstaged=false )
     if ex.args[1].args[1]==:eval # extending eval(m,x) = ... in module. don't touch it.
+        return
+    end
+
+    if length(ex.args) == 1 && typeof(ex.args[1]) == Symbol
+        # generic function without methods
         return
     end
 
     temporaryTypes = Any[]
 
-    fname = symbol("")
+    fname = Symbol("")
     if ex.args[1].head == :tuple # anonymous
         # do nothing
     elseif isexpr( ex.args[1].args[1], :(.) )
@@ -98,9 +103,9 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
         lintexpr( ex.args[1].args[1].args[1], ctx )
     end
     ctx.scope = string(fname)
-    if fname != symbol( "" ) && !contains( ctx.file, "deprecate" )
+    if fname != Symbol( "" ) && !contains( ctx.file, "deprecate" )
         isDeprecated = functionIsDeprecated( ex.args[1] )
-        if isDeprecated != nothing && !pragmaexists( "Ignore deprecated " * string( fname ), ctx )
+        if isDeprecated != nothing && !pragmaexists( "Ignore deprecated " * utf8( fname ), ctx )
             msg( ctx, 2, isDeprecated.message * "\nSee: deprecated.jl " * string( isDeprecated.line ) )
         end
     end
@@ -224,7 +229,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
     end
 
     params = nothing
-    for i = (fname == symbol("") ? 1 : 2 ):length(ex.args[1].args)
+    for i = (fname == Symbol("") ? 1 : 2 ):length(ex.args[1].args)
         if isexpr( ex.args[1].args[i], :parameters )
             params = ex.args[1].args[i]
             continue
@@ -258,10 +263,10 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = symbol( "" ), isst
     pushVarScope( ctx )
     lintexpr( ex.args[2], ctx )
 
-    if ctorType != symbol( "" ) && fname != ctorType && in( :new, ctx.callstack[end].calledfuncs )
+    if ctorType != Symbol( "" ) && fname != ctorType && in( :new, ctx.callstack[end].calledfuncs )
         msg( ctx, 2, "Constructor-like function " * string( fname ) * " within type " * string( ctorType ) * ". Shouldn't they match?" )
     end
-    if ctorType != symbol( "" ) && fname == ctorType
+    if ctorType != Symbol( "" ) && fname == ctorType
         t = guesstype( ex.args[2], ctx )
         if typeof( t ) == DataType
             if t.name.name != ctorType
@@ -355,7 +360,7 @@ end
 
 function lintfunctioncall( ex::Expr, ctx::LintContext )
     if ex.args[1]==:include
-        if typeof( ex.args[2] ) <: String
+        if typeof( ex.args[2] ) <: AbstractString
             inclfile = string(ex.args[2])
         else
             inclfile = ""
@@ -431,6 +436,8 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
         end
         if ex.args[1] == :String
             msg( ctx, 2, "You want string(), i.e. string conversion, instead of a non-existent constructor" )
+        elseif ex.args[1] == :Union
+            msg( ctx, 2, "Use Union{...}, with curly, instead of parentheses." )
         elseif ex.args[1]==:(+)
             lintplus( ex, ctx )
             known = true
@@ -459,14 +466,14 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
 
         #splice! allows empty range such as 3:2, it means inserting an array
         # between position 2 and 3, without taking out any value.
-        if ex.args[1] == symbol( "splice!" ) && Meta.isexpr( ex.args[3], :(:) ) &&
+        if ex.args[1] == Symbol( "splice!" ) && Meta.isexpr( ex.args[3], :(:) ) &&
             length( ex.args[3].args ) == 2 && typeof( ex.args[3].args[1] ) <: Real &&
             typeof( ex.args[3].args[2] ) <: Real && ex.args[3].args[2] < ex.args[3].args[1]
             push!( skiplist, 3 )
         end
 
         if ex.args[1] == :new
-            tname = symbol( ctx.scope )
+            tname = Symbol( ctx.scope )
             for i = length( ctx.callstack ):-1:1
                 if haskey( ctx.callstack[i].typefields, tname )
                     fields = ctx.callstack[i].typefields[ tname ]
@@ -512,6 +519,9 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                 for kw in ex.args[i].args
                     if isexpr( kw, :(...) )
                         lintexpr( kw.args[1], ctx )
+                    elseif isexpr( kw, :(=>) )
+                        lintexpr( kw.args[1], ctx )
+                        lintexpr( kw.args[2], ctx )
                     elseif length(kw.args) != 2
                         msg( ctx, 2, "unknown keyword pattern " * string(kw))
                     else
@@ -529,7 +539,7 @@ end
 
 function lintplus( ex::Expr, ctx::LintContext )
     for i in 2:length(ex.args)
-        if guesstype( ex.args[i], ctx ) <: String
+        if guesstype( ex.args[i], ctx ) <: AbstractString
             msg( ctx, 2, "String uses * to concatenate.")
             break
         end

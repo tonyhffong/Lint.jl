@@ -1,5 +1,5 @@
 s = """
-stagedfunction f(a,b)
+@generated function f(a,b)
     if a==1
         :(b)
     elseif b == Int
@@ -15,7 +15,7 @@ msgs = lintstr( s )
 
 # if it is not a staged function, it would have no lint message
 s = """
-stagedfunction f(x)
+@generated function f(x)
     :(x+y)
 end
 """
@@ -23,7 +23,7 @@ msgs = lintstr( s )
 @test contains( msgs[1].message, "Use of undeclared symbol" )
 
 s = """
-stagedfunction f( args::Int... )
+@generated function f( args::Int... )
     @lintpragma( "Info type args")
     x = args[1]
     @lintpragma( "Info type x")

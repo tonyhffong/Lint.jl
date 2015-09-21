@@ -221,3 +221,9 @@ s = """
 """
 msgs = lintstr(s)
 @test contains( msgs[1].message, "Comparing apparently incompatible type" )
+
+s = """
+s = Union(Int,Double)
+"""
+msgs = lintstr( s )
+@test( contains( msgs[1].message, "Use Union"))

@@ -3,7 +3,7 @@
 
 type DeprecateInfo
     funcname::Any
-    sig::Union( Nothing, Array{Any,1} )
+    sig::Union{ Void, Array{Any,1} }
     message::UTF8String
     line::Int
 end
@@ -101,7 +101,7 @@ function parseDeprecate( ex, lineabs )
             msg = utf8( string( blockcontents[1].args[2] ) )
             push!( deprecates[ funcname ], DeprecateInfo( funcname, sig, msg, lineabs ) )
         end
-    elseif Meta.isexpr( ex, :macrocall ) && ex.args[1] == symbol("@deprecate")
+    elseif Meta.isexpr( ex, :macrocall ) && ex.args[1] == Symbol("@deprecate")
         if typeof( ex.args[2] ) == Symbol
             funcname = ex.args[2]
             sig = nothing

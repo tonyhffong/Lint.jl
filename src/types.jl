@@ -54,7 +54,7 @@ function linttype( ex::Expr, ctx::LintContext )
         end
     end
 
-    typename = symbol( "" )
+    typename = Symbol( "" )
     if typeof( ex.args[2] ) == Symbol
         typename = ex.args[2]
     elseif isexpr( ex.args[2], :($) ) && typeof( ex.args[2].args[1] ) == Symbol
@@ -70,7 +70,7 @@ function linttype( ex::Expr, ctx::LintContext )
             processCurly( ex.args[2].args[1] )
         end
     end
-    if typename != symbol( "" )
+    if typename != Symbol( "" )
         if islower( string( typename )[1] )
             msg( ctx, 0, "Julia style recommends type names start with an upper case: " * string( typename ) )
         end
@@ -85,13 +85,13 @@ function linttype( ex::Expr, ctx::LintContext )
             ctx.line = def.line-1
         elseif typeof( def ) == Symbol
             # it means Any, probably not a very efficient choice
-            if !pragmaexists( "Ignore untyped field " * string( def ), ctx, deep=false )
+            if !pragmaexists( utf8( "Ignore untyped field " * string( def ) ), ctx, deep=false )
                 msg( ctx, 0, "A type is not given to the field " * string( def ) * ", which can be slow." )
             end
             push!( fields, ( def, Any ))
-        elseif isexpr( def, :macrocall ) && def.args[1] == symbol( "@lintpragma" )
+        elseif isexpr( def, :macrocall ) && def.args[1] == Symbol( "@lintpragma" )
             lintlintpragma( def, ctx )
-        elseif isexpr( def, :call ) && def.args[1] == symbol( "lintpragma" )
+        elseif isexpr( def, :call ) && def.args[1] == Symbol( "lintpragma" )
             lintlintpragma( def, ctx )
             msg( ctx,2, "Use @lintpragma macro inside type declaration" )
         elseif def.head == :(::)
@@ -121,7 +121,7 @@ function linttype( ex::Expr, ctx::LintContext )
         end
     end
 
-    if typename != symbol( "" )
+    if typename != Symbol( "" )
         ctx.callstack[end-1].typefields[ typename ] = fields
     end
 

@@ -30,7 +30,7 @@ function lintdict4( ex::Expr, ctx::LintContext )
             for (j,s) in [ (1,ktypes), (2,vtypes ) ]
                 if typeof( a.args[j] ) <: QuoteNode && typeof( a.args[j].value ) <: Symbol
                     push!( s, Symbol )
-                elseif typeof( a.args[j] ) <: Number || typeof( a.args[j] ) <: String
+                elseif typeof( a.args[j] ) <: Number || typeof( a.args[j] ) <: AbstractString
                     push!( s, typeof( a.args[j] ) )
                     # we want to add more immutable types such as Date, DateTime, etc.
                 elseif isexpr( a.args[j], :call ) && in( a.args[j].args[1], [:Date, :DateTime] )

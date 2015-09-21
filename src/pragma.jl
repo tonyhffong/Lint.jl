@@ -4,7 +4,7 @@ type PragmaInfo
 end
 
 function lintlintpragma( ex::Expr, ctx::LintContext )
-    if typeof( ex.args[2] ) <: String
+    if typeof( ex.args[2] ) <: AbstractString
         m = match( r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)|(version)) +(.+)"s, ex.args[2] )
         if m != nothing
             action = m.captures[1]
@@ -50,7 +50,7 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
     end
 end
 
-function pragmaexists( s::String, ctx::LintContext; deep=true )
+function pragmaexists( s::UTF8String, ctx::LintContext; deep=true )
     iend = deep ? 1 : length(ctx.callstack)
     for i in length( ctx.callstack ):-1:iend
         if haskey( ctx.callstack[i].pragmas, s )
@@ -60,3 +60,5 @@ function pragmaexists( s::String, ctx::LintContext; deep=true )
     end
     return false
 end
+
+pragmaexists( s::ASCIIString, ctx::LintContext; deep = true ) = pragmaexists( utf8( s ), ctx; deep = deep )

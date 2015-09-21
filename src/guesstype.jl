@@ -102,12 +102,12 @@ function guesstype( ex, ctx::LintContext )
     if t <: Number
         return t
     end
-    if t <: String
+    if t <: AbstractString
         return t
     end
     if t==Symbol # check if we have seen it
         if ex == :nothing
-            return Nothing
+            return Void
         end
         # TODO: this should be a module function
         checkret = x -> begin
@@ -199,12 +199,12 @@ function guesstype( ex, ctx::LintContext )
 
     # this is hackish because the return type is a Symbol, not a DataType
     if isexpr( ex, :call ) && ex.args[1] == :new
-        return symbol( ctx.scope )
+        return Symbol( ctx.scope )
     end
 
     # another detection for constructor calling another constructor
     # A() = A(default)
-    if isexpr( ex, :call ) && symbol( ctx.scope ) == ex.args[1]
+    if isexpr( ex, :call ) && Symbol( ctx.scope ) == ex.args[1]
         found = false
         for i = length( ctx.callstack ):-1:1
             found = in( ex.args[1], ctx.callstack[i].types )
@@ -214,7 +214,7 @@ function guesstype( ex, ctx::LintContext )
         end
     end
     # A() = A{T}(default)
-    if isexpr( ex, :call ) && isexpr( ex.args[1], :curly ) && symbol( ctx.scope ) == ex.args[1].args[1]
+    if isexpr( ex, :call ) && isexpr( ex.args[1], :curly ) && Symbol( ctx.scope ) == ex.args[1].args[1]
         found = false
         for i = length( ctx.callstack ):-1:1
             found = in( ex.args[1].args[1], ctx.callstack[i].types )
@@ -255,12 +255,12 @@ function guesstype( ex, ctx::LintContext )
     end
 
     if isexpr( ex, :macrocall )
-        if ex.args[1] == symbol( "@sprintf" ) ||
+        if ex.args[1] == Symbol( "@sprintf" ) ||
             isexpr( ex, :call ) && in( ex.args[1], [:replace, :string, :utf8, :utf16, :utf32, :repr, :normalize_string, :join, :chop, :chomp,
             :lpad, :rpad, :strip, :lstrip, :rstrip, :uppercase, :lowercase, :ucfirst, :lcfirst,
             :escape_string, :unescape_string ] )
-            return String
-        elseif ex.args[1] == symbol( "@compat" )
+            return AbstractString
+        elseif ex.args[1] == Symbol( "@compat" )
             return guesstype( ex.args[2], ctx )
         end
     end
@@ -354,7 +354,7 @@ function guesstype( ex, ctx::LintContext )
         return fst
     end
 
-    if isexpr( ex, symbol( "'" ) )
+    if isexpr( ex, Symbol( "'" ) )
         fst = guesstype( ex.args[1], ctx )
         return fst
     end
@@ -414,7 +414,7 @@ function guesstype( ex, ctx::LintContext )
 
     if isexpr( ex, :call ) && ex.args[1] == :repeat
         ret = guesstype( ex.args[2], ctx )
-        if ret <: String
+        if ret <: AbstractString
             return ret
         end
     end
@@ -499,7 +499,7 @@ function guesstype( ex, ctx::LintContext )
                 msg( ctx, 2, "Key type expects " * string( ktypeexpect ) * ", provided " * string( ktypeactual ) )
             end
             return vtypeexpect
-        elseif partyp <: String
+        elseif partyp <: AbstractString
             ktypeactual = guesstype( ex.args[2], ctx )
             if ktypeactual != Any && !( ktypeactual <: Integer ) && !( ktypeactual <: Range )
                 msg( ctx, 2, "string[] expects Integer, provided " * string( ktypeactual ) )

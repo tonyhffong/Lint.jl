@@ -1,9 +1,9 @@
 type LintMessage
-    file    :: String
-    scope   :: String
+    file    :: UTF8String
+    scope   :: UTF8String
     line    :: Int
     level   :: Int # 0: INFO, 1: WARNING, 2: ERROR, 3:FATAL (probably dangerous)
-    message :: String
+    message :: UTF8String
 end
 
 import Base.string
@@ -54,7 +54,7 @@ end
 type VarInfo
     line::Int
     typeactual::Any # most of the time it's DataType, but could be Tuple of types, too
-    typeexpr::Union( Expr, Symbol ) # We may know that it is Array{ T, 1 }, though we do not know T, for example
+    typeexpr::Union{ Expr, Symbol } # We may know that it is Array{ T, 1 }, though we do not know T, for example
     VarInfo() = new( -1, Any, :() )
     VarInfo( l::Int ) = new( l, Any, :() )
     VarInfo( l::Int, t::DataType ) = new( l, t, :() )
@@ -75,7 +75,7 @@ type LintStack
     localusedvars :: Array{ Set{Symbol}, 1 }
     usedvars      :: Set{Symbol}
     oosvars       :: Set{Symbol}
-    pragmas       :: Dict{String, PragmaInfo } # the boolean denotes if the pragma has been used
+    pragmas       :: Dict{UTF8String, PragmaInfo } # the boolean denotes if the pragma has been used
     calledfuncs   :: Set{Symbol}
     inModule      :: Bool
     moduleName    :: Any
@@ -86,7 +86,7 @@ type LintStack
     functions     :: Set{Any}
     modules       :: Set{Any}
     macros        :: Set{Any}
-    linthelpers   :: Dict{ String, Any }
+    linthelpers   :: Dict{ UTF8String, Any }
     data          :: Dict{ Symbol, Any }
     isTop         :: Bool
     LintStack() = begin
@@ -98,10 +98,10 @@ type LintStack
             [ Set{Symbol}() ],
             Set{Symbol}(),
             Set{Symbol}(),
-            Dict{String, Bool}(), #pragmas
+            Dict{UTF8String, Bool}(), #pragmas
             Set{Symbol}(),
             false,
-            symbol(""),
+            Symbol(""),
             Set{Any}(),
             Dict{Any,Any}(),
             Set{Any}(),
@@ -109,7 +109,7 @@ type LintStack
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),
-            Dict{ String, Any }(),
+            Dict{ UTF8String, Any }(),
             Dict{ Symbol, Any }(),
             false,
             )
@@ -136,12 +136,12 @@ function LintIgnoreState()
 end
 
 type LintContext
-    file         :: String
+    file         :: UTF8String
     line         :: Int
     lineabs      :: Int
-    scope        :: String # usually the function name
+    scope        :: UTF8String # usually the function name
     isstaged     :: Bool
-    path         :: String
+    path         :: UTF8String
     globals      :: Dict{Symbol,Any}
     types        :: Dict{Symbol,Any}
     functions    :: Dict{Symbol,Any}

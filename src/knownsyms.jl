@@ -6,8 +6,8 @@ function cacheknownsyms()
     union!( knownsyms, names( Core ) )
     union!( knownsyms, names( Base ) )
     union!( knownsyms, [
-     symbol( "end" ),
-     symbol( "Entry" ),
+     Symbol( "end" ),
+     Symbol( "Entry" ),
      :STDIN,
      :STDOUT,
      :box,

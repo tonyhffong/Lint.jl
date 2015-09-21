@@ -1,4 +1,4 @@
-# Julia's homoiconicity is crying out for an awesome lint module
+VERSION >= v"0.4.0-dev+6521" && __precompile__(true)
 
 module Lint
 
@@ -15,6 +15,10 @@ const ASSIGN_OPS = [ :(=), :(+=), :(-=), :(*=), :(/=), :(&=), :(|=) ]
 # no-op. We have to use macro inside type declaration as it disallows actual function calls
 macro lintpragma( s )
 end
+
+import Base: ==, utf8
+
+utf8( s::Symbol ) = utf8( string( s ) )
 
 include( "linttypes.jl" )
 include( "knownsyms.jl")
@@ -34,7 +38,7 @@ include( "curly.jl" )
 include( "misc.jl")
 include( "init.jl" )
 
-function lintpkg( pkg::String; returnMsgs::Bool = false )
+function lintpkg{T<:AbstractString}( pkg::T; returnMsgs::Bool = false )
     p = joinpath( Pkg.dir( pkg ), "src", pkg * ".jl" )
     if !ispath( p )
         throw( "cannot find path: " * p )
@@ -42,7 +46,7 @@ function lintpkg( pkg::String; returnMsgs::Bool = false )
     lintfile( p, returnMsgs = returnMsgs )
 end
 
-function lintfile( file::String; returnMsgs::Bool = false )
+function lintfile{T<:AbstractString}( file::T; returnMsgs::Bool = false )
     if !ispath( file )
         throw( "no such file exists")
     end
@@ -71,7 +75,7 @@ function lintfile( file::String; returnMsgs::Bool = false )
     end
 end
 
-function lintstr( str::String, ctx :: LintContext = LintContext(), lineoffset = 0 )
+function lintstr{T<:AbstractString}( str::T, ctx :: LintContext = LintContext(), lineoffset = 0 )
     linecharc = cumsum( map( x->length(x)+1, @compat(split( str, "\n", keep=true ) ) ) )
     numlines = length( linecharc )
     i = start(str)
@@ -146,14 +150,14 @@ function lintexpr( ex::Any, ctx::LintContext )
     elseif ex.head == :(=) && typeof(ex.args[1])==Expr && ex.args[1].head == :call
         lintfunction( ex, ctx )
     elseif in( ex.head, ASSIGN_OPS )
-        lintassignment( ex, ctx )
+        lintassignment( ex, ex.head, ctx )
     elseif ex.head == :local
         lintlocal( ex, ctx )
     elseif ex.head == :global
         lintglobal( ex, ctx )
     elseif ex.head == :const
         if typeof( ex.args[1] ) == Expr && ex.args[1].head == :(=)
-            lintassignment( ex.args[1], ctx; isConst = true )
+            lintassignment( ex.args[1], :(=), ctx; isConst = true )
         end
     elseif ex.head == :module
         lintmodule( ex, ctx )
@@ -195,6 +199,8 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintfunction( ex, ctx )
     elseif ex.head == :stagedfunction
         lintfunction( ex, ctx, isstaged=true )
+    elseif ex.head == :macrocall && ex.args[1] == Symbol( "@generated" )
+        lintfunction( ex.args[2], ctx, isstaged=true )
     elseif ex.head == :macro
         lintmacro( ex, ctx )
     elseif ex.head == :macrocall

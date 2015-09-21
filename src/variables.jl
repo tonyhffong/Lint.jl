@@ -4,17 +4,17 @@ function popVarScope( ctx::LintContext; checkargs::Bool=false )
     unused = setdiff( keys(stacktop.localvars[end]), stacktop.localusedvars[end] )
     if ctx.quoteLvl == 0
         for v in unused
-            if !pragmaexists( "Ignore unused " * string( v ), ctx ) && v != :_
+            if !pragmaexists( "Ignore unused " * utf8( v ), ctx ) && v != :_
                 ctx.line = stacktop.localvars[end][ v ].line
-                msg( ctx, 1, "Local vars declared but not used: " * string( v ) )
+                msg( ctx, 1, "Local vars declared but not used: " * utf8( v ) )
             end
         end
         if checkargs
             unusedargs = setdiff( keys( stacktop.localarguments[end] ), stacktop.localusedargs[end] )
             for v in unusedargs
-                if !pragmaexists( "Ignore unused " * string( v ), ctx ) && v != :_
+                if !pragmaexists( "Ignore unused " * utf8( v ), ctx ) && v != :_
                     ctx.line = stacktop.localarguments[end][ v ].line
-                    msg( ctx, 0, "Argument declared but not used: " * string( v ) )
+                    msg( ctx, 0, "Argument declared but not used: " * utf8( v ) )
                 end
             end
         end
@@ -63,7 +63,7 @@ function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
         end
     end
 
-    str = string(sym)
+    str = utf8(sym)
     if isupper( str[1] )
         @lintpragma( "Ignore incompatible type comparison" )
         t = nothing
@@ -130,13 +130,13 @@ function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
         return :Any
     end
 
-    if pragmaexists( "Ignore use of undeclared variable " * string( sym ), ctx )
+    if pragmaexists( "Ignore use of undeclared variable " * utf8( sym ), ctx )
         return :Any
     end
     if ctx.quoteLvl == 0
-        msg( ctx, 2, "Use of undeclared symbol " *string(sym))
+        msg( ctx, 2, "Use of undeclared symbol " *utf8(sym))
     elseif ctx.isstaged
-        msg( ctx, 0, "Use of undeclared symbol " *string(sym))
+        msg( ctx, 0, "Use of undeclared symbol " *utf8(sym))
     end
     return :Any
 end
@@ -148,9 +148,9 @@ function lintglobal( ex::Expr, ctx::LintContext )
                 ctx.callstack[end].declglobs[ sym ] = @compat( Dict{Symbol,Any}( :file=>ctx.file, :line=>ctx.line ) )
             end
         elseif isexpr( sym, ASSIGN_OPS )
-            lintassignment( sym, ctx; isGlobal=true )
+            lintassignment( sym, sym.head, ctx; isGlobal=true )
         else
-            msg( ctx, 0, "unknown global pattern " * string(sym))
+            msg( ctx, 0, "unknown global pattern " * utf8(sym))
         end
     end
 end
@@ -167,7 +167,7 @@ function lintlocal( ex::Expr, ctx::LintContext )
             continue
         end
         if sube.head == :(=)
-            lintassignment( sube, ctx; islocal = true )
+            lintassignment( sube, :(=), ctx; islocal = true )
         elseif sube.head == :(::)
             sym = sube.args[1]
             vi = VarInfo( ctx.line )
@@ -209,7 +209,7 @@ function resolveLHSsymbol( ex, syms::Array{Any,1}, ctx::LintContext, typeassert:
     end
 end
 
-function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false ) # is it a local decl & assignment?
+function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false ) # is it a local decl & assignment?
     lintexpr( ex.args[2], ctx )
 
     syms = Any[]
@@ -238,7 +238,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
 
         if VERSION < v"0.4.0-dev+4139"
             if rhstype <: Tuple && length( rhstype ) != tuplelen
-                msg( ctx, 0, "Iteration generates tuples of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+                msg( ctx, 0, "Iteration generates tuples of "*utf8(rhstype)*". N of variables used: "* utf8( string(tuplelen) ) )
             end
         else
             if rhstype <: Tuple && length( rhstype.parameters ) != tuplelen
@@ -250,7 +250,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
     if VERSION < v"0.4.0-dev+4139"
         if typeof( rhstype ) != Symbol && rhstype <: Tuple && length( rhstype ) != tuplelen && !isForLoop
             if length( syms ) > 1
-                msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+                msg( ctx, 2, "RHS is a tuple of "*utf8(rhstype)*". N of variables used: "* string( tuplelen ) )
             end
         end
     else
@@ -292,7 +292,7 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
             registersymboluse( s, ctx )
         end
         vi = VarInfo( ctx.line )
-        @lintpragma( "Ignore incompatible type comparison" )
+        #@lintpragma( "Ignore incompatible type comparison" )
         if VERSION < v"0.4.0-dev+4139"
             if rhstype == Any || length( syms ) == 1
                 rhst = rhstype
@@ -340,8 +340,18 @@ function lintassignment( ex::Expr, ctx::LintContext; islocal = false, isConst=fa
                 if haskey( ctx.callstack[end].localvars[i], s )
                     found = true
                     prevvi = ctx.callstack[end].localvars[i][s]
-                    if !isAnyOrTupleAny( vi.typeactual ) && typeof( vi.typeactual ) != Symbol && !( vi.typeactual <: prevvi.typeactual ) &&
-                        !( vi.typeactual == String && prevvi.typeactual <: vi.typeactual ) &&
+                    if typeof( vi.typeactual ) <: DataType && typeof( prevvi.typeactual ) <: DataType &&
+                        vi.typeactual <: Number && prevvi.typeactual <: Number && assign_ops != :(=)
+                        if length( prevvi.typeactual.parameters ) == 0
+                        else
+                        end
+                        continue
+                    elseif typeof( vi.typeactual ) <: DataType && typeof( prevvi.typeactual ) <: DataType &&
+                        vi.typeactual <: Number && prevvi.typeactual <: Array && assign_ops != :(=)
+
+                        continue
+                    elseif !isAnyOrTupleAny( vi.typeactual ) && typeof( vi.typeactual ) != Symbol && !( vi.typeactual <: prevvi.typeactual ) &&
+                        !( vi.typeactual <: AbstractString && prevvi.typeactual <: vi.typeactual ) &&
                         !pragmaexists( "Ignore unstable type variable " * string( s ), ctx )
                         msg( ctx, 1, "Previously used " * string( s ) * " has apparent type " * string( prevvi.typeactual ) * ", but now assigned " * string( vi.typeactual ) )
                     end

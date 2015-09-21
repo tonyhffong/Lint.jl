@@ -1,6 +1,6 @@
 function lintmacro( ex::Expr, ctx::LintContext )
     fname = ex.args[1].args[1]
-    push!( ctx.callstack[end].macros, symbol( "@" * string(fname ) ) )
+    push!( ctx.callstack[end].macros, Symbol( "@" * string(fname ) ) )
     push!( ctx.callstack[end].localarguments, Dict{ Symbol, Any }() )
     push!( ctx.callstack[end].localusedargs, Set{ Symbol }() )
 
@@ -47,21 +47,21 @@ function lintmacro( ex::Expr, ctx::LintContext )
 end
 
 function lintmacrocall( ex::Expr, ctx::LintContext )
-    if ex.args[1] == symbol("@deprecate") || ex.args[1] == Expr( :(.), :Base, QuoteNode( symbol( "@deprecate" )))
+    if ex.args[1] == Symbol("@deprecate") || ex.args[1] == Expr( :(.), :Base, QuoteNode( Symbol( "@deprecate" )))
         return
     end
 
-    if ex.args[1] == symbol( "@lintpragma" )
+    if ex.args[1] == Symbol( "@lintpragma" )
         lintlintpragma( ex, ctx )
         return
     end
 
-    if ex.args[1] == symbol( "@doc" ) && length( ex.args ) >= 2 # see Docile.jl
+    if ex.args[1] == Symbol( "@doc" ) && length( ex.args ) >= 2 # see Docile.jl
         if isexpr( ex.args[2], :(->) )
             lintexpr( ex.args[2].args[2], ctx ) # no need to lint the doc string
             return
-        elseif ( typeof( ex.args[2] ) <: String ||
-              isexpr( ex.args[2], :macrocall) && ex.args[2].args[1] == symbol( "@mstr" )
+        elseif ( typeof( ex.args[2] ) <: AbstractString ||
+              isexpr( ex.args[2], :macrocall) && ex.args[2].args[1] == Symbol( "@mstr" )
               )
             if length( ex.args ) >= 3
                 lintexpr( ex.args[3], ctx )
@@ -73,7 +73,7 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
-    if ex.args[1] == symbol( "@pyimport" )
+    if ex.args[1] == Symbol( "@pyimport" )
         if length( ex.args ) == 2 && typeof( ex.args[2] ) == Symbol
             ctx.callstack[end].localvars[end][ ex.args[2] ] = VarInfo( ctx.line )
         elseif length( ex.args ) == 4 && ex.args[3] == :as && typeof( ex.args[4] ) == Symbol
@@ -82,7 +82,7 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
-    if ex.args[1] == symbol( "@compat" )
+    if ex.args[1] == Symbol( "@compat" )
         if isexpr( ex.args[2], :call ) && ( ex.args[2].args[1]== :Dict ||
             isexpr( ex.args[2].args[1], :curly ) && ex.args[2].args[1].args[1] == :Dict )
             lintdict4( ex.args[2], ctx )
@@ -90,7 +90,7 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         end
     end
 
-    if ex.args[1] == symbol( "@gensym" )
+    if ex.args[1] == Symbol( "@gensym" )
         for i in 2:length( ex.args )
             if typeof( ex.args[i] ) == Symbol
                 vi = VarInfo( ctx.line )
@@ -100,7 +100,7 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         return
     end
 
-    if ex.args[1] == symbol( "@enum" )
+    if ex.args[1] == Symbol( "@enum" )
         for i in 2:length( ex.args )
             if typeof( ex.args[i] ) == Symbol
                 vi = VarInfo( ctx.line )

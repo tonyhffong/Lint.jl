@@ -54,7 +54,7 @@ function versionconstraint( ex )
                 if a == :VERSION
                     continue
                 end
-                if !isexpr( a, :macrocall ) || a.args[1] != symbol( "@v_str" ) || !( typeof( a.args[2] ) <: String )
+                if !isexpr( a, :macrocall ) || a.args[1] != Symbol( "@v_str" ) || !( typeof( a.args[2] ) <: AbstractString )
                     return (nothing, nothing )
                 end
             end
@@ -180,7 +180,7 @@ function lintcomparison( ex::Expr, ctx::LintContext )
                      !( lefttype <: righttype ) && !( righttype <: lefttype )
                     problem = true
                 end
-                if problem && !pragmaexists( "Ignore incompatible type comparison", ctx )
+                if problem && !pragmaexists( utf8( "Ignore incompatible type comparison" ), ctx )
                     msg( ctx, 1, "Comparing apparently incompatible types (#" *
                         string(i>>1) * ") LHS:" *string(lefttype)*
                         " RHS:" * string(righttype) )
@@ -196,11 +196,11 @@ function lintfor( ex::Expr, ctx::LintContext )
     pushVarScope( ctx )
 
     if isexpr( ex.args[1], :(=) )
-        lintassignment( ex.args[1], ctx; isForLoop=true )
+        lintassignment( ex.args[1], :(=), ctx; isForLoop=true )
     elseif isexpr( ex.args[1], :block )
         for a in ex.args[1].args
             if isexpr( a, :(=) )
-                lintassignment( a, ctx; isForLoop=true )
+                lintassignment( a, :(=), ctx; isForLoop=true )
             end
         end
     end
@@ -244,7 +244,7 @@ function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
 
     for i in st:length(ex.args)
         if isexpr( ex.args[i], :(=) )
-            lintassignment( ex.args[i], ctx; islocal=true, isForLoop=true ) # note contrast with for loop
+            lintassignment( ex.args[i], :(=), ctx; islocal=true, isForLoop=true ) # note contrast with for loop
         end
     end
     lintexpr( ex.args[fn], ctx )
