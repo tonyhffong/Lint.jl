@@ -227,3 +227,10 @@ s = Union(Int,Double)
 """
 msgs = lintstr( s )
 @test( contains( msgs[1].message, "Use Union"))
+
+s = """
+a = 1.0
+a /= 2
+"""
+msgs = lintstr( s )
+@test isempty( msgs )
