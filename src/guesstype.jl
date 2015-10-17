@@ -109,6 +109,9 @@ function guesstype( ex, ctx::LintContext )
         if ex == :nothing
             return Void
         end
+        if ex == :(:)
+            return Colon
+        end
         # TODO: this should be a module function
         checkret = x -> begin
             if typeof( x ) == DataType || typeof( x ) == (DataType,)
@@ -549,6 +552,12 @@ function guesstype( ex, ctx::LintContext )
             end
         end
         return Any
+    end
+
+    if isexpr( ex, :(=>) )
+        t1 = guesstype( ex.args[1], ctx )
+        t2 = guesstype( ex.args[2], ctx )
+        return Pair{t1,t2}
     end
 
     if isexpr( ex, :typed_dict ) && isexpr( ex.args[1], :(=>) ) &&
