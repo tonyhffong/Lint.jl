@@ -1,1 +1,8 @@
+# Ignore system files
+*.swp
+.DS_Store
+
+# Default Ignore
 *.jl.cov
+*.jl.*.cov
+*.jl.mem
