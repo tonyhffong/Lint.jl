@@ -23,9 +23,9 @@ It'd follow any `include` statements.
 
 The output is of the following form:
 ```
-         filename.jl [       function name] Line CODE  Explanation
+filename.jl:Line [function name  ] CODE  Explanation
 ```
-`Line` is the line number relative to the start of the function.
+`Line` is the line number relative to the start of the file.
 `CODE` gives an indication of severity, and is one of `INFO`, `WARN`, `ERROR`, or `FATAL`.
 
 To simplify life, there is a convenience function for packages:
