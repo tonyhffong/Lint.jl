@@ -263,33 +263,53 @@ end
 
 function lintserver(port)
     server = listen(port)
+    println("Server running on port $port ...")
     while true
-      conn = accept(server)
-      @async begin
-        try
-          while true
-            line = readline(conn)
-
-            println(typeof(line))
-            println(ispath(strip(line)))
-            println(strip(line))
-
-            if ispath(strip(line))
-                m = lintfile(strip(line), returnMsgs = true)
-            else
-                error("The string is not a file.")
+        conn = accept(server)
+        @async try
+            println("Connection accepted.")
+            # Get file, code length and code
+            file = strip(readline(conn))
+            println("file: ", file)
+            code_len = parse(Int, strip(readline(conn)))
+            println("code length: ", code_len)
+            code = ""
+            while length(code) < code_len
+                code = string(code, readline(conn))
             end
-
-            for i in m
+            println("code received: ", length(code))
+            # Build context
+            ctx = LintContext()
+            ctx.file = file
+            if ispath( file )
+                ctx.path = dirname( file )
+            end
+            # Lint code
+            msgs = lintstr( code, ctx )
+            # Process messages
+            sort!( msgs )
+            delids = Int[]
+            for i in 2:length( msgs )
+                if  msgs[i] == msgs[i-1]
+                    push!( delids, i )
+                end
+            end
+            deleteat!( msgs, delids )
+            for m in msgs
+                colors = [ :normal, :yellow, :magenta, :red ]
+                Base.println_with_color( colors[m.level+1], string(m) )
+            end
+            # Write response to socket
+            for i in msgs
                 write(conn, string(i))
                 write(conn, "\n")
             end
-
-          end
+            # Blank line to indicate end of messages
+            write(conn, "\n")
+            println("Connection closed.")
         catch err
-          print("connection ended with error $err")
+          println("connection ended with error $err")
         end
-      end
     end
 end
 
