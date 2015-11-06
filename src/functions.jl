@@ -522,10 +522,12 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                     elseif isexpr( kw, :(=>) )
                         lintexpr( kw.args[1], ctx )
                         lintexpr( kw.args[2], ctx )
-                    elseif length(kw.args) != 2
-                        msg( ctx, 2, "unknown keyword pattern " * string(kw))
-                    else
+                    elseif isa(kw, Expr) && length(kw.args) == 2
                         lintexpr( kw.args[2], ctx )
+                    elseif isa(kw, Symbol)
+                        lintexpr( kw, ctx )
+                    else
+                        msg( ctx, 2, "unknown keyword pattern " * string(kw))
                     end
                 end
             elseif isexpr( ex.args[i], :kw )
