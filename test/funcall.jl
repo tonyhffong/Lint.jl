@@ -348,3 +348,16 @@ if VERSION >= v"0.4"
     msgs = lintstr(s)
     @test( isempty( msgs ) )
 end
+
+s="""
+a = (:a, 1)
+f(; a)
+"""
+msgs = lintstr(s)
+@test( isempty( msgs ) )
+
+s = """
+f(; 2)
+"""
+msgs = lintstr(s)
+@test contains( msgs[1].message, "unknown keyword pattern" )
