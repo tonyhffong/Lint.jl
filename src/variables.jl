@@ -150,7 +150,7 @@ function lintglobal( ex::Expr, ctx::LintContext )
         elseif isexpr( sym, ASSIGN_OPS )
             lintassignment( sym, sym.head, ctx; isGlobal=true )
         else
-            msg( ctx, 0, "unknown global pattern $sym")
+            msg( ctx, 2, "unknown global pattern $sym")
         end
     end
 end
