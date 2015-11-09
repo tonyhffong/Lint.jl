@@ -105,7 +105,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = Symbol( "" ), isst
     ctx.scope = string(fname)
     if fname != Symbol( "" ) && !contains( ctx.file, "deprecate" )
         isDeprecated = functionIsDeprecated( ex.args[1] )
-        if isDeprecated != nothing && !pragmaexists( "Ignore deprecated " * utf8( fname ), ctx )
+        if isDeprecated != nothing && !pragmaexists( "Ignore deprecated $fname", ctx )
             msg( ctx, 2, isDeprecated.message * "\nSee: deprecated.jl " * string( isDeprecated.line ) )
         end
     end
