@@ -272,12 +272,9 @@ function lintserver(port)
             file = strip(readline(conn))
             println("file: ", file)
             code_len = parse(Int, strip(readline(conn)))
-            println("code length: ", code_len)
-            code = ""
-            while length(code) < code_len
-                code = string(code, readline(conn))
-            end
-            println("code received: ", length(code))
+            println("Code bytes: ", code_len)
+            code = utf8(readbytes(conn, code_len))
+            println("Code received")
             # Build context
             ctx = LintContext()
             ctx.file = file
