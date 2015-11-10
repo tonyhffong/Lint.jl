@@ -55,19 +55,12 @@ function lintfile{T<:AbstractString}( file::T; returnMsgs::Bool = false )
     ctx.file = file
     ctx.path = dirname( file )
     str = open(readall, file)
+
     msgs = lintstr( str, ctx )
-    sort!( msgs )
-    delids = Int[]
-    for i in 2:length( msgs )
-        if  msgs[i] == msgs[i-1]
-            push!( delids, i )
-        end
-    end
-    deleteat!( msgs, delids )
-    for m in msgs
-        colors = [ :normal, :yellow, :magenta, :red ]
-        Base.println_with_color( colors[m.level+1], string(m) )
-    end
+
+    clean_messages!( msgs )
+    display_messages( msgs )
+
     if returnMsgs
         return msgs
     else
@@ -114,6 +107,25 @@ end
 function msg( ctx, lvl, str )
     push!( ctx.messages, LintMessage( ctx.file , ctx.scope,
             ctx.lineabs + ctx.line, lvl, str ) )
+end
+
+"Process messages. Sort and remove duplicates."
+function clean_messages!( msgs )
+    sort!( msgs )
+    delids = Int[]
+    for i in 2:length( msgs )
+        if  msgs[i] == msgs[i-1]
+            push!( delids, i )
+        end
+    end
+    deleteat!( msgs, delids )
+end
+
+function display_messages( msgs )
+    for m in msgs
+        colors = [ :normal, :yellow, :magenta, :red ]
+        Base.println_with_color( colors[m.level+1], string(m) )
+    end
 end
 
 function lintexpr( ex::Any, ctx::LintContext )
@@ -284,18 +296,8 @@ function lintserver(port)
             # Lint code
             msgs = lintstr( code, ctx )
             # Process messages
-            sort!( msgs )
-            delids = Int[]
-            for i in 2:length( msgs )
-                if  msgs[i] == msgs[i-1]
-                    push!( delids, i )
-                end
-            end
-            deleteat!( msgs, delids )
-            for m in msgs
-                colors = [ :normal, :yellow, :magenta, :red ]
-                Base.println_with_color( colors[m.level+1], string(m) )
-            end
+            clean_messages!( msgs )
+            display_messages( msgs )
             # Write response to socket
             for i in msgs
                 write(conn, string(i))
