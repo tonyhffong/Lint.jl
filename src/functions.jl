@@ -105,7 +105,7 @@ function lintfunction( ex::Expr, ctx::LintContext; ctorType = Symbol( "" ), isst
     ctx.scope = string(fname)
     if fname != Symbol( "" ) && !contains( ctx.file, "deprecate" )
         isDeprecated = functionIsDeprecated( ex.args[1] )
-        if isDeprecated != nothing && !pragmaexists( "Ignore deprecated " * utf8( fname ), ctx )
+        if isDeprecated != nothing && !pragmaexists( "Ignore deprecated $fname", ctx )
             msg( ctx, 2, isDeprecated.message * "\nSee: deprecated.jl " * string( isDeprecated.line ) )
         end
     end
@@ -522,10 +522,12 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
                     elseif isexpr( kw, :(=>) )
                         lintexpr( kw.args[1], ctx )
                         lintexpr( kw.args[2], ctx )
-                    elseif length(kw.args) != 2
-                        msg( ctx, 2, "unknown keyword pattern " * string(kw))
-                    else
+                    elseif isa(kw, Expr) && length(kw.args) == 2
                         lintexpr( kw.args[2], ctx )
+                    elseif isa(kw, Symbol)
+                        lintexpr( kw, ctx )
+                    else
+                        msg( ctx, 2, "unknown keyword pattern " * string(kw))
                     end
                 end
             elseif isexpr( ex.args[i], :kw )

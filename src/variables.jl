@@ -150,7 +150,7 @@ function lintglobal( ex::Expr, ctx::LintContext )
         elseif isexpr( sym, ASSIGN_OPS )
             lintassignment( sym, sym.head, ctx; isGlobal=true )
         else
-            msg( ctx, 0, "unknown global pattern " * utf8(sym))
+            msg( ctx, 2, "unknown global pattern $sym")
         end
     end
 end
@@ -238,11 +238,11 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
 
         if VERSION < v"0.4.0-dev+4139"
             if rhstype <: Tuple && length( rhstype ) != tuplelen
-                msg( ctx, 0, "Iteration generates tuples of "*utf8(rhstype)*". N of variables used: "* utf8( string(tuplelen) ) )
+                msg( ctx, 0, "Iteration generates tuples of $rhstype. N of variables used: $tuplelen" )
             end
         else
             if rhstype <: Tuple && length( rhstype.parameters ) != tuplelen
-                msg( ctx, 0, "Iteration generates tuples of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+                msg( ctx, 0, "Iteration generates tuples of $rhstype. N of variables used: $tuplelen" )
             end
         end
     end
@@ -250,13 +250,13 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
     if VERSION < v"0.4.0-dev+4139"
         if typeof( rhstype ) != Symbol && rhstype <: Tuple && length( rhstype ) != tuplelen && !isForLoop
             if length( syms ) > 1
-                msg( ctx, 2, "RHS is a tuple of "*utf8(rhstype)*". N of variables used: "* string( tuplelen ) )
+                msg( ctx, 2, "RHS is a tuple of $rhstype. N of variables used: $tuplelen" )
             end
         end
     else
         if typeof(rhstype) != Symbol && rhstype <: Tuple && length( rhstype.parameters ) != tuplelen && !isForLoop
             if tuplelen > 1
-                msg( ctx, 2, "RHS is a tuple of "*string(rhstype)*". N of variables used: "* string( tuplelen ) )
+                msg( ctx, 2, "RHS is a tuple of $rhstype. N of variables used: $tuplelen" )
             end
         end
     end
