@@ -54,3 +54,8 @@ end
 """
 msgs = lintstr(s)
 @test( contains(msgs[1].message, "expected assignment after \\\"const\\\"") )
+s = """
+global 5
+"""
+msgs = lintstr(s)
+@test( contains(msgs[1].message, "unknown global pattern") )
