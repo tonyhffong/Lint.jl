@@ -290,14 +290,14 @@ function lintserver(port)
             # Build context
             ctx = LintContext()
             ctx.file = file
-            if ispath( file )
-                ctx.path = dirname( file )
+            if ispath(file)
+                ctx.path = dirname(file)
             end
             # Lint code
-            msgs = lintstr( code, ctx )
+            msgs = lintstr(code, ctx)
             # Process messages
-            clean_messages!( msgs )
-            display_messages( msgs )
+            clean_messages!(msgs)
+            display_messages(msgs)
             # Write response to socket
             for i in msgs
                 write(conn, string(i))
