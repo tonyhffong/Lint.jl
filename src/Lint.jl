@@ -48,13 +48,11 @@ end
 
 function lintfile{T<:AbstractString}( file::T; returnMsgs::Bool = false )
     if !ispath( file )
-        throw( "no such file exists")
+        throw( "no such file exists" )
     end
 
-    ctx = LintContext()
-    ctx.file = file
-    ctx.path = dirname( file )
-    str = open(readall, file)
+    ctx = LintContext( file )
+    str = open( readall, file )
 
     msgs = lintstr( str, ctx )
 
@@ -288,11 +286,7 @@ function lintserver(port)
             code = utf8(readbytes(conn, code_len))
             println("Code received")
             # Build context
-            ctx = LintContext()
-            ctx.file = file
-            if ispath(file)
-                ctx.path = dirname(file)
-            end
+            ctx = LintContext(file)
             # Lint code
             msgs = lintstr(code, ctx)
             # Process messages
