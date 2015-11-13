@@ -3,7 +3,7 @@ conn = listenany(2228)
 close(conn[2])
 port = conn[1]
 
-@async lintserver(port)
+server = @async lintserver(port)
 sleep(1) #let sever start
 
 
@@ -22,3 +22,8 @@ write(conn, "bad\n")
 
 @test contains(readline(conn), "Use of undeclared symbol bad\n")
 @test readline(conn) == "\n"
+
+
+try # close the server
+    Base.throwto(server, InterruptException())
+end
