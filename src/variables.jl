@@ -189,23 +189,27 @@ end
 function resolveLHSsymbol( ex, syms::Array{Any,1}, ctx::LintContext, typeassert::Dict{Symbol,Any} )
     if typeof( ex ) == Symbol
         push!( syms, ex)
-    elseif ex.head == :(::)
-        if typeof( ex.args[1]) == Symbol
-            typeassert[ ex.args[1] ]=ex.args[2]
+    elseif typeof( ex ) == Expr
+        if ex.head == :(::)
+            if typeof( ex.args[1]) == Symbol
+                typeassert[ ex.args[1] ]=ex.args[2]
+            end
+            resolveLHSsymbol( ex.args[1], syms, ctx, typeassert )
+        elseif ex.head == :tuple
+            for s in ex.args
+                resolveLHSsymbol( s, syms, ctx, typeassert )
+            end
+        elseif ex.head == :(.) ||   # a.b = something
+            ex.head == :ref ||      # a[b] = something
+            ex.head == :($)         # :( $(esc(name)) = something )
+            push!( syms, ex )
+            lintexpr( ex, ctx )
+            return
+        else
+            msg( ctx, :INFO, "LHS in assignment not understood by Lint. please check: $ex" )
         end
-        resolveLHSsymbol( ex.args[1], syms, ctx, typeassert )
-    elseif ex.head == :tuple
-        for s in ex.args
-            resolveLHSsymbol( s, syms, ctx, typeassert )
-        end
-    elseif ex.head == :(.) ||   # a.b = something
-        ex.head == :ref ||      # a[b] = something
-        ex.head == :($)         # :( $(esc(name)) = something )
-        push!( syms, ex )
-        lintexpr( ex, ctx )
-        return
     else
-        msg( ctx, :INFO, "LHS in assignment not understood by Lint. please check: " * string(ex) )
+        msg( ctx, :INFO, "LHS in assignment not understood by Lint. please check: $ex" )
     end
 end
 
