@@ -2,7 +2,7 @@ type LintMessage
     file    :: UTF8String
     scope   :: UTF8String
     line    :: Int
-    level   :: Int # 0: INFO, 1: WARNING, 2: ERROR (probably dangerous)
+    level   :: Symbol # INFO, WARNING, ERROR
     message :: UTF8String
 end
 
@@ -10,8 +10,7 @@ import Base.string
 function string( m::LintMessage )
     s = @sprintf( "%s:%d ", m.file, m.line )
     s = s * @sprintf( "[%-15s] ", m.scope )
-    arr = [ "INFO", "WARN", "ERROR" ]
-    s = s * @sprintf( "%-5s  ", arr[ m.level+1 ] )
+    s = s * @sprintf( "%-5s  ", m.level )
     ident = min( 60, length(s) )
     lines = split(m.message, "\n")
     for (i,l) in enumerate(lines)
@@ -35,7 +34,7 @@ function Base.isless( m1::LintMessage, m2::LintMessage )
         return isless(m1.file, m2.file)
     end
     if m1.level != m2.level
-        return m2.level < m1.level # reverse
+        return m1.level == :ERROR || m2.level == :INFO # reverse
     end
     if m1.line != m2.line
         return m1.line < m2.line
@@ -177,7 +176,7 @@ function popcallstack( ctx::LintContext )
         if !b.used
             tmpline = ctx.line
             ctx.line = b.line
-            msg( ctx, 0, "Unused @lintpragma " * p )
+            msg( ctx, :INFO, "Unused @lintpragma " * p )
             ctx.line = tmpline
         end
     end

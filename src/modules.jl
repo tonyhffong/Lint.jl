@@ -18,14 +18,14 @@ function lintmodule( ex::Expr, ctx::LintContext )
     undefs = setdiff( undefs, stacktop.imports )
 
     for sym in undefs
-        msg( ctx, 2, "exporting undefined symbol " * string(sym))
+        msg( ctx, :ERROR, "exporting undefined symbol " * string(sym))
     end
     popcallstack( ctx )
 end
 
 function lintusing( ex::Expr, ctx::LintContext )
     if ctx.functionLvl > 0
-        msg( ctx, 2, "using is not allowed inside function definitions.")
+        msg( ctx, :ERROR, "using is not allowed inside function definitions.")
     end
     for s in ex.args
         if s != :(.)
@@ -55,7 +55,7 @@ function lintusing( ex::Expr, ctx::LintContext )
             end
         else
             if !pragmaexists( "Ignore undefined module " * string( path ), ctx )
-                msg( ctx, 1, string(path) * " doesn't eval into a Module")
+                msg( ctx, :WARN, string(path) * " doesn't eval into a Module")
             end
         end
     end
@@ -63,11 +63,11 @@ end
 
 function lintexport( ex::Expr, ctx::LintContext )
     if ctx.functionLvl > 0
-        msg( ctx, 2, "export is not allowed inside function definitions.")
+        msg( ctx, :ERROR, "export is not allowed inside function definitions.")
     end
     for sym in ex.args
         if in(sym, ctx.callstack[end].exports )
-            msg( ctx, 2, "duplicate exports of symbol " * string( sym ))
+            msg( ctx, :ERROR, "duplicate exports of symbol " * string( sym ))
         else
             push!( ctx.callstack[end].exports, sym )
         end
@@ -76,7 +76,7 @@ end
 
 function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
     if ctx.functionLvl > 0
-        msg( ctx, 2, "import is not allowed inside function definitions.")
+        msg( ctx, :ERROR, "import is not allowed inside function definitions.")
     end
     if !ctx.versionreachable( VERSION )
         return

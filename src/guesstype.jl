@@ -438,7 +438,7 @@ function guesstype( ex, ctx::LintContext )
                 elt = parsetype( ex.args[1] )
                 return Array{ elt, 1 }
             elseif what == :Any
-                msg( ctx, 1, "Lint cannot determine if " * string( ex.args[1] ) * " is a DataType or not" )
+                msg( ctx, :WARN, "Lint cannot determine if " * string( ex.args[1] ) * " is a DataType or not" )
                 return Any
             end
         end
@@ -466,7 +466,7 @@ function guesstype( ex, ctx::LintContext )
                     if nd == 0 && ex.args[2] == 1 # ok to do A[1] for a 0-dimensional array
                         return eletyp
                     else
-                        msg( ctx, 2, string( ex ) * " has more indices than dimensions")
+                        msg( ctx, :ERROR, string( ex ) * " has more indices than dimensions")
                         return Any
                     end
                 end
@@ -499,13 +499,13 @@ function guesstype( ex, ctx::LintContext )
             vtypeexpect = valuetype( partyp )
             ktypeactual = guesstype( ex.args[2], ctx )
             if ktypeactual != Any && !( ktypeactual <: ktypeexpect )
-                msg( ctx, 2, "Key type expects " * string( ktypeexpect ) * ", provided " * string( ktypeactual ) )
+                msg( ctx, :ERROR, "Key type expects " * string( ktypeexpect ) * ", provided " * string( ktypeactual ) )
             end
             return vtypeexpect
         elseif partyp <: AbstractString
             ktypeactual = guesstype( ex.args[2], ctx )
             if ktypeactual != Any && !( ktypeactual <: Integer ) && !( ktypeactual <: Range )
-                msg( ctx, 2, "string[] expects Integer, provided " * string( ktypeactual ) )
+                msg( ctx, :ERROR, "string[] expects Integer, provided " * string( ktypeactual ) )
             end
             if ktypeactual <: Integer
                 return Char
@@ -548,7 +548,7 @@ function guesstype( ex, ctx::LintContext )
         =#
         elseif partyp != Any
             if ctx.versionreachable( VERSION ) && !pragmaexists( string( partyp ) * " is a container type", ctx )
-                msg( ctx, 2, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
+                msg( ctx, :ERROR, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
             end
         end
         return Any

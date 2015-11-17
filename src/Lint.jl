@@ -88,7 +88,7 @@ function lintstr{T<:AbstractString}( str::T, ctx :: LintContext = LintContext(),
             (ex, i) = parse(str,i)
         catch y
             if typeof( y ) != ParseError || y.msg != "end of input"
-                msg( ctx, 2, string(y) )
+                msg( ctx, :ERROR, string(y) )
             end
             problem = true
         end
@@ -120,9 +120,9 @@ function clean_messages!( msgs )
 end
 
 function display_messages( msgs )
+    colors = Dict{Symbol, Symbol}(:INFO => :normal, :WARN => :yellow, :ERROR => :magenta)
     for m in msgs
-        colors = [ :normal, :yellow, :magenta ]
-        Base.println_with_color( colors[m.level+1], string(m) )
+        Base.println_with_color( colors[m.level], string(m) )
     end
 end
 
@@ -259,7 +259,7 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintboolean( ex.args[1], ctx )
         lintexpr( ex.args[2], ctx ) # do not enforce boolean. e.g. b==1 || error( "b must be 1!" )
     elseif ex.head == :incomplete
-        msg(ctx, 2, ex.args[1])
+        msg(ctx, :ERROR, ex.args[1])
     else
         for sube in ex.args
             if typeof(sube)== Expr

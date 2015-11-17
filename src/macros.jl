@@ -21,7 +21,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
         elseif sube.head == :(::) && length( sube.args ) == 2
             typeex = sube.args[2]
             if  typeex != :Expr && typeex != :Symbol
-                msg( ctx, 2, "macro arguments can only be Symbol/Expr: " *string( sube ))
+                msg( ctx, :ERROR, "macro arguments can only be Symbol/Expr: " *string( sube ))
             end
             resolveArguments( sube.args[1] )
         elseif sube.head == :(...)
@@ -31,7 +31,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
             lintexpr( sube.args[1], ctx )
         =#
         else
-            msg( ctx, 2, "Lint does not understand: " *string( sube ))
+            msg( ctx, :ERROR, "Lint does not understand: " *string( sube ))
         end
     end
 
@@ -66,7 +66,7 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
             if length( ex.args ) >= 3
                 lintexpr( ex.args[3], ctx )
             else
-                msg( ctx, 1, "Did you forget an -> after @doc or make it inline?" )
+                msg( ctx, :WARN, "Did you forget an -> after @doc or make it inline?" )
             end
             return
         end

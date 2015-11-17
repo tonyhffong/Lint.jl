@@ -3,11 +3,11 @@ function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
 
     if !typed
         if VERSION < v"0.4-" && ctx.versionreachable( VERSION )
-            msg( ctx, 0, "dictionary [a=>b,...], may be deprecated by Julia 0.4. Use @compat Dict(a=>b,...).")
+            msg( ctx, :INFO, "dictionary [a=>b,...], may be deprecated by Julia 0.4. Use @compat Dict(a=>b,...).")
         end
     else
         if VERSION < v"0.4-" && ctx.versionreachable( VERSION )
-            msg( ctx, 0, "(K=>V)[a=>b,...] may be deprecated by Julia 0.4. Use @compat Dict{K,V}(a=>b,...).")
+            msg( ctx, :INFO, "(K=>V)[a=>b,...] may be deprecated by Julia 0.4. Use @compat Dict{K,V}(a=>b,...).")
         end
     end
 end
@@ -23,7 +23,7 @@ function lintdict4( ex::Expr, ctx::LintContext )
         if typeof(a)== Expr && a.head == :(=>)
             if typeof( a.args[1] ) != Expr
                 if in( a.args[1], ks )
-                    msg( ctx, 2, "Duplicate key in Dict: " * string( a.args[1] ) )
+                    msg( ctx, :ERROR, "Duplicate key in Dict: " * string( a.args[1] ) )
                 end
                 push!( ks, a.args[1] )
             end
@@ -48,16 +48,16 @@ function lintdict4( ex::Expr, ctx::LintContext )
 
     if typed
         if length( ktypes ) > 1 && ex.args[1].args[2] != :Any && !isexpr(ex.args[1].args[2], :call )
-            msg( ctx, 2, "Multiple key types detected. Use Dict{Any,V}() for mixed type dict")
+            msg( ctx, :ERROR, "Multiple key types detected. Use Dict{Any,V}() for mixed type dict")
         end
         if length( vtypes ) > 1 && ex.args[1].args[3] != :Any && !isexpr( ex.args[1].args[3], :call )
-            msg( ctx, 2, "Multiple value types detected. Use Dict{K,Any}() for mixed type dict")
+            msg( ctx, :ERROR, "Multiple value types detected. Use Dict{K,Any}() for mixed type dict")
         end
     else
         # if the expression is explicitly (Any=>Any)[ :a => 1 ], then it'd be
         #   :Any=>:Any, not TopNode( :Any )=>TopNode( :Any )
         if !in( Any, ktypes ) && length( ktypes ) == 1 && !in( Any, vtypes ) && length( vtypes ) == 1
-            msg( ctx, 0, "There is only 1 key type && 1 value type. Use explicit Dict{K,V}() for better performances.")
+            msg( ctx, :INFO, "There is only 1 key type && 1 value type. Use explicit Dict{K,V}() for better performances.")
         end
     end
 end
