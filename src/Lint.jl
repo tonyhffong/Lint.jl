@@ -121,7 +121,7 @@ end
 
 function display_messages( msgs )
     for m in msgs
-        colors = [ :normal, :yellow, :magenta, :red ]
+        colors = [ :normal, :yellow, :magenta ]
         Base.println_with_color( colors[m.level+1], string(m) )
     end
 end
@@ -259,7 +259,7 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintboolean( ex.args[1], ctx )
         lintexpr( ex.args[2], ctx ) # do not enforce boolean. e.g. b==1 || error( "b must be 1!" )
     elseif ex.head == :incomplete
-        msg(ctx, 3, ex.args[1])
+        msg(ctx, 2, ex.args[1])
     else
         for sube in ex.args
             if typeof(sube)== Expr

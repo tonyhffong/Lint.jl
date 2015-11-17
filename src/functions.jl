@@ -374,7 +374,7 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
         inclfile = joinpath( ctx.path, inclfile )
 
         if !ispath( inclfile )
-            msg( ctx, 3, "cannot find include file: " * inclfile )
+            msg( ctx, 2, "cannot find include file: " * inclfile )
             return
         else
             println( inclfile )

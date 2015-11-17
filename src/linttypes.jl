@@ -2,7 +2,7 @@ type LintMessage
     file    :: UTF8String
     scope   :: UTF8String
     line    :: Int
-    level   :: Int # 0: INFO, 1: WARNING, 2: ERROR, 3:FATAL (probably dangerous)
+    level   :: Int # 0: INFO, 1: WARNING, 2: ERROR (probably dangerous)
     message :: UTF8String
 end
 
@@ -10,7 +10,7 @@ import Base.string
 function string( m::LintMessage )
     s = @sprintf( "%s:%d ", m.file, m.line )
     s = s * @sprintf( "[%-15s] ", m.scope )
-    arr = [ "INFO", "WARN", "ERROR", "FATAL" ]
+    arr = [ "INFO", "WARN", "ERROR" ]
     s = s * @sprintf( "%-5s  ", arr[ m.level+1 ] )
     ident = min( 60, length(s) )
     lines = split(m.message, "\n")
