@@ -53,7 +53,7 @@ end
 # a constructor for a type. We would check
 # * if the function name matches the type name
 function lintfunction( ex::Expr, ctx::LintContext; ctorType = Symbol( "" ), isstaged=false )
-    if ex.args[1].args[1]==:eval # extending eval(m,x) = ... in module. don't touch it.
+    if !isempty(ex.args[1].args) && ex.args[1].args[1]==:eval # extending eval(m,x) = ... in module. don't touch it.
         return
     end
 
