@@ -107,7 +107,11 @@ function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
             # within the scope block
             if i != length(ctx.callstack) &&
                 haskey( ctx.callstack[i].declglobs, sym )
-                ctx.callstack[end].declglobs[ sym ] = ctx.callstack[i].declglobs[sym]
+                register_global(
+                    ctx,
+                    sym,
+                    ctx.callstack[i].declglobs[sym]
+                )
             end
             return ret
         end
@@ -122,7 +126,11 @@ function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
         t = nothing
     end
     if t == Function
-        ctx.callstack[end].declglobs[ sym ] = @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+        register_global(
+            ctx,
+            sym,
+            @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+        )
         return :var
     end
 
@@ -145,7 +153,11 @@ function lintglobal( ex::Expr, ctx::LintContext )
     for sym in ex.args
         if typeof(sym) == Symbol
             if !haskey( ctx.callstack[end].declglobs, sym)
-                ctx.callstack[end].declglobs[ sym ] = @compat( Dict{Symbol,Any}( :file=>ctx.file, :line=>ctx.line ) )
+                register_global(
+                    ctx,
+                    sym,
+                    @compat( Dict{Symbol,Any}( :file=>ctx.file, :line=>ctx.line ) )
+                )
             end
         elseif isexpr( sym, ASSIGN_OPS )
             lintassignment( sym, sym.head, ctx; isGlobal=true )
@@ -387,7 +399,11 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
             end
         end
         if isGlobal || isConst || (ctx.functionLvl + ctx.macroLvl == 0 && ctx.callstack[end].isTop)
-            ctx.callstack[end].declglobs[ s ] = @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+            register_global(
+                ctx,
+                s,
+                @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+            )
         end
     end
 end

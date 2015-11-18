@@ -29,7 +29,11 @@ function lintusing( ex::Expr, ctx::LintContext )
     end
     for s in ex.args
         if s != :(.)
-            ctx.callstack[end].declglobs[ s ] = @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+            register_global(
+                ctx,
+                s,
+                @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+            )
         end
     end
     if ex.args[1] != :(.) && ctx.versionreachable( VERSION )
@@ -43,7 +47,11 @@ function lintusing( ex::Expr, ctx::LintContext )
         if t == Module
             for n in names( m )
                 if !haskey( ctx.callstack[end].declglobs, n )
-                    ctx.callstack[end].declglobs[ n ] = @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+                    register_global(
+                        ctx,
+                        n,
+                        @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+                    )
                 end
             end
 
@@ -93,7 +101,11 @@ function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
             m = eval( Main, parse( path ) )
             lastpart = ex.args[end]
         else
-            ctx.callstack[end].declglobs[ ex.args[1] ] = @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+            register_global(
+                ctx,
+                ex.args[1],
+                @compat( Dict{Symbol,Any}( :file => ctx.file, :line => ctx.line ) )
+            )
             eval( Main, ex )
             lastpart = ex.args[end]
             m = eval( Main, parse( join(ex.args, "." ) ) )

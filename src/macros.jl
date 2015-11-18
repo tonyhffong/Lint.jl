@@ -104,10 +104,10 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
         for i in 2:length( ex.args )
             if typeof( ex.args[i] ) == Symbol
                 vi = VarInfo( ctx.line )
-                ctx.callstack[1].declglobs[ ex.args[i] ] = vi
+                register_global(ctx, ex.args[i], vi, 1)
             elseif isexpr( ex.args[i], :(=) ) && typeof( ex.args[i].args[1] ) == Symbol
                 vi = VarInfo( ctx.line )
-                ctx.callstack[1].declglobs[ ex.args[i].args[1] ] = vi
+                register_global(ctx, ex.args[i].args[1], vi, 1)
             end
         end
         return
