@@ -48,26 +48,17 @@ end
 
 function lintfile{T<:AbstractString}( file::T; returnMsgs::Bool = false )
     if !ispath( file )
-        throw( "no such file exists")
+        throw( "no such file exists" )
     end
 
-    ctx = LintContext()
-    ctx.file = file
-    ctx.path = dirname( file )
-    str = open(readall, file)
+    ctx = LintContext( file )
+    str = open( readall, file )
+
     msgs = lintstr( str, ctx )
-    sort!( msgs )
-    delids = Int[]
-    for i in 2:length( msgs )
-        if  msgs[i] == msgs[i-1]
-            push!( delids, i )
-        end
-    end
-    deleteat!( msgs, delids )
-    for m in msgs
-        colors = [ :normal, :yellow, :magenta, :red ]
-        Base.println_with_color( colors[m.level+1], string(m) )
-    end
+
+    clean_messages!( msgs )
+    display_messages( msgs )
+
     if returnMsgs
         return msgs
     else
@@ -114,6 +105,25 @@ end
 function msg( ctx, lvl, str )
     push!( ctx.messages, LintMessage( ctx.file , ctx.scope,
             ctx.lineabs + ctx.line, lvl, str ) )
+end
+
+"Process messages. Sort and remove duplicates."
+function clean_messages!( msgs )
+    sort!( msgs )
+    delids = Int[]
+    for i in 2:length( msgs )
+        if  msgs[i] == msgs[i-1]
+            push!( delids, i )
+        end
+    end
+    deleteat!( msgs, delids )
+end
+
+function display_messages( msgs )
+    for m in msgs
+        colors = [ :normal, :yellow, :magenta, :red ]
+        Base.println_with_color( colors[m.level+1], string(m) )
+    end
 end
 
 function lintexpr( ex::Any, ctx::LintContext )
@@ -263,33 +273,40 @@ end
 
 function lintserver(port)
     server = listen(port)
-    while true
-      conn = accept(server)
-      @async begin
-        try
-          while true
-            line = readline(conn)
-
-            println(typeof(line))
-            println(ispath(strip(line)))
-            println(strip(line))
-
-            if ispath(strip(line))
-                m = lintfile(strip(line), returnMsgs = true)
-            else
-                error("The string is not a file.")
-            end
-
-            for i in m
-                write(conn, string(i))
+    try
+        println("Server running on port $port ...")
+        while true
+            conn = accept(server)
+            @async try
+                println("Connection accepted.")
+                # Get file, code length and code
+                file = strip(readline(conn))
+                println("file: ", file)
+                code_len = parse(Int, strip(readline(conn)))
+                println("Code bytes: ", code_len)
+                code = utf8(readbytes(conn, code_len))
+                println("Code received")
+                # Build context
+                ctx = LintContext(file)
+                # Lint code
+                msgs = lintstr(code, ctx)
+                # Process messages
+                clean_messages!(msgs)
+                display_messages(msgs)
+                # Write response to socket
+                for i in msgs
+                    write(conn, string(i))
+                    write(conn, "\n")
+                end
+                # Blank line to indicate end of messages
                 write(conn, "\n")
+                println("Connection closed.")
+            catch err
+              println("connection ended with error $err")
             end
-
-          end
-        catch err
-          print("connection ended with error $err")
         end
-      end
+    finally
+        close(server)
     end
 end
 

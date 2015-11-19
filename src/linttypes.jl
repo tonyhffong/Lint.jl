@@ -158,6 +158,15 @@ type LintContext
             Any[ LintStack( true ) ], LintMessage[], _ -> true, LintIgnoreState() )
 end
 
+function LintContext(file::AbstractString)
+    ctx = LintContext()
+    ctx.file = file
+    if ispath(file)
+        ctx.path = dirname(file)
+    end
+    return ctx
+end
+
 function pushcallstack( ctx::LintContext )
     push!( ctx.callstack, LintStack() )
 end
