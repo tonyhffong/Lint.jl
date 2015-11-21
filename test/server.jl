@@ -23,7 +23,9 @@ write(conn, "bad\n")
 @test contains(readline(conn), "Use of undeclared symbol bad\n")
 @test readline(conn) == "\n"
 
-
-try # close the server
-    Base.throwto(server, InterruptException())
-end
+# This isn't working on the nightly build. Ideally we explicitly stop the server process (as
+# it loops forever). It seems to get stopped when the tests end, so it's not necessary.
+#
+#try # close the server
+#    Base.throwto(server, InterruptException())
+#end
