@@ -50,11 +50,24 @@ function lintfile{T<:AbstractString}( file::T; returnMsgs::Bool = false )
     if !ispath( file )
         throw( "no such file exists" )
     end
-
-    ctx = LintContext( file )
     str = open( readall, file )
+    lintfile(file, str, returnMsgs=returnMsgs)
+end
 
-    msgs = lintstr( str, ctx )
+function lintfile(file::AbstractString, code::AbstractString; returnMsgs::Bool = false )
+    ctx = LintContext( file )
+
+    msgs = lintstr( code, ctx )
+
+    # If we have an undeclared symbol check the relative path
+    if isdir(ctx.path)
+        for message in msgs
+            if contains(message.message, "Use of undeclared symbol")
+                msgs = lintdir(ctx.path, ctx, true)
+                break
+            end
+        end
+    end
 
     clean_messages!( msgs )
     display_messages( msgs )
@@ -271,6 +284,58 @@ function lintexpr( ex::Any, ctx::LintContext )
     end
 end
 
+"""
+Include a file to your lintContext.
+Does nothing if file does not exist or has already been included.
+"""
+function lintinclude{T<:AbstractString}(ctx::LintContext, file::T, ignore_messages::Bool=false)
+    if ispath(file) && !(file in ctx.included)
+        if !(ctx.file in ctx.included) # We don't want to lint the file again
+            push!(ctx.included, ctx.file)
+        end
+        #println("including: $file")
+        push!(ctx.included, file)
+
+        oldpath = deepcopy(ctx.path)
+        oldfile = deepcopy(ctx.file)
+        oldlineabs = ctx.lineabs
+        if ignore_messages
+            oldmessages = deepcopy(ctx.messages)
+        end
+
+        str = open(readall, file)
+        ctx.file = deepcopy(file)
+        ctx.path = dirname(file)
+        ctx.lineabs = 1
+        lintstr(str, ctx)
+
+        ctx.file = oldfile
+        ctx.path = oldpath
+        ctx.lineabs = oldlineabs
+        if ignore_messages
+            ctx.messages = intersect(ctx.messages, oldmessages)
+        end
+    end
+end
+
+"""
+Lint all *.jl files at a given directory.
+Will ignore LintContext file and already included files.
+"""
+function lintdir{T<:AbstractString}(
+    dir::T, ctx::LintContext=LintContext(), ignore_messages::Bool=false
+)
+    for file in readdir(dir)
+        if endswith(file, ".jl")
+            file = joinpath(dir, file)
+            if !isdir(file)
+                lintinclude(ctx, file, ignore_messages)
+            end
+        end
+    end
+    ctx.messages
+end
+
 function lintserver(port)
     server = listen(port)
     try
@@ -286,13 +351,8 @@ function lintserver(port)
                 println("Code bytes: ", code_len)
                 code = utf8(readbytes(conn, code_len))
                 println("Code received")
-                # Build context
-                ctx = LintContext(file)
-                # Lint code
-                msgs = lintstr(code, ctx)
-                # Process messages
-                clean_messages!(msgs)
-                display_messages(msgs)
+                # Do the linting
+                msgs = lintfile(file, code, returnMsgs=true)
                 # Write response to socket
                 for i in msgs
                     write(conn, string(i))

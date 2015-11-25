@@ -377,18 +377,8 @@ function lintfunctioncall( ex::Expr, ctx::LintContext )
             msg( ctx, :ERROR, "cannot find include file: " * inclfile )
             return
         else
-            println( inclfile )
-            path = ctx.path
-            file = deepcopy( ctx.file )
-            lineabs = ctx.lineabs
-            str = open(readall, inclfile )
-            ctx.file = deepcopy( inclfile )
-            ctx.path = dirname( inclfile )
-            ctx.lineabs = 1
-            lintstr( str, ctx )
-            ctx.file = file
-            ctx.path = path
-            ctx.lineabs = lineabs
+            #println( "include: ", inclfile )
+            lintinclude(ctx, inclfile)
         end
     else
         if isexpr( ex.args[1], :curly )

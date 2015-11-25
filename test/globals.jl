@@ -59,3 +59,21 @@ global 5
 """
 msgs = lintstr(s)
 @test( contains(msgs[1].message, "unknown global pattern") )
+
+# Test gloabl defined in another file
+msgs = lintfile( "DEMOFILE3.jl"; returnMsgs = true )
+@test( length(msgs)==0 )
+
+s = """
+f() = x
+x = 5
+"""
+msgs = lintstr(s)
+@test( length(msgs)==0 )
+
+s = """
+x
+x = 5
+"""
+msgs = lintstr(s)
+@test( contains(msgs[1].message, "Use of undeclared symbol") )

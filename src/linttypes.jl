@@ -141,6 +141,7 @@ type LintContext
     scope        :: UTF8String # usually the function name
     isstaged     :: Bool
     path         :: UTF8String
+    included     :: Array{AbstractString,1} # list of files included
     globals      :: Dict{Symbol,Any}
     types        :: Dict{Symbol,Any}
     functions    :: Dict{Symbol,Any}
@@ -152,7 +153,7 @@ type LintContext
     messages     :: Array{ LintMessage, 1 }
     versionreachable:: Function # VERSION -> true means this code is reachable by VERSION
     ignoreState  :: LintIgnoreState
-    LintContext() = new( "none", 0, 1, "", false, ".",
+    LintContext() = new( "none", 0, 1, "", false, ".", AbstractString[],
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0, 0,
             Any[ LintStack( true ) ], LintMessage[], _ -> true, LintIgnoreState() )
 end
@@ -161,7 +162,7 @@ function LintContext(file::AbstractString)
     ctx = LintContext()
     ctx.file = file
     if ispath(file)
-        ctx.path = dirname(file)
+        ctx.path = dirname(abspath(file))
     end
     return ctx
 end
