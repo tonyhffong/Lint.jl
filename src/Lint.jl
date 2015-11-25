@@ -120,7 +120,7 @@ function clean_messages!( msgs )
 end
 
 function display_messages( msgs )
-    colors = Dict{Symbol, Symbol}(:INFO => :normal, :WARN => :yellow, :ERROR => :magenta)
+    colors = Dict{Symbol, Symbol}(:INFO => :black, :WARN => :yellow, :ERROR => :magenta)
     for m in msgs
         Base.println_with_color( colors[m.level], string(m) )
     end
