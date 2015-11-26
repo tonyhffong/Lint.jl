@@ -361,3 +361,9 @@ f(; 2)
 """
 msgs = lintstr(s)
 @test contains( msgs[1].message, "unknown keyword pattern" )
+
+s = """
+function () end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
