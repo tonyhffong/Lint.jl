@@ -186,12 +186,10 @@ end
 
 function register_global(ctx::LintContext, glob, info, callstackindex=length(ctx.callstack))
     ctx.callstack[callstackindex].declglobs[glob] = info
-    f = function (message)
-        if contains(message.message, "Use of undeclared symbol $glob") &&
-                (!isempty(message.scope) || message.file != ctx.file)
-            return false
-        end
-        return true
-    end
-    filter!(f, ctx.messages)
+    filter!(message -> begin
+                return !(contains(message.message, "Use of undeclared symbol $glob") &&
+                        (!isempty(message.scope) || message.file != ctx.file))
+            end,
+        ctx.messages
+    )
 end
