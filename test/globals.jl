@@ -60,10 +60,6 @@ global 5
 msgs = lintstr(s)
 @test( contains(msgs[1].message, "unknown global pattern") )
 
-# Test gloabl defined in another file
-msgs = lintfile( "DEMOFILE3.jl"; returnMsgs = true )
-@test( length(msgs)==0 )
-
 s = """
 f() = x
 x = 5
@@ -77,3 +73,14 @@ x = 5
 """
 msgs = lintstr(s)
 @test( contains(msgs[1].message, "Use of undeclared symbol") )
+
+# Test gloabls defined in other files
+# File in package src
+msgs = lintfile( "FakePackage/src/subfolder2/file2.jl"; returnMsgs = true )
+@test( length(msgs)==0 )
+# File in package test
+msgs = lintfile( "FakePackage/test/file2.jl"; returnMsgs = true )
+@test( length(msgs)==0 )
+# File in base julia
+msgs = lintfile( "FakeJulia/base/file2.jl"; returnMsgs = true )
+@test( length(msgs)==0 )

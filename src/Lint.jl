@@ -39,11 +39,45 @@ include( "misc.jl")
 include( "init.jl" )
 
 function lintpkg{T<:AbstractString}( pkg::T; returnMsgs::Bool = false )
-    p = joinpath( Pkg.dir( pkg ), "src", pkg * ".jl" )
+    p = joinpath( Pkg.dir( pkg ), "src", basename(pkg) * ".jl" )
     if !ispath( p )
         throw( "cannot find path: " * p )
     end
-    lintfile( p, returnMsgs = returnMsgs )
+    msgs = lintpkgforfile( p )
+
+    returnMsgs ? msgs : nothing
+end
+
+"""
+Lint the package for a file.
+If file is in src, lint Package.jl and its includes.
+If file is in test, lint runtests.jl and its includes.
+If file is in base lint all files in base dir.
+"""
+function lintpkgforfile{T<:AbstractString}(path::T, ctx::LintContext=LintContext())
+    path = abspath(path)
+    if ispath(ctx.path)
+        while path != "/"
+            path, folder = splitdir(path)
+            if folder == "src"
+                file = joinpath(path, folder, basename(path) * ".jl")
+                if ispath(file)
+                    lintinclude(ctx, file)
+                end
+                break
+            elseif folder == "test"
+                file = joinpath(path, folder, "runtests.jl")
+                if ispath(file)
+                    lintinclude(ctx, file)
+                end
+                break
+            elseif folder == "base"
+                lintdir(joinpath(path, folder), ctx)
+                break
+            end
+        end
+    end
+    ctx.messages
 end
 
 function lintfile{T<:AbstractString}( file::T; returnMsgs::Bool = false )
@@ -59,24 +93,20 @@ function lintfile(file::AbstractString, code::AbstractString; returnMsgs::Bool =
 
     msgs = lintstr( code, ctx )
 
-    # If we have an undeclared symbol check the relative path
-    if isdir(ctx.path)
-        for message in msgs
-            if contains(message.message, "Use of undeclared symbol")
-                msgs = lintdir(ctx.path, ctx, true)
-                break
-            end
+    # If we have an undeclared symbol, lint the package to try and resolve
+    for message in msgs
+        if contains(message.message, "Use of undeclared symbol")
+            message = lintpkgforfile(ctx.file, ctx)
+            break
         end
     end
+
+    filter!(msg -> msg.file == file, msgs)
 
     clean_messages!( msgs )
     display_messages( msgs )
 
-    if returnMsgs
-        return msgs
-    else
-        return nothing
-    end
+    returnMsgs ? msgs : nothing
 end
 
 function lintstr{T<:AbstractString}( str::T, ctx :: LintContext = LintContext(), lineoffset = 0 )
@@ -288,8 +318,8 @@ end
 Include a file to your lintContext.
 Does nothing if file does not exist or has already been included.
 """
-function lintinclude{T<:AbstractString}(ctx::LintContext, file::T, ignore_messages::Bool=false)
-    if ispath(file) && !(file in ctx.included)
+function lintinclude{T<:AbstractString}(ctx::LintContext, file::T)
+    if ispath(file) && !(file in ctx.included) && file != ctx.file
         if !(ctx.file in ctx.included) # We don't want to lint the file again
             push!(ctx.included, ctx.file)
         end
@@ -299,9 +329,6 @@ function lintinclude{T<:AbstractString}(ctx::LintContext, file::T, ignore_messag
         oldpath = deepcopy(ctx.path)
         oldfile = deepcopy(ctx.file)
         oldlineabs = ctx.lineabs
-        if ignore_messages
-            oldmessages = deepcopy(ctx.messages)
-        end
 
         str = open(readall, file)
         ctx.file = deepcopy(file)
@@ -312,9 +339,6 @@ function lintinclude{T<:AbstractString}(ctx::LintContext, file::T, ignore_messag
         ctx.file = oldfile
         ctx.path = oldpath
         ctx.lineabs = oldlineabs
-        if ignore_messages
-            ctx.messages = intersect(ctx.messages, oldmessages)
-        end
     end
 end
 
@@ -322,14 +346,12 @@ end
 Lint all *.jl files at a given directory.
 Will ignore LintContext file and already included files.
 """
-function lintdir{T<:AbstractString}(
-    dir::T, ctx::LintContext=LintContext(), ignore_messages::Bool=false
-)
+function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
     for file in readdir(dir)
         if endswith(file, ".jl")
             file = joinpath(dir, file)
             if !isdir(file)
-                lintinclude(ctx, file, ignore_messages)
+                lintinclude(ctx, file)
             end
         end
     end
