@@ -53,9 +53,7 @@ include( "unusedvar.jl")
 include( "using.jl")
 include( "versions.jl" )
 include( "server.jl" )
-if VERSION >= v"0.4.0-dev+1444"
-    include( "stagedfuncs.jl")
-end
+include( "stagedfuncs.jl")
 
 println( "...OK\n")
 include( "lintself.jl")
