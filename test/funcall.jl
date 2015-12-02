@@ -230,25 +230,16 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "typeof( x ) == Int" ) )
-if VERSION < v"0.4-"
-    s = """
-    function f(x::Int8=int8(1))
-        @lintpragma( "Info type x")
-        return x
-    end
-    """
-    msgs = lintstr(s)
-    @test( contains( msgs[1].message, "typeof( x ) == Int8" ) )
-else
-    s = """
-    function f(x::Int8=Int8(1))
-        @lintpragma( "Info type x")
-        return x
-    end
-    """
-    msgs = lintstr(s)
-    @test( contains( msgs[1].message, "typeof( x ) == Int8" ) )
+
+s = """
+function f(x::Int8=Int8(1))
+    @lintpragma( "Info type x")
+    return x
 end
+"""
+msgs = lintstr(s)
+@test( contains( msgs[1].message, "typeof( x ) == Int8" ) )
+
 s = """
 function f(c::Char)
     x = convert( Int, c )
@@ -267,13 +258,8 @@ function f( args...; dict... )
 end
 """
 msgs = lintstr(s)
-if VERSION < v"0.4.0-dev+4139"
-    @test contains( msgs[1].message, "typeof( args ) == (Any...,)")
-    @test contains( msgs[2].message, "typeof( dict ) == (Any...,)")
-else
-    @test contains( msgs[1].message, "typeof( args ) == Tuple")
-    @test contains( msgs[2].message, "typeof( dict ) == Tuple")
-end
+@test contains( msgs[1].message, "typeof( args ) == Tuple")
+@test contains( msgs[2].message, "typeof( dict ) == Tuple")
 
 s = """
 function f( args::Float64... )
@@ -282,11 +268,7 @@ function f( args::Float64... )
 end
 """
 msgs = lintstr(s)
-if VERSION < v"0.4.0-dev+4139"
-    @test contains( msgs[1].message, "typeof( args ) == (Float64...,)")
-else
-    @test contains( msgs[1].message, "typeof( args ) == Tuple{Vararg{Float64}}" )
-end
+@test contains( msgs[1].message, "typeof( args ) == Tuple{Vararg{Float64}}" )
 
 s = """
 function f( args::Float64... )
@@ -340,14 +322,12 @@ end
 msgs = lintstr(s)
 @test( isempty( msgs ) )
 
-if VERSION >= v"0.4"
-    s = """
-    a = :b
-    f(; a => 1 )
-    """
-    msgs = lintstr(s)
-    @test( isempty( msgs ) )
-end
+s = """
+a = :b
+f(; a => 1 )
+"""
+msgs = lintstr(s)
+@test( isempty( msgs ) )
 
 s="""
 a = (:a, 1)

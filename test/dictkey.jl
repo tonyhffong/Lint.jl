@@ -1,17 +1,3 @@
-if VERSION < v"0.4-"
-    s = """
-    [ :a=>1, :b=>2, :a=>3]
-    """
-    msgs = lintstr( s )
-    @test( contains( msgs[1].message, "may be deprecated by Julia 0.4" ) )
-
-    s = """
-    { :a=>1, :b=>2, :a=>3}
-    """
-    msgs = lintstr( s )
-    @test( contains( msgs[1].message, "may be deprecated by Julia 0.4" ) )
-end
-
 s = """@compat Dict(:a=>1, :b=>2, :a=>3 )"""
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "Duplicate key" ) )

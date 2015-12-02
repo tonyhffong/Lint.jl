@@ -66,7 +66,7 @@ msgs = lintstr(s)
 @assert( contains( msgs[1].message, "generic deprecate message" ) )
 
 s = """
-function testDep5{T <: String}( x::Array{T,1} )
+function testDep5{T <: AbstractString}( x::Array{T,1} )
     x
 end
 """

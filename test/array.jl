@@ -1,25 +1,17 @@
-if VERSION < v"0.4-"
-    @assert [[1,2],[3,4]] == [1,2,3,4]
-    s = """
-    r = [[1,2], [3,4]]
-    """
-    msgs = lintstr( s )
-    @test( contains( msgs[1].message, "Nested vcat" ) )
-elseif VERSION >= v"0.4.0-dev+3345"
-    @assert [[1;2];[3;4]] == [1;2;3;4]
-    s = """
-    r = [[1;2];[3;4]]
-    """
-    msgs = lintstr( s )
-    @test( contains( msgs[1].message, "Nested vcat" ) )
+@assert [[1;2];[3;4]] == [1;2;3;4]
+s = """
+r = [[1;2];[3;4]]
+"""
+msgs = lintstr( s )
+@test( contains( msgs[1].message, "Nested vcat" ) )
 
-    s = """
-    r = [[1,2],[3,4]]
-    """
-    msgs = lintstr( s )
-    println( msgs )
-    @test( contains( msgs[1].message, "Nested vect" ) )
-end
+s = """
+r = [[1,2],[3,4]]
+"""
+msgs = lintstr( s )
+println( msgs )
+@test( contains( msgs[1].message, "Nested vect" ) )
+
 @assert [[1 2] [3 4]] == [1 2 3 4]
 s = """
 r = [[1 2]  [3 4]]
@@ -133,14 +125,6 @@ sndlast = s[end -1]
 """
 msgs = lintstr( s )
 @test( contains( msgs[1].message, "Ambiguity of `[end -n]` as a matrix row vs index [end-n]" ) )
-
-if VERSION < v"0.4-"
-    s = """
-    s = {}
-    """
-    msgs = lintstr( s )
-    @test( contains( msgs[1].message, "may be deprecated in Julia 0.4" ) )
-end
 
 s = """
 function f()
