@@ -211,3 +211,18 @@ a /= 2
 """
 msgs = lintstr( s )
 @test isempty( msgs )
+
+s = """
+function f(x::ANY...)
+   x[1]
+end
+"""
+msgs = lintstr( s )
+@test isempty( msgs )
+s = """
+function typed_hcat(A::AbstractVecOrMat...)
+   A[1]
+end
+"""
+msgs = lintstr( s )
+@test isempty( msgs )

@@ -530,7 +530,9 @@ function guesstype( ex, ctx::LintContext )
                     return Any
                 end
                 if length( partyp.parameters ) == 1 || partyp.parameters[1].name.name == :Vararg
-                    return eval( Main, partyp.parameters[1].parameters[1].name.name )
+                    if typeof(partyp.parameters[1].parameters[1]) <: DataType
+                        return eval( Main, partyp.parameters[1].parameters[1].name.name )
+                    end
                 end
                 elt = partyp.parameters[1]
                 if all( x->x == elt, partyp.parameters )
