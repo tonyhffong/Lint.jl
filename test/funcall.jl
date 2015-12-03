@@ -347,3 +347,9 @@ function () end
 """
 msgs = lintstr(s)
 @assert( isempty( msgs ) )
+
+s = """
+function foo end
+"""
+msgs = lintstr(s)
+@assert( isempty( msgs ) )
