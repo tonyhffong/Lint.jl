@@ -130,3 +130,13 @@ end
 """
 msgs = lintstr(s )
 @test( isempty( msgs ) )
+
+s = """
+1==1 && true
+true && 1==1
+1==1 || true || 1==1
+1==1 || 1==1 || true
+true || 1==1 || 1==1
+"""
+msgs = lintstr(s )
+@test( isempty( msgs ) )
