@@ -1,9 +1,9 @@
 function lintblock( ex::Expr, ctx::LintContext )
-    global SIMILARITY_THRESHOLD
     lastexpr = nothing
     similarexprs = Expr[]
     diffs = Float64[]
-    checksimilarityflag = (!haskey( ctx.ignoreState.ignore, :similarity ) || !ctx.ignoreState.ignore[ :similarity ])
+    checksimilarityflag = (!haskey( ctx.ignoreState.ignore, :similarity ) ||
+        !ctx.ignoreState.ignore[ :similarity ])
 
     if checksimilarityflag
         checksimilarity = ()->begin
@@ -94,7 +94,7 @@ function expr_similar_score( e1::Expr, e2::Expr, base::Float64 = 1.0 )
         return -base
     end
 
-    score = base - abs( length(e1.args)-length(e2.args)) * base * 2.0
+    score = base - abs(length(e1.args)-length(e2.args)) * base * 2.0
 
     for i in 1:min( length(e1.args), length(e2.args) )
         if typeof(e1.args[i]) == Expr && typeof(e2.args[i]) == Expr
@@ -114,7 +114,7 @@ function expr_similar_score( e1::Expr, e2::Expr, base::Float64 = 1.0 )
     return score
 end
 
-function test_similarity_string{T<:AbstractString}( str::T)
+function test_similarity_string{T<:AbstractString}(str::T)
     i = start(str)
     firstexpr = nothing
     lastexpr = nothing
@@ -132,7 +132,7 @@ function test_similarity_string{T<:AbstractString}( str::T)
                 firstexpr = ex
             end
             if lastexpr != nothing
-                push!( diffs, expr_similar_score( lastexpr, ex ))
+                push!( diffs, expr_similar_score( lastexpr, ex ) )
             end
             lastexpr = ex
         else
@@ -183,7 +183,7 @@ function lintlet( ex::Expr, ctx::LintContext )
     end
     ctx.functionLvl -= 1
 
-    if ctx.macroLvl==0
+    if ctx.macroLvl == 0
         popVarScope( ctx )
     end
 end

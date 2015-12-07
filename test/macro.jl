@@ -72,3 +72,10 @@ s = """
 """
 msgs = lintstr( s )
 @assert( isempty( msgs ) )
+
+s = """
+macro ()
+end
+"""
+msgs = lintstr(s)
+@test(contains(msgs[1].message, "Lint does not understand"))

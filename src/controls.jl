@@ -1,15 +1,15 @@
 function lintifexpr( ex::Expr, ctx::LintContext )
     if ex.args[1] == false
-        msg( ctx, :WARN, "true branch is unreachable")
+        msg(ctx, :WARN, "true branch is unreachable")
         if length(ex.args) > 2
             lintexpr( ex.args[3], ctx )
         end
     elseif ex.args[1] == true
         lintexpr( ex.args[2], ctx )
         if length(ex.args) > 2
-            msg( ctx, :WARN, "false branch is unreachable")
+            msg(ctx, :WARN, "false branch is unreachable")
         else
-            msg( ctx, :WARN, "redundant if-true statement")
+            msg(ctx, :WARN, "redundant if-true statement")
         end
     else
         lintboolean( ex.args[1], ctx )
@@ -17,10 +17,11 @@ function lintifexpr( ex::Expr, ctx::LintContext )
         # a boolean expression (!=, ==, >=, <=, >, <, &&, ||),
         # generate a INFO, as it could have been a typo
         if isexpr( ex.args[2], :block ) && length( ex.args[2].args ) >= 2 &&
-            ( isexpr( ex.args[2].args[2], :comparison ) ||
-              isexpr( ex.args[2].args[2], :call ) && ex.args[2].args[2].args[1] == :(!) ||
-              isexpr( ex.args[2].args[2], [ :(&&), :(||) ] ) && !isexpr(ex.args[2].args[2].args[end], [ :call, :error, :throw, :return ] ) )
-            msg( ctx, :INFO, "The 1st statement under the true-branch is a boolean expression. Typo?")
+                ( isexpr( ex.args[2].args[2], :comparison ) ||
+                isexpr( ex.args[2].args[2], :call ) && ex.args[2].args[2].args[1] == :(!) ||
+                isexpr( ex.args[2].args[2], [ :(&&), :(||) ] ) &&
+                !isexpr(ex.args[2].args[2].args[end], [ :call, :error, :throw, :return ] ) )
+            msg(ctx, :INFO, "The 1st statement under the true-branch is a boolean expression. Typo?")
         end
         (verconstraint1, verconstraint2) = versionconstraint( ex.args[1] )
         if verconstraint1 != nothing
@@ -54,8 +55,9 @@ function versionconstraint( ex )
                 if a == :VERSION
                     continue
                 end
-                if !isexpr( a, :macrocall ) || a.args[1] != Symbol( "@v_str" ) || !( typeof( a.args[2] ) <: AbstractString )
-                    return (nothing, nothing )
+                if !isexpr( a, :macrocall ) || a.args[1] != Symbol( "@v_str" ) ||
+                        !( typeof( a.args[2] ) <: AbstractString )
+                    return ( nothing, nothing )
                 end
             end
             localex = deepcopy( ex )
@@ -125,7 +127,7 @@ end
 function lintboolean( ex, ctx::LintContext )
     if typeof( ex ) <: Expr
         if ex.head == :(=)
-            msg( ctx, :INFO, "Assignment in the if-predicate clause.")
+            msg( ctx, :INFO, "Assignment in the if-predicate clause." )
         elseif ex.head == :call && ex.args[1] in [ :(&), :(|), :($) ]
             msg( ctx, :WARN, "Bit-wise " * string( ex.args[1]) * " in a boolean context. (&,|) do not have short-circuit behavior." )
         elseif ex.head == :(&&) || ex.head == :(||)
@@ -141,7 +143,7 @@ function lintboolean( ex, ctx::LintContext )
         elseif ex.head == :comparison
             lintcomparison( ex, ctx )
         elseif ex.head == :call && ex.args[1] == :length
-            msg( ctx, :ERROR, "Incorrect usage of length() in a Boolean context. You want to use isempty().")
+            msg( ctx, :ERROR, "Incorrect usage of length() in a Boolean context. You want to use isempty()." )
         end
     elseif typeof( ex ) == Symbol
         # can we figure of if that symbol is Bool?
@@ -176,14 +178,13 @@ function lintcomparison( ex::Expr, ctx::LintContext )
                         !in( ex.args[i], [ :(==), :(!=) ] ) # non-real comparison can only be == or !=
                     problem = true
                 end
-                if !problem && ( !(lefttype <: Number) || !(righttype <: Number ) ) &&
-                     !( lefttype <: righttype ) && !( righttype <: lefttype )
+                if !problem && ( !(lefttype <: Number) || !( righttype <: Number ) ) &&
+                       !( lefttype <: righttype ) && !( righttype <: lefttype )
                     problem = true
                 end
                 if problem && !pragmaexists( utf8( "Ignore incompatible type comparison" ), ctx )
-                    msg( ctx, :WARN, "Comparing apparently incompatible types (#" *
-                        string(i>>1) * ") LHS:" *string(lefttype)*
-                        " RHS:" * string(righttype) )
+                    msg(ctx, :WARN, "Comparing apparently incompatible types (#$(i>>1)) " *
+                        "LHS:$(lefttype) RHS:$(righttype)")
                 end
             end
             lefttype = righttype
@@ -211,7 +212,7 @@ end
 
 function lintwhile( ex::Expr, ctx::LintContext )
     if ex.args[1] == false
-        msg( ctx, :WARN, "while false block is unreachable")
+        msg(ctx, :WARN, "while false block is unreachable")
     elseif typeof(ex.args[1]) == Expr
             lintboolean( ex.args[1], ctx )
     end
@@ -222,8 +223,8 @@ end
 
 function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
     pushVarScope( ctx )
-    st = typed? 3 :2
-    fn = typed? 2 :1
+    st = typed ? 3 : 2
+    fn = typed ? 2 : 1
 
     if typed
         if ex.head == :typed_dict_comprehension
@@ -231,13 +232,13 @@ function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
                 declktype = ex.args[1].args[1]
                 declvtype = ex.args[1].args[2]
                 if declktype == TopNode( :Any ) && declvtype == TopNode( :Any ) && VERSION < v"0.4-"
-                    msg( ctx, :INFO, "Untyped dictionary {a=>b for (a,b) in c}, may be deprecated by Julia 0.4. Use (Any=>Any)[a=>b for (a,b) in c].")
+                    msg(ctx, :INFO, "Untyped dictionary {a=>b for (a,b) in c}, may be deprecated by Julia 0.4. Use (Any=>Any)[a=>b for (a,b) in c].")
                 end
             end
         else
             declvtype = ex.args[1]
             if declvtype == TopNode( :Any ) && VERSION < v"0.4-"
-                msg( ctx, :INFO, "Untyped dictionary {a for a in c}, may be deprecated by Julia 0.4. Use (Any)[a for a in c].")
+                msg(ctx, :INFO, "Untyped dictionary {a for a in c}, may be deprecated by Julia 0.4. Use (Any)[a for a in c].")
             end
         end
     end

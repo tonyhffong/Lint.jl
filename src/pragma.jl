@@ -4,7 +4,7 @@ type PragmaInfo
 end
 
 function lintlintpragma( ex::Expr, ctx::LintContext )
-    if typeof( ex.args[2] ) <: AbstractString
+    if length(ex.args) >= 2 && typeof( ex.args[2] ) <: AbstractString
         m = match( r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)|(version)) +(.+)"s, ex.args[2] )
         if m != nothing
             action = m.captures[1]

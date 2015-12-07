@@ -15,13 +15,13 @@ function lintcurly( ex::Expr, ctx::LintContext )
             continue # grandfathered
         elseif typeof( a ) == QuoteNode || isexpr( a, :quote )
             if ex.args[1] != :Val
-                msg( ctx, :INFO, "Probably illegal use of " * string(a) * " inside curly.")
+                msg(ctx, :INFO, "Probably illegal use of " * string(a) * " inside curly.")
             end
         else
             t = guesstype( a, ctx )
             if t == Symbol || t != Any && t != () && typeof( t ) != DataType &&
                 !( typeof( t ) <: Tuple && all( x->typeof( x ) == DataType, t ) ) && !( t <: Integer )
-                msg( ctx, :WARN, "Probably illegal use of " * string(a) * " inside curly.")
+                msg(ctx, :WARN, "Probably illegal use of " * string(a) * " inside curly.")
             end
             lintexpr( a, ctx )
         end

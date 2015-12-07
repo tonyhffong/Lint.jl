@@ -1,7 +1,8 @@
 # misc easy to make mistakes
 
 function lintrange( ex::Expr, ctx::LintContext )
-    if length( ex.args ) == 2 && typeof( ex.args[1] ) <: Real && typeof( ex.args[2] ) <: Real && ex.args[2] < ex.args[1]
+    if length( ex.args ) == 2 && typeof( ex.args[1] ) <: Real &&
+            typeof( ex.args[2] ) <: Real && ex.args[2] < ex.args[1]
         msg( ctx, :ERROR, "For a decreasing range, use a negative step e.g. 10:-1:1")
     else
         for a in ex.args

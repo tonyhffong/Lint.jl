@@ -25,7 +25,7 @@ end
 
 function lintusing( ex::Expr, ctx::LintContext )
     if ctx.functionLvl > 0
-        msg( ctx, :ERROR, "using is not allowed inside function definitions.")
+        msg(ctx, :ERROR, "using is not allowed inside function definitions.")
     end
     for s in ex.args
         if s != :(.)
@@ -57,13 +57,13 @@ function lintusing( ex::Expr, ctx::LintContext )
 
             if in( :lint_helper, names(m, true ) )
                 if !haskey( ctx.callstack[end].linthelpers, path )
-                    println( "found lint_helper in " * string(m))
+                    println("found lint_helper in " * string(m))
                 end
                 ctx.callstack[end].linthelpers[ path ] = m.lint_helper
             end
         else
             if !pragmaexists( "Ignore undefined module " * string( path ), ctx )
-                msg( ctx, :WARN, string(path) * " doesn't eval into a Module")
+                msg(ctx, :WARN, string(path) * " doesn't eval into a Module")
             end
         end
     end
@@ -71,7 +71,7 @@ end
 
 function lintexport( ex::Expr, ctx::LintContext )
     if ctx.functionLvl > 0
-        msg( ctx, :ERROR, "export is not allowed inside function definitions.")
+        msg(ctx, :ERROR, "export is not allowed inside function definitions.")
     end
     for sym in ex.args
         if in(sym, ctx.callstack[end].exports )
@@ -84,7 +84,7 @@ end
 
 function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
     if ctx.functionLvl > 0
-        msg( ctx, :ERROR, "import is not allowed inside function definitions.")
+        msg(ctx, :ERROR, "import is not allowed inside function definitions.")
     end
     if !ctx.versionreachable( VERSION )
         return

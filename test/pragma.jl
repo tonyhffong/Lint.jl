@@ -98,3 +98,9 @@ end
 """
 msgs = lintstr(s)
 @test( contains( msgs[1].message, "Unused @lintpragma Ignore unused a" ) )
+
+s = """
+@lintpragma()
+"""
+msgs = lintstr(s)
+@test(contains(msgs[1].message, "@lintpragma must be called using"))

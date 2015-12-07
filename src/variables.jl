@@ -39,7 +39,6 @@ end
 # if strict == false, it won't generate lint warnings, just return :Any
 
 function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
-    global knownsyms
     stacktop = ctx.callstack[end]
 
     #println(sym)

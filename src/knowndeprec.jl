@@ -38,7 +38,7 @@ function argReplace!( e::Expr, pattern, replace )
         if e.args[j] == pattern
             e.args[j] = replace
         elseif typeof(e.args[j]) == Expr
-            argReplace!( e.args[j], pattern, replace)
+            argReplace!(e.args[j], pattern, replace)
         end
     end
 end
@@ -59,11 +59,11 @@ function processOneSig( s, typeHints )
     if typeof( s ) == Symbol
         return ( :normal, :Any )
     elseif Meta.isexpr( s, [ :(...),:kw ] ) && typeof( s.args[1] )==Symbol
-        return (s.head, :Any )
+        return (s.head, :Any)
     elseif Meta.isexpr( s, :(::) )
         ditype = determineType( s.args[end] )
-        return (:normal, ditype )
-    elseif Meta.isexpr( s, [ :(...), :kw ] ) && Meta.isexpr(s.args[1], :(::) )
+        return (:normal, ditype)
+    elseif Meta.isexpr( s, [ :(...), :kw ] ) && Meta.isexpr(s.args[1], :(::))
         ditype = determineType( s.args[1].args[end] )
         return ( s.head, ditype )
     else

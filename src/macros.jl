@@ -1,6 +1,10 @@
 function lintmacro( ex::Expr, ctx::LintContext )
+    if !isa(ex.args[1], Expr) || length(ex.args[1].args) < 2
+        msg(ctx, :ERROR, "Lint does not understand: $(ex.args[1])")
+        return
+    end
     fname = ex.args[1].args[1]
-    push!( ctx.callstack[end].macros, Symbol( "@" * string(fname ) ) )
+    push!( ctx.callstack[end].macros, Symbol( "@" * string(fname) ) )
     push!( ctx.callstack[end].localarguments, Dict{ Symbol, Any }() )
     push!( ctx.callstack[end].localusedargs, Set{ Symbol }() )
 
@@ -21,22 +25,22 @@ function lintmacro( ex::Expr, ctx::LintContext )
         elseif sube.head == :(::) && length( sube.args ) == 2
             typeex = sube.args[2]
             if  typeex != :Expr && typeex != :Symbol
-                msg( ctx, :ERROR, "macro arguments can only be Symbol/Expr: " *string( sube ))
+                msg(ctx, :ERROR, "macro arguments can only be Symbol/Expr: $(sube)")
             end
             resolveArguments( sube.args[1] )
         elseif sube.head == :(...)
-            resolveArguments( sube.args[1])
+            resolveArguments(sube.args[1])
         #= # macro definition inside another macro? highly unlikely
         elseif sube.head == :($)
             lintexpr( sube.args[1], ctx )
         =#
         else
-            msg( ctx, :ERROR, "Lint does not understand: " *string( sube ))
+            msg(ctx, :ERROR, "Lint does not understand: $(sube)")
         end
     end
 
     for i = 2:length(ex.args[1].args)
-        resolveArguments( ex.args[1].args[i])
+        resolveArguments(ex.args[1].args[i])
     end
 
     ctx.macroLvl += 1

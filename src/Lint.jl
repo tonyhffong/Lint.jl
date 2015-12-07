@@ -21,7 +21,7 @@ import Base: ==, utf8
 utf8( s::Symbol ) = utf8( string( s ) )
 
 include( "linttypes.jl" )
-include( "knownsyms.jl")
+include( "knownsyms.jl" )
 include( "guesstype.jl" )
 include( "variables.jl" )
 include( "pragma.jl" )
@@ -32,10 +32,10 @@ include( "blocks.jl" )
 include( "controls.jl" )
 include( "macros.jl" )
 include( "knowndeprec.jl" )
-include( "dict.jl")
-include( "ref.jl")
+include( "dict.jl" )
+include( "ref.jl" )
 include( "curly.jl" )
-include( "misc.jl")
+include( "misc.jl" )
 include( "init.jl" )
 
 function lintpkg{T<:AbstractString}( pkg::T; returnMsgs::Bool = false )
@@ -109,7 +109,7 @@ function lintfile(file::AbstractString, code::AbstractString; returnMsgs::Bool =
     returnMsgs ? msgs : nothing
 end
 
-function lintstr{T<:AbstractString}( str::T, ctx :: LintContext = LintContext(), lineoffset = 0 )
+function lintstr{T<:AbstractString}( str::T, ctx::LintContext = LintContext(), lineoffset = 0 )
     linecharc = cumsum( map( x->length(x)+1, @compat(split( str, "\n", keep=true ) ) ) )
     numlines = length( linecharc )
     i = start(str)
@@ -145,13 +145,13 @@ function lintstr{T<:AbstractString}( str::T, ctx :: LintContext = LintContext(),
     return ctx.messages
 end
 
-function msg( ctx, lvl, str )
+function msg( ctx::LintContext, lvl::Symbol, str::AbstractString )
     push!( ctx.messages, LintMessage( ctx.file , ctx.scope,
             ctx.lineabs + ctx.line, lvl, str ) )
 end
 
 "Process messages. Sort and remove duplicates."
-function clean_messages!( msgs )
+function clean_messages!( msgs::Array{LintMessage} )
     sort!( msgs )
     delids = Int[]
     for i in 2:length( msgs )
@@ -162,7 +162,7 @@ function clean_messages!( msgs )
     deleteat!( msgs, delids )
 end
 
-function display_messages( msgs )
+function display_messages( msgs::Array{LintMessage} )
     colors = Dict{Symbol, Symbol}(:INFO => :bold, :WARN => :yellow, :ERROR => :magenta)
     for m in msgs
         Base.println_with_color( colors[m.level], string(m) )
@@ -182,7 +182,7 @@ function lintexpr( ex::Any, ctx::LintContext )
         return
     end
 
-    if typeof(ex)!=Expr
+    if typeof(ex) != Expr
         return
     end
 

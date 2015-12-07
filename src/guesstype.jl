@@ -22,12 +22,12 @@ function valuetype{T<:Associative}( ::Type{T} )
 end
 
 if VERSION < v"0.4-dev+3345"
-function eltype{T}( ::Type{Enumerate{T}})
-    (Int, T )
+function eltype{T}(::Type{Enumerate{T}})
+    (Int, T)
 end
 #else
-#function eltype{T}( ::Type{Enumerate{T}})
-#    Tuple{Int, T }
+#function eltype{T}(::Type{Enumerate{T}})
+#    Tuple{Int, T}
 #end
 end
 
@@ -35,7 +35,7 @@ function isAnyOrTupleAny( x )
     if x == Any
         return true
     elseif typeof( x ) <: Tuple
-        return all( y->y==Any, x )
+        return all( y->y == Any, x )
     end
     return false
 end
@@ -59,7 +59,7 @@ function parsetype( ex )
                     try
                         elt = eval( Main, ex.args[2] )
                     end
-                    if length(ex.args ) == 2
+                    if length(ex.args) == 2
                         return Array{ elt }
                     else
                         if typeof( ex.args[3] ) <: Integer
@@ -105,7 +105,7 @@ function guesstype( ex, ctx::LintContext )
     if t <: AbstractString
         return t
     end
-    if t==Symbol # check if we have seen it
+    if t == Symbol # check if we have seen it
         if ex == :nothing
             return Void
         end
@@ -142,7 +142,7 @@ function guesstype( ex, ctx::LintContext )
                 return checkret( ret )
             end
         end
-        for i in length( ctx.callstack):-1:1
+        for i in length(ctx.callstack):-1:1
             if in( sym, ctx.callstack[i].types )
                 return DataType
             end
@@ -217,7 +217,8 @@ function guesstype( ex, ctx::LintContext )
         end
     end
     # A() = A{T}(default)
-    if isexpr( ex, :call ) && isexpr( ex.args[1], :curly ) && Symbol( ctx.scope ) == ex.args[1].args[1]
+    if isexpr( ex, :call ) && isexpr( ex.args[1], :curly ) &&
+            Symbol( ctx.scope ) == ex.args[1].args[1]
         found = false
         for i = length( ctx.callstack ):-1:1
             found = in( ex.args[1].args[1], ctx.callstack[i].types )
@@ -258,10 +259,12 @@ function guesstype( ex, ctx::LintContext )
     end
 
     if isexpr( ex, :macrocall )
-        if ex.args[1] == Symbol( "@sprintf" ) ||
-            isexpr( ex, :call ) && in( ex.args[1], [:replace, :string, :utf8, :utf16, :utf32, :repr, :normalize_string, :join, :chop, :chomp,
-            :lpad, :rpad, :strip, :lstrip, :rstrip, :uppercase, :lowercase, :ucfirst, :lcfirst,
-            :escape_string, :unescape_string ] )
+        if ex.args[1] == Symbol( "@sprintf" ) || isexpr( ex, :call ) && in( ex.args[1], [
+                    :replace, :string, :utf8, :utf16, :utf32, :repr, :normalize_string,
+                    :join, :chop, :chomp, :lpad, :rpad, :strip, :lstrip, :rstrip,
+                    :uppercase, :lowercase, :ucfirst, :lcfirst, :escape_string,
+                    :unescape_string
+                ] )
             return AbstractString
         elseif ex.args[1] == Symbol( "@compat" )
             return guesstype( ex.args[2], ctx )
@@ -282,7 +285,7 @@ function guesstype( ex, ctx::LintContext )
     end
 
     if isexpr( ex, :call ) && ex.args[1] == :rand
-        if length(ex.args)==1
+        if length(ex.args) == 1
             return Float64
         else
             return Array{ Float64, length( ex.args ) - 1 }
@@ -331,8 +334,8 @@ function guesstype( ex, ctx::LintContext )
             elt = eval( Main, ex.args[2] )
         end
         if length(sig) >= 1 && sig[1] == DataType
-            if length(sig) == 2 && isexpr(ex.args[3],:tuple)
-                ret = Array{ elt, length(ex.args[3].args ) }
+            if length(sig) == 2 && isexpr(ex.args[3], :tuple)
+                ret = Array{ elt, length(ex.args[3].args) }
             elseif length(sig) == 2 && sig[2] <: Tuple && all( x->x <: Integer, sig[2] )
                 if VERSION < v"0.4.0-dev+4319"
                     ret = Array{ elt, length( sig[2] ) }
@@ -375,6 +378,7 @@ function guesstype( ex, ctx::LintContext )
                 if nd == 1 || length( ex.args ) == 3
                     ret = Int
                 else
+                    # TODO this should be fixed not just ignored
                     @lintpragma( "Ignore unused i" )
                     if VERSION < v"0.4.0-dev+4319"
                         ret = tuple( DataType[ Int for i=1:nd ]... )
@@ -397,7 +401,7 @@ function guesstype( ex, ctx::LintContext )
             return Any
         end
         eletyp = eltype( sig[1] )
-        #dump( eletyp )
+        # dump( eletyp )
         if length(sig)==2
             if sig[2] <: Number
                 return Array{ eletyp, 1 }
@@ -438,7 +442,7 @@ function guesstype( ex, ctx::LintContext )
                 elt = parsetype( ex.args[1] )
                 return Array{ elt, 1 }
             elseif what == :Any
-                msg( ctx, :WARN, "Lint cannot determine if " * string( ex.args[1] ) * " is a DataType or not" )
+                msg( ctx, :WARN, "Lint cannot determine if $(ex.args[1]) is a DataType or not" )
                 return Any
             end
         end
@@ -447,6 +451,10 @@ function guesstype( ex, ctx::LintContext )
         if typeof( partyp ) == Symbol # we are in a context of a constructor of a new type, so it's difficult to figure out the content
             return Any
         elseif partyp <: UnitRange
+            if length(ex.args) < 2
+                msg(ctx, :ERROR, "Lint does not understand: $(ex.args[1])")
+                return Any
+            end
             ktypeactual = guesstype( ex.args[2], ctx )
             if ktypeactual <: Integer
                 return eltype( partyp )
@@ -466,13 +474,14 @@ function guesstype( ex, ctx::LintContext )
                     if nd == 0 && ex.args[2] == 1 # ok to do A[1] for a 0-dimensional array
                         return eletyp
                     else
-                        msg( ctx, :ERROR, string( ex ) * " has more indices than dimensions")
+                        msg(ctx, :ERROR, "$(ex) has more indices than dimensions")
                         return Any
                     end
                 end
 
                 for i in 2:length( ex.args )
-                    if ex.args[i] == :(:) || isexpr( ex.args[i], :call ) && ex.args[i].args[1] == :Colon
+                    if ex.args[i] == :(:) || isexpr( ex.args[i], :call ) &&
+                            ex.args[i].args[1] == :Colon
                         tmpdim += 1
                     end
                 end
@@ -497,15 +506,23 @@ function guesstype( ex, ctx::LintContext )
         elseif partyp <: Associative
             ktypeexpect = keytype( partyp )
             vtypeexpect = valuetype( partyp )
+            if length(ex.args) < 2
+                msg(ctx, :ERROR, "Lint does not understand: $(ex.args[1])")
+                return Any
+            end
             ktypeactual = guesstype( ex.args[2], ctx )
             if ktypeactual != Any && !( ktypeactual <: ktypeexpect )
-                msg( ctx, :ERROR, "Key type expects " * string( ktypeexpect ) * ", provided " * string( ktypeactual ) )
+                msg(ctx, :ERROR, "Key type expects $(ktypeexpect), provided $(ktypeactual)")
             end
             return vtypeexpect
         elseif partyp <: AbstractString
+            if length(ex.args) < 2
+                msg(ctx, :ERROR, "Lint does not understand: $(ex.args[1])")
+                return Any
+            end
             ktypeactual = guesstype( ex.args[2], ctx )
             if ktypeactual != Any && !( ktypeactual <: Integer ) && !( ktypeactual <: Range )
-                msg( ctx, :ERROR, "string[] expects Integer, provided " * string( ktypeactual ) )
+                msg(ctx, :ERROR, "string[] expects Integer, provided $(ktypeactual)")
             end
             if ktypeactual <: Integer
                 return Char
@@ -549,8 +566,8 @@ function guesstype( ex, ctx::LintContext )
             end
         =#
         elseif partyp != Any
-            if ctx.versionreachable( VERSION ) && !pragmaexists( string( partyp ) * " is a container type", ctx )
-                msg( ctx, :ERROR, string( ex.args[1] ) * " has apparent type " * string( partyp ) * ", not a container type." )
+            if ctx.versionreachable( VERSION ) && !pragmaexists( "$(partyp) is a container type", ctx )
+                msg( ctx, :ERROR, "$(ex.args[1]) has apparent type $(partyp), not a container type." )
             end
         end
         return Any

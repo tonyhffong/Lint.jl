@@ -1,13 +1,13 @@
 function lintdict( ex::Expr, ctx::LintContext; typed::Bool = false )
-    @lintpragma( "Ignore unused ex")
+    @lintpragma("Ignore unused ex")
 
     if !typed
         if VERSION < v"0.4-" && ctx.versionreachable( VERSION )
-            msg( ctx, :INFO, "dictionary [a=>b,...], may be deprecated by Julia 0.4. Use @compat Dict(a=>b,...).")
+            msg(ctx, :INFO, "dictionary [a=>b,...], may be deprecated by Julia 0.4. Use @compat Dict(a=>b,...).")
         end
     else
         if VERSION < v"0.4-" && ctx.versionreachable( VERSION )
-            msg( ctx, :INFO, "(K=>V)[a=>b,...] may be deprecated by Julia 0.4. Use @compat Dict{K,V}(a=>b,...).")
+            msg(ctx, :INFO, "(K=>V)[a=>b,...] may be deprecated by Julia 0.4. Use @compat Dict{K,V}(a=>b,...).")
         end
     end
 end
@@ -20,14 +20,14 @@ function lintdict4( ex::Expr, ctx::LintContext )
     vtypes = Set{Any}()
     for i in st:length(ex.args)
         a = ex.args[i]
-        if typeof(a)== Expr && a.head == :(=>)
+        if typeof(a) == Expr && a.head == :(=>)
             if typeof( a.args[1] ) != Expr
                 if in( a.args[1], ks )
                     msg( ctx, :ERROR, "Duplicate key in Dict: " * string( a.args[1] ) )
                 end
                 push!( ks, a.args[1] )
             end
-            for (j,s) in [ (1,ktypes), (2,vtypes ) ]
+            for (j,s) in [ (1,ktypes), (2,vtypes) ]
                 if typeof( a.args[j] ) <: QuoteNode && typeof( a.args[j].value ) <: Symbol
                     push!( s, Symbol )
                 elseif typeof( a.args[j] ) <: Number || typeof( a.args[j] ) <: AbstractString
@@ -47,17 +47,17 @@ function lintdict4( ex::Expr, ctx::LintContext )
     end
 
     if typed
-        if length( ktypes ) > 1 && ex.args[1].args[2] != :Any && !isexpr(ex.args[1].args[2], :call )
-            msg( ctx, :ERROR, "Multiple key types detected. Use Dict{Any,V}() for mixed type dict")
+        if length( ktypes ) > 1 && ex.args[1].args[2] != :Any && !isexpr( ex.args[1].args[2], :call )
+            msg(ctx, :ERROR, "Multiple key types detected. Use Dict{Any,V}() for mixed type dict")
         end
         if length( vtypes ) > 1 && ex.args[1].args[3] != :Any && !isexpr( ex.args[1].args[3], :call )
-            msg( ctx, :ERROR, "Multiple value types detected. Use Dict{K,Any}() for mixed type dict")
+            msg(ctx, :ERROR, "Multiple value types detected. Use Dict{K,Any}() for mixed type dict")
         end
     else
         # if the expression is explicitly (Any=>Any)[ :a => 1 ], then it'd be
         #   :Any=>:Any, not TopNode( :Any )=>TopNode( :Any )
         if !in( Any, ktypes ) && length( ktypes ) == 1 && !in( Any, vtypes ) && length( vtypes ) == 1
-            msg( ctx, :INFO, "There is only 1 key type && 1 value type. Use explicit Dict{K,V}() for better performances.")
+            msg(ctx, :INFO, "There is only 1 key type && 1 value type. Use explicit Dict{K,V}() for better performances.")
         end
     end
 end
