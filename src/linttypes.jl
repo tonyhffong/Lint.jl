@@ -11,8 +11,8 @@ end
 import Base.string
 function string( m::LintMessage )
     s = @sprintf( "%s:%d ", m.file, m.line )
-    s = s * @sprintf( "[%-8s] ", m.variable )
-    s = s * @sprintf( "%s%-3s  ", string(m.level)[1], m.code )
+    s = s * @sprintf( "%s%s ", string(m.level)[1], m.code )
+    s = s * @sprintf( "[%s] ", m.variable )
     ident = min( 60, length(s) )
     lines = split(m.message, "\n")
     for (i,l) in enumerate(lines)
