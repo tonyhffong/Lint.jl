@@ -43,7 +43,7 @@ msgs = lintstr(s)
 @test isempty(msgs)
 
 s = """
-ntuple( 4, _->0)
+ntuple(4, _->0)
 """
 msgs = lintstr(s)
 @test isempty(msgs)

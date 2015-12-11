@@ -14,7 +14,7 @@ msgs = lintstr(s)
 s = """
 function f{T}(x::T, y::T)
     a = Array{T, 1}()
-    append!(a, [ x, y ])
+    append!(a, [x, y])
     a
 end
 """

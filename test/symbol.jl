@@ -1,16 +1,16 @@
 s = """
-s = Symbol( "abc" )
+s = Symbol("abc")
 """
-msgs = lintstr( s )
+msgs = lintstr(s)
 
-@test isempty( msgs )
+@test isempty(msgs)
 
 s = """
 if VERSION < v"0.4-"
-    s = symbol( "end" )
+    s = symbol("end")
 else
-    s = Symbol( "end" )
+    s = Symbol("end")
 end
 """
-msgs = lintstr( s )
-@test isempty( msgs )
+msgs = lintstr(s)
+@test isempty(msgs)

@@ -3,7 +3,7 @@ module LintExample2
 
 #submodule
 module LintExSubMod1
-subfoo(x) = println( x )
+subfoo(x) = println(x)
 end
 
 module LintExSubMod2
@@ -15,7 +15,7 @@ using LintExample
 
 export foo, bar
 
-@fancyfuncgen( foo )
-@fancyfuncgen( bar )
+@fancyfuncgen(foo)
+@fancyfuncgen(bar)
 
 end

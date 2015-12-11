@@ -109,7 +109,7 @@ function f(t::Array{Int64,2}, m, n)
     @lintpragma("Info type x7")
 end
 """
-msgs = lintstr( s )
+msgs = lintstr(s)
 @test msgs[1].code == 271
 @test contains(msgs[1].message, "typeof(x1) == Array{Int64,2}")
 @test msgs[2].code == 271
@@ -146,7 +146,7 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "ambiguity of :end as a symbol vs as part of a range")
 
 s = """
-s = utf8( "abcdef" )
+s = utf8("abcdef")
 sndlast = s[end -1]
 """
 msgs = lintstr(s)

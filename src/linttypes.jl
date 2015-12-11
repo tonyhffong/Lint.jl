@@ -9,11 +9,11 @@ type LintMessage
 end
 
 import Base.string
-function string( m::LintMessage )
-    s = @sprintf( "%s:%d ", m.file, m.line )
-    s = s * @sprintf( "%s%s ", string(m.level)[1], m.code )
-    s = s * @sprintf( "%s: ", m.variable )
-    ident = min( 60, length(s) )
+function string(m::LintMessage)
+    s = @sprintf("%s:%d ", m.file, m.line)
+    s = s * @sprintf("%s%s ", string(m.level)[1], m.code)
+    s = s * @sprintf("%s: ", m.variable)
+    ident = min(60, length(s))
     lines = split(m.message, "\n")
     for (i,l) in enumerate(lines)
         if i==1
@@ -26,12 +26,12 @@ function string( m::LintMessage )
 end
 
 import Base.show
-function Base.show( io::IO, m::LintMessage )
-    print( io, string(m) )
+function Base.show(io::IO, m::LintMessage)
+    print(io, string(m))
 end
 
 import Base.isless
-function Base.isless( m1::LintMessage, m2::LintMessage )
+function Base.isless(m1::LintMessage, m2::LintMessage)
     if m1.file != m2.file
         return isless(m1.file, m2.file)
     end
@@ -47,7 +47,7 @@ function Base.isless( m1::LintMessage, m2::LintMessage )
     return m1.message < m2.message
 end
 
-function ==( m1::LintMessage, m2::LintMessage )
+function ==(m1::LintMessage, m2::LintMessage)
     m1.file == m2.file &&
     m1.level == m2.level &&
     m1.code == m2.code &&
@@ -60,12 +60,12 @@ end
 type VarInfo
     line::Int
     typeactual::Any # most of the time it's DataType, but could be Tuple of types, too
-    typeexpr::Union{ Expr, Symbol } # We may know that it is Array{ T, 1 }, though we do not know T, for example
-    VarInfo() = new( -1, Any, :() )
-    VarInfo( l::Int ) = new( l, Any, :() )
-    VarInfo( l::Int, t::DataType ) = new( l, t, :() )
-    VarInfo( l::Int, ex::Expr ) = new( l, Any, ex )
-    VarInfo( ex::Expr ) = new( -1, Any, ex )
+    typeexpr::Union{Expr, Symbol} # We may know that it is Array{T, 1}, though we do not know T, for example
+    VarInfo() = new(-1, Any, :())
+    VarInfo(l::Int) = new(l, Any, :())
+    VarInfo(l::Int, t::DataType) = new(l, t, :())
+    VarInfo(l::Int, ex::Expr) = new(l, Any, ex)
+    VarInfo(ex::Expr) = new(-1, Any, ex)
 end
 
 type PragmaInfo
@@ -75,13 +75,13 @@ end
 
 type LintStack
     declglobs     :: Dict{Symbol, Any}
-    localarguments:: Array{ Dict{Symbol, Any}, 1 }
-    localusedargs :: Array{ Set{Symbol}, 1 }
-    localvars     :: Array{ Dict{Symbol, Any}, 1 }
-    localusedvars :: Array{ Set{Symbol}, 1 }
+    localarguments:: Array{Dict{Symbol, Any}, 1}
+    localusedargs :: Array{Set{Symbol}, 1}
+    localvars     :: Array{Dict{Symbol, Any}, 1}
+    localusedvars :: Array{Set{Symbol}, 1}
     usedvars      :: Set{Symbol}
     oosvars       :: Set{Symbol}
-    pragmas       :: Dict{UTF8String, PragmaInfo } # the boolean denotes if the pragma has been used
+    pragmas       :: Dict{UTF8String, PragmaInfo} # the boolean denotes if the pragma has been used
     calledfuncs   :: Set{Symbol}
     inModule      :: Bool
     moduleName    :: Any
@@ -92,16 +92,16 @@ type LintStack
     functions     :: Set{Any}
     modules       :: Set{Any}
     macros        :: Set{Any}
-    linthelpers   :: Dict{ UTF8String, Any }
-    data          :: Dict{ Symbol, Any }
+    linthelpers   :: Dict{UTF8String, Any}
+    data          :: Dict{Symbol, Any}
     isTop         :: Bool
     LintStack() = begin
         x = new(
             Dict{Symbol,Any}(),
-            [ Dict{Symbol, Any}() ],
-            [ Set{Symbol}() ],
-            [ Dict{Symbol, Any}() ],
-            [ Set{Symbol}() ],
+            [Dict{Symbol, Any}()],
+            [Set{Symbol}()],
+            [Dict{Symbol, Any}()],
+            [Set{Symbol}()],
             Set{Symbol}(),
             Set{Symbol}(),
             Dict{UTF8String, Bool}(), #pragmas
@@ -115,15 +115,15 @@ type LintStack
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),
-            Dict{ UTF8String, Any }(),
-            Dict{ Symbol, Any }(),
+            Dict{UTF8String, Any}(),
+            Dict{Symbol, Any}(),
             false,
-            )
+           )
         x
     end
 end
 
-function LintStack( t::Bool )
+function LintStack(t::Bool)
     x = LintStack()
     x.isTop = t
     x
@@ -136,8 +136,8 @@ type LintIgnoreState
 end
 
 function LintIgnoreState()
-    x = LintIgnoreState( Set{Symbol}(), Set{Symbol}(), Dict{Symbol,Bool}() )
-    x.ignore[ :similarity ] = true
+    x = LintIgnoreState(Set{Symbol}(), Set{Symbol}(), Dict{Symbol,Bool}())
+    x.ignore[:similarity] = true
     x
 end
 
@@ -156,13 +156,13 @@ type LintContext
     macroLvl     :: Int
     macrocallLvl :: Int
     quoteLvl     :: Int
-    callstack    :: Array{ Any, 1 }
-    messages     :: Array{ LintMessage, 1 }
+    callstack    :: Array{Any, 1}
+    messages     :: Array{LintMessage, 1}
     versionreachable:: Function # VERSION -> true means this code is reachable by VERSION
     ignoreState  :: LintIgnoreState
-    LintContext() = new( "none", 0, 1, "", false, ".", AbstractString[],
+    LintContext() = new("none", 0, 1, "", false, ".", AbstractString[],
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0, 0,
-            Any[ LintStack( true ) ], LintMessage[], _ -> true, LintIgnoreState() )
+            Any[LintStack(true)], LintMessage[], _ -> true, LintIgnoreState())
 end
 
 function LintContext(file::AbstractString)
@@ -174,21 +174,21 @@ function LintContext(file::AbstractString)
     return ctx
 end
 
-function pushcallstack( ctx::LintContext )
-    push!( ctx.callstack, LintStack() )
+function pushcallstack(ctx::LintContext)
+    push!(ctx.callstack, LintStack())
 end
 
-function popcallstack( ctx::LintContext )
+function popcallstack(ctx::LintContext)
     stacktop = ctx.callstack[end]
     for (p,b) in stacktop.pragmas
         if !b.used
             tmpline = ctx.line
             ctx.line = b.line
-            msg( ctx, :INFO, 381, "unused @lintpragma $p" )
+            msg(ctx, :INFO, 381, "unused @lintpragma $p")
             ctx.line = tmpline
         end
     end
-    pop!( ctx.callstack )
+    pop!(ctx.callstack)
 end
 
 function register_global(ctx::LintContext, glob, info, callstackindex=length(ctx.callstack))
@@ -198,5 +198,5 @@ function register_global(ctx::LintContext, glob, info, callstackindex=length(ctx
                         (!isempty(message.scope) || message.file != ctx.file))
             end,
         ctx.messages
-    )
+   )
 end

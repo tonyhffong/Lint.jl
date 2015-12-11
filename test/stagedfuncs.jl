@@ -25,11 +25,11 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "use of undeclared symbol")
 
 s = """
-@generated function f( args::Int... )
+@generated function f(args::Int...)
     @lintpragma("Info type args")
     x = args[1]
     @lintpragma("Info type x")
-    :(show(x, args... ))
+    :(show(x, args...))
 end
 """
 msgs = lintstr(s)

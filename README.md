@@ -11,19 +11,19 @@ improved.
 
 ## Installation
 ```julia
-Pkg.add( "Lint" )
+Pkg.add("Lint")
 ```
 
 ## Usage
 ```julia
 using Lint
-lintfile( "your_.jl_file" )
+lintfile("your_.jl_file")
 ```
 It'd follow any `include` statements.
 
 The output is of the following form:
 ```
-filename.jl:Line [function name  ] CODE  Explanation
+filename.jl:Line [function name] CODE  Explanation
 ```
 `Line` is the line number relative to the start of the file.
 `CODE` gives an indication of severity, and is one of `INFO`, `WARN`, `ERROR`, or `FATAL`.
@@ -31,21 +31,21 @@ filename.jl:Line [function name  ] CODE  Explanation
 To simplify life, there is a convenience function for packages:
 ```julia
 using Lint
-lintpkg( "MyPackage" )
+lintpkg("MyPackage")
 ```
 
 If your package always lints clean, you may want to keep it that way in a test:
 ```julia
 using Test
 using Lint
-@test isempty(lintpkg( "MyPackage", returnMsgs=true))
+@test isempty(lintpkg("MyPackage", returnMsgs=true))
 ```
 
 ## What can it find?
 * simple deadcode detection (e.g if true/false)
 * simple premature-return deadcode detection
 * Bitwise `&`, `|` being used in a Bool context. Suggest `&&` and `||`
-* Declared but unused variables or arguments. Overruled by adding the no-op statement `@lintpragma( "Ignore unused [variable name]" )`
+* Declared but unused variables or arguments. Overruled by adding the no-op statement `@lintpragma("Ignore unused [variable name]")`
   just before the warning line.
 * Using an undefined variable
 * Duplicate key as in `[:a=>1, :b=>2, :a=>3]`
@@ -61,9 +61,9 @@ using Lint
 * warn `length()` being used as Bool, suggest `!isempty()`
 * Out-of-scope local variable name being reused again inside the same code block. (legal but frowned upon)
 * Function arguments being Container on non-leaf type e.g. `f(x::Array{Number,1})`. Suggest `f{T<:Number}(x::Array{T,1})`
-* Concatenation of strings using `+`. It also catches common string functions, e.g. `string(...) + replace( ... )`
+* Concatenation of strings using `+`. It also catches common string functions, e.g. `string(...) + replace(...)`
 * Iteration over an apparent dictionary using only one variable instead of (k,v) tuple
-* Incorrect ADT usage in function definition, e.g. `f{Int}( x::Int )`, `f{T<:Int64}( x::T )`, `f{Int<:Real}( x::Int)`
+* Incorrect ADT usage in function definition, e.g. `f{Int}(x::Int)`, `f{T<:Int64}(x::T)`, `f{Int<:Real}(x::Int)`
 * Suspicious range literals e.g. `10:1` when it probably should be `10:-1:1`
 * Understandable but actually non-existent constructors e.g. String(), Symbol()
 * Redefining mathematical constants, such as `e = 2.718`
@@ -77,7 +77,7 @@ using Lint
 * Constructor forgetting to return the constructed object
 * calling new() with the number of arguments different from the number of fields.
 * Rudimentary type instability warnings e.g. `a = 1` then followed by `a = 2.0`. Overruled using a no-op statement
-  `@lintpragma( "Ignore unstable type variable [variable name]" )` just before the warning.
+  `@lintpragma("Ignore unstable type variable [variable name]")` just before the warning.
 * Incompatible type assertion and assignment e.g. `a::Int = 1.0`
 * Incompatible tuple assignment sizes e.g. `(a,b) = (1,2,3)`
 * Flatten behavior of nested vcat e.g. `[[1,2],[3,4]]`
@@ -93,7 +93,7 @@ using Lint
 * Constant global without assigning a value to it.
 * Staged function: catch one forgetting that the arguments are all types. Inform unused arguments in both the
   staged function's logic as well as the quoted code.
-* Catch silly curly bracket misuse/abuse e.g. Dict{ :Symbol, Any }
+* Catch silly curly bracket misuse/abuse e.g. Dict{:Symbol, Any}
 * Understands and checks basic `@doc`
 * Catch assigning `a.b = something` when `a` is proven to be of an immutable type, e.g. `Complex`
 * Follow VERSION if-statements to properly lint based on version-appropriate standard
@@ -105,35 +105,35 @@ However, at lint-time, these pragmas steer the lint behavior. Module designers d
 the macro from Lint.jl in their module, as long as they just create an empty macro like this, early in their
 module scripts:
 ```julia
-macro lintpragma( s )
+macro lintpragma(s)
 end
 ```
 
 Lint message suppression (do not include the square brackets)
-* `@lintpragma( "Ignore unused [variable name]" )`. Works for unused arguments also.
-* `@lintpragma( "Ignore unstable type variable [variable name]" )`. Ignore type instability warnings.
-* `@lintpragma( "Ignore deprecated [function name]" )`
-* `@lintpragma( "Ignore undefined module [module name]" )`. Useful to support Julia packages across 
+* `@lintpragma("Ignore unused [variable name]")`. Works for unused arguments also.
+* `@lintpragma("Ignore unstable type variable [variable name]")`. Ignore type instability warnings.
+* `@lintpragma("Ignore deprecated [function name]")`
+* `@lintpragma("Ignore undefined module [module name]")`. Useful to support Julia packages across 
     different Julia releases.
-* `@lintpragma( "Ignore untyped field [field name]" )`.
-* `@lintpragma( "Ignore dimensionless array field [field name]" )`. Useful if we really want to store 
+* `@lintpragma("Ignore untyped field [field name]")`.
+* `@lintpragma("Ignore dimensionless array field [field name]")`. Useful if we really want to store 
     arrays with uncertain/runtime-calculated dimension
-* `@lintpragma( "Ignore use of undeclared variable [variable name]" )`. Useful when using macros to
+* `@lintpragma("Ignore use of undeclared variable [variable name]")`. Useful when using macros to
   generate symbols on the fly.
-* `@lintpragma( "Ignore incompatible type comparison" )`. Useful to silence deliberately different-type comparison
+* `@lintpragma("Ignore incompatible type comparison")`. Useful to silence deliberately different-type comparison
 
 Lint message generation (do not include the square brackets)
-* `@lintpragma( "Info type [expression]")`. Generate the best guess type of the expression during lint-time.
-* `@lintpragma( "Info me [any text]")`. An alternative to-do.
-* `@lintpragma( "Warn me [any text]")`. Remind yourself this code isn't done yet.
-* `@lintpragma( "Error me [any text]")`. Remind yourself this code is wrong.
+* `@lintpragma("Info type [expression]")`. Generate the best guess type of the expression during lint-time.
+* `@lintpragma("Info me [any text]")`. An alternative to-do.
+* `@lintpragma("Warn me [any text]")`. Remind yourself this code isn't done yet.
+* `@lintpragma("Error me [any text]")`. Remind yourself this code is wrong.
 
 The macro also supports lint-time terminal output that generates no Lint message:
-* `@lintpragma( "Print type [expression]")`. Just print out the type
-* `@lintpragma( "Print me [any text]")`. Lint-time printing
+* `@lintpragma("Print type [expression]")`. Just print out the type
+* `@lintpragma("Print me [any text]")`. Lint-time printing
 
 Useful version tracing tool
-* `@lintpragma( "Info version [version]" )`. lint-time version reachability test
+* `@lintpragma("Info version [version]")`. lint-time version reachability test
 
 ## VERSION branch
 
@@ -153,20 +153,20 @@ end
 
 ```julia
 # this passes lint in 0.3 but it generates an INFO in 0.4
-s = symbol( "end" )
+s = symbol("end")
 ```
 
 ```julia
 # this is an error 0.3 but it passes in 0.4
-s = Symbol( "end" )
+s = Symbol("end")
 ```
 
 ```julia
 # this will lint clean cross versions
 if VERSION < v"0.4-"
-    s = symbol( "end" )
+    s = symbol("end")
 else
-    s = Symbol( "end" )
+    s = Symbol("end")
 end
 ```
 
@@ -174,11 +174,11 @@ You can directly test for version reachability by inserting lint-pragmas
 like so
 ```julia
 if VERSION >= v"0.4-"
-    @lintpragma( "Info version 0.3")
-    @lintpragma( "Info version 0.4.0-dev+1833")
+    @lintpragma("Info version 0.3")
+    @lintpragma("Info version 0.4.0-dev+1833")
 else
-    @lintpragma( "Info version 0.3")
-    @lintpragma( "Info version 0.4.0-dev+1833")
+    @lintpragma("Info version 0.3")
+    @lintpragma("Info version 0.4.0-dev+1833")
 end
 ```
 You will see line-by-line reachability in your output. See test/versions.jl
@@ -197,11 +197,11 @@ Key info about adding a `lint_helper` function in your module
   so that Lint can give other modules a go at it. Note that
   if you always returning true in your code you will break Lint.
 * `lint_helper` takes two argument, an `Expr` instance and a context.
-  - if you find an issue in your expression, call `Lint.msg( ctx, level, "explanation" )`
+  - if you find an issue in your expression, call `Lint.msg(ctx, level, "explanation")`
   - level is 0: INFO, 1:WARN, 2:ERROR, 4:FATAL
 * typical structure looks like this
 ```julia
-function lint_helper( ex::Expr, ctx )
+function lint_helper(ex::Expr, ctx)
     if ex.head == :macrocall
         if ex.args[1] == symbol("@fancy_macro1")
             # your own checking code
@@ -224,19 +224,19 @@ end
  inside another macro.
 * If your macro generates new local variables, call this:
 ```julia
-ctx.callstack[end].localvars[end][ varsymbol ] = ctx.line
+ctx.callstack[end].localvars[end][varsymbol] = ctx.line
 ```
 * If your macro generates new free variables (not bound to a block scope), call this:
 ```julia
-ctx.callstack[end].localvars[1][ varsymbol ] = ctx.line
+ctx.callstack[end].localvars[1][varsymbol] = ctx.line
 ```
 * If your macro generates new functions,
 ```julia
-push!( ctx.callstack[end].functions, funcsymbol )
+push!(ctx.callstack[end].functions, funcsymbol)
 ```
 * If your macro generates new types,
 ```julia
-push!( ctx.callstack[end].types, roottypesymbol )
+push!(ctx.callstack[end].types, roottypesymbol)
 ```
 You just need to put in the root symbol for a parametric type, for example
 `:A` for `A{T<:Any}`.

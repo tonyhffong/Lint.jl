@@ -1,7 +1,7 @@
 s = """
 r = 10:1
 """
-msgs = lintstr( s )
+msgs = lintstr(s)
 @test msgs[1].code == 433
 @test contains(msgs[1].message, "decreasing range")
 

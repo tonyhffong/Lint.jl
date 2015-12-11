@@ -47,7 +47,7 @@ msgs = lintstr(s)
 
 s = """
 function f(x::Int)
-    @lintpragma( "Info type x")
+    @lintpragma("Info type x")
     for i in x
         println(i)
     end
