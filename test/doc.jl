@@ -1,32 +1,37 @@
 s = """
 @doc "this is a test" -> f() = 0
 """
-msgs = lintstr( s )
-@assert isempty( msgs )
+msgs = lintstr(s)
+@test isempty(msgs)
+
 s = "@doc \"\"\"this is a test\"\"\" -> f() = 0"
-msgs = lintstr( s )
-@assert isempty( msgs )
+msgs = lintstr(s)
+@test isempty(msgs)
+
 s = """
 @doc "this is a test"
 f() = 0
 """
-msgs = lintstr( s )
-@assert contains( msgs[1].message, "Did you forget an -> after @doc")
+msgs = lintstr(s)
+@test msgs[1].code == 443
+@test contains(msgs[1].message, "did you forget an -> after @doc")
+
 s = """
 @doc "this is a test" f() = 0
 """
-msgs = lintstr( s )
-@assert isempty( msgs )
+msgs = lintstr(s)
+@test isempty(msgs)
 
-s = "
+s = """
 @doc \"\"\"
 this is a test
 \"\"\" f() = 0
-"
-msgs = lintstr( s )
-@assert isempty( msgs )
+"""
+msgs = lintstr(s)
+@test isempty(msgs)
+
 s = """
 @doc f
 """
-msgs = lintstr( s )
-@assert isempty( msgs )
+msgs = lintstr(s)
+@test isempty(msgs)

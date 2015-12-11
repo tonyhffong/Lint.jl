@@ -1,16 +1,18 @@
 type LintMessage
     file    :: UTF8String
+    level   :: Symbol # INFO, WARN, ERROR
+    code    :: Int # [1-9][1-9][1-9]
     scope   :: UTF8String
     line    :: Int
-    level   :: Symbol # INFO, WARNING, ERROR
+    variable:: Any
     message :: UTF8String
 end
 
 import Base.string
 function string( m::LintMessage )
     s = @sprintf( "%s:%d ", m.file, m.line )
-    s = s * @sprintf( "[%-15s] ", m.scope )
-    s = s * @sprintf( "%-5s  ", m.level )
+    s = s * @sprintf( "[%-8s] ", m.variable )
+    s = s * @sprintf( "%s%-3s  ", string(m.level)[1], m.code )
     ident = min( 60, length(s) )
     lines = split(m.message, "\n")
     for (i,l) in enumerate(lines)
@@ -34,10 +36,13 @@ function Base.isless( m1::LintMessage, m2::LintMessage )
         return isless(m1.file, m2.file)
     end
     if m1.level != m2.level
-        return m1.level == :ERROR || m2.level == :INFO # reverse
+        return m1.level == :ERROR || m2.level == :INFO
     end
     if m1.line != m2.line
         return m1.line < m2.line
+    end
+    if m1.code != m2.code
+        return m1.code < m2.code
     end
     return m1.message < m2.message
 end
@@ -45,8 +50,10 @@ end
 function ==( m1::LintMessage, m2::LintMessage )
     m1.file == m2.file &&
     m1.level == m2.level &&
+    m1.code == m2.code &&
     m1.scope == m2.scope &&
     m1.line == m2.line &&
+    m1.variable == m2.variable &&
     m1.message == m2.message
 end
 
@@ -177,7 +184,7 @@ function popcallstack( ctx::LintContext )
         if !b.used
             tmpline = ctx.line
             ctx.line = b.line
-            msg( ctx, :INFO, "Unused @lintpragma " * p )
+            msg( ctx, :INFO, 381, "unused @lintpragma $p" )
             ctx.line = tmpline
         end
     end
@@ -187,7 +194,7 @@ end
 function register_global(ctx::LintContext, glob, info, callstackindex=length(ctx.callstack))
     ctx.callstack[callstackindex].declglobs[glob] = info
     filter!(message -> begin
-                return !(contains(message.message, "Use of undeclared symbol $glob") &&
+                return !(message.code == 321 && message.variable == glob &&
                         (!isempty(message.scope) || message.file != ctx.file))
             end,
         ctx.messages

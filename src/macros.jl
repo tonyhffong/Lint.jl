@@ -1,6 +1,6 @@
 function lintmacro( ex::Expr, ctx::LintContext )
     if !isa(ex.args[1], Expr) || length(ex.args[1].args) < 2
-        msg(ctx, :ERROR, "Lint does not understand: $(ex.args[1])")
+        msg(ctx, :ERROR, 121, ex.args[1], "Lint does not understand: $(ex.args[1])")
         return
     end
     fname = ex.args[1].args[1]
@@ -10,7 +10,6 @@ function lintmacro( ex::Expr, ctx::LintContext )
 
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
     stacktop = ctx.callstack[end]
-
     resolveArguments = (sube) -> begin
         if typeof( sube ) == Symbol
             stacktop.localarguments[end][sube]=VarInfo(ctx.line)
@@ -25,7 +24,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
         elseif sube.head == :(::) && length( sube.args ) == 2
             typeex = sube.args[2]
             if  typeex != :Expr && typeex != :Symbol
-                msg(ctx, :ERROR, "macro arguments can only be Symbol/Expr: $(sube)")
+                msg(ctx, :ERROR, 522, sube, "macro arguments can only be Symbol/Expr: $(sube)")
             end
             resolveArguments( sube.args[1] )
         elseif sube.head == :(...)
@@ -35,7 +34,7 @@ function lintmacro( ex::Expr, ctx::LintContext )
             lintexpr( sube.args[1], ctx )
         =#
         else
-            msg(ctx, :ERROR, "Lint does not understand: $(sube)")
+            msg(ctx, :ERROR, 136, sube, "Lint does not understand: $(sube)")
         end
     end
 
@@ -70,7 +69,7 @@ function lintmacrocall( ex::Expr, ctx::LintContext )
             if length( ex.args ) >= 3
                 lintexpr( ex.args[3], ctx )
             else
-                msg( ctx, :WARN, "Did you forget an -> after @doc or make it inline?" )
+                msg( ctx, :WARN, 443, "did you forget an -> after @doc or make it inline?" )
             end
             return
         end

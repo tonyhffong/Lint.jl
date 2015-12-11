@@ -8,5 +8,4 @@ function f()
 end
 """
 msgs = lintstr(s)
-
-@assert( isempty(msgs) )
+@test isempty(msgs)

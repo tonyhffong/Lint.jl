@@ -1,6 +1,6 @@
 s = """
 @generated function f(a,b)
-    if a==1
+    if a == 1
         :(b)
     elseif b == Int
         :(a)
@@ -10,8 +10,9 @@ s = """
 end
 """
 
-msgs = lintstr( s )
-@test contains( msgs[1].message, "incompatible types (#1)" )
+msgs = lintstr(s)
+@test msgs[1].code == 542
+@test contains(msgs[1].message, "incompatible types (#1)")
 
 # if it is not a staged function, it would have no lint message
 s = """
@@ -19,17 +20,20 @@ s = """
     :(x+y)
 end
 """
-msgs = lintstr( s )
-@test contains( msgs[1].message, "Use of undeclared symbol" )
+msgs = lintstr(s)
+@test msgs[1].code == 371
+@test contains(msgs[1].message, "use of undeclared symbol")
 
 s = """
 @generated function f( args::Int... )
-    @lintpragma( "Info type args")
+    @lintpragma("Info type args")
     x = args[1]
-    @lintpragma( "Info type x")
-    :( show( x,args... ) )
+    @lintpragma("Info type x")
+    :(show(x, args... ))
 end
 """
 msgs = lintstr(s)
-@test contains( msgs[1].message, "typeof( args ) == Tuple{Vararg{DataType}}")
-@test contains( msgs[2].message, "typeof( x ) == DataType" )
+@test msgs[1].code == 271
+@test contains(msgs[1].message, "typeof(args) == Tuple{Vararg{DataType}}")
+@test msgs[2].code == 271
+@test contains(msgs[2].message, "typeof(x) == DataType")

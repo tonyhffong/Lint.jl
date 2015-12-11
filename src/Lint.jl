@@ -95,7 +95,7 @@ function lintfile(file::AbstractString, code::AbstractString; returnMsgs::Bool =
 
     # If we have an undeclared symbol, lint the package to try and resolve
     for message in msgs
-        if contains(message.message, "Use of undeclared symbol")
+        if message.code == 321 # undeclared symbol
             message = lintpkgforfile(ctx.file, ctx)
             break
         end
@@ -131,7 +131,7 @@ function lintstr{T<:AbstractString}( str::T, ctx::LintContext = LintContext(), l
             (ex, i) = parse(str,i)
         catch y
             if typeof( y ) != ParseError || y.msg != "end of input"
-                msg( ctx, :ERROR, string(y) )
+                msg( ctx, :ERROR, 111, string(y) )
             end
             problem = true
         end
@@ -145,9 +145,13 @@ function lintstr{T<:AbstractString}( str::T, ctx::LintContext = LintContext(), l
     return ctx.messages
 end
 
-function msg( ctx::LintContext, lvl::Symbol, str::AbstractString )
-    push!( ctx.messages, LintMessage( ctx.file , ctx.scope,
-            ctx.lineabs + ctx.line, lvl, str ) )
+function msg( ctx::LintContext, level::Symbol, code::Int, variable, str::AbstractString )
+    push!( ctx.messages, LintMessage( ctx.file, level, code, ctx.scope,
+            ctx.lineabs + ctx.line, variable, str ) )
+end
+
+function msg( ctx::LintContext, level::Symbol, code::Int, str::AbstractString )
+    msg( ctx, level, code, "", str )
 end
 
 "Process messages. Sort and remove duplicates."
@@ -302,7 +306,7 @@ function lintexpr( ex::Any, ctx::LintContext )
         lintboolean( ex.args[1], ctx )
         lintexpr( ex.args[2], ctx ) # do not enforce boolean. e.g. b==1 || error( "b must be 1!" )
     elseif ex.head == :incomplete
-        msg(ctx, :ERROR, ex.args[1])
+        msg(ctx, :ERROR, 112, ex.args[1])
     else
         for sube in ex.args
             if typeof(sube)== Expr

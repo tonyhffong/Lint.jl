@@ -20,7 +20,7 @@ write(conn, "undeclared_symbol\n")
 write(conn, "4\n")
 write(conn, "bad\n")
 
-@test contains(readline(conn), "Use of undeclared symbol bad\n")
+@test contains(readline(conn), "use of undeclared symbol bad\n")
 @test readline(conn) == "\n"
 
 # This isn't working on the nightly build. Ideally we explicitly stop the server process (as

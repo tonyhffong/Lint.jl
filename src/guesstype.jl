@@ -61,12 +61,10 @@ function parsetype( ex )
                     end
                     if length(ex.args) == 2
                         return Array{ elt }
+                    elseif typeof( ex.args[3] ) <: Integer
+                        return Array{ elt, ex.args[3] }
                     else
-                        if typeof( ex.args[3] ) <: Integer
-                            return Array{ elt, ex.args[3] }
-                        else
-                            return Array{ elt }
-                        end
+                        return Array{ elt }
                     end
                 end
             elseif ex.args[1] == :Dict
@@ -442,7 +440,8 @@ function guesstype( ex, ctx::LintContext )
                 elt = parsetype( ex.args[1] )
                 return Array{ elt, 1 }
             elseif what == :Any
-                msg( ctx, :WARN, "Lint cannot determine if $(ex.args[1]) is a DataType or not" )
+                msg( ctx, :WARN, 543, ex.args[1], "Lint cannot determine if $(ex.args[1]) " *
+                    "is a DataType or not" )
                 return Any
             end
         end
@@ -452,7 +451,7 @@ function guesstype( ex, ctx::LintContext )
             return Any
         elseif partyp <: UnitRange
             if length(ex.args) < 2
-                msg(ctx, :ERROR, "Lint does not understand: $(ex.args[1])")
+                msg(ctx, :ERROR, 121, ex.args[1], "Lint does not understand: $(ex.args[1])")
                 return Any
             end
             ktypeactual = guesstype( ex.args[2], ctx )
@@ -474,7 +473,7 @@ function guesstype( ex, ctx::LintContext )
                     if nd == 0 && ex.args[2] == 1 # ok to do A[1] for a 0-dimensional array
                         return eletyp
                     else
-                        msg(ctx, :ERROR, "$(ex) has more indices than dimensions")
+                        msg(ctx, :ERROR, 436, ex, "$(ex) has more indices than dimensions")
                         return Any
                     end
                 end
@@ -507,22 +506,24 @@ function guesstype( ex, ctx::LintContext )
             ktypeexpect = keytype( partyp )
             vtypeexpect = valuetype( partyp )
             if length(ex.args) < 2
-                msg(ctx, :ERROR, "Lint does not understand: $(ex.args[1])")
+                msg(ctx, :ERROR, 121, ex.args[1], "Lint does not understand: $(ex.args[1])")
                 return Any
             end
             ktypeactual = guesstype( ex.args[2], ctx )
             if ktypeactual != Any && !( ktypeactual <: ktypeexpect )
-                msg(ctx, :ERROR, "Key type expects $(ktypeexpect), provided $(ktypeactual)")
+                msg(ctx, :ERROR, 518, ktypeactual, "key type expects $(ktypeexpect), " *
+                    "provided $(ktypeactual)")
             end
             return vtypeexpect
         elseif partyp <: AbstractString
             if length(ex.args) < 2
-                msg(ctx, :ERROR, "Lint does not understand: $(ex.args[1])")
+                msg(ctx, :ERROR, 121, ex.args[1], "Lint does not understand: $(ex.args[1])")
                 return Any
             end
             ktypeactual = guesstype( ex.args[2], ctx )
             if ktypeactual != Any && !( ktypeactual <: Integer ) && !( ktypeactual <: Range )
-                msg(ctx, :ERROR, "string[] expects Integer, provided $(ktypeactual)")
+                msg(ctx, :ERROR, 519, ktypeactual, "string[] expects Integer, provided " *
+                    "$(ktypeactual)")
             end
             if ktypeactual <: Integer
                 return Char
@@ -567,7 +568,8 @@ function guesstype( ex, ctx::LintContext )
         =#
         elseif partyp != Any
             if ctx.versionreachable( VERSION ) && !pragmaexists( "$(partyp) is a container type", ctx )
-                msg( ctx, :ERROR, "$(ex.args[1]) has apparent type $(partyp), not a container type." )
+                msg( ctx, :ERROR, 521, partyp, "$(ex.args[1]) has apparent type " *
+                    "$(partyp), not a container type" )
             end
         end
         return Any

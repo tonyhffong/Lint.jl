@@ -4,8 +4,9 @@ function f()
     call
 end
 """
-msgs = lintstr( s )
-@test contains( msgs[1].message, "You should not use 'call' as a variable name")
+msgs = lintstr(s)
+@test msgs[1].code == 332
+@test contains(msgs[1].message, "call should not be used as a variable name")
 
 s = """
 function f()
@@ -13,5 +14,6 @@ function f()
     var
 end
 """
-msgs = lintstr( s )
-@test contains( msgs[1].message, "\"var\" as a local variable might cause confusion" )
+msgs = lintstr(s)
+@test msgs[1].code == 356
+@test contains(msgs[1].message, "var as a local variable might cause confusion")

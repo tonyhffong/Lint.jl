@@ -13,10 +13,10 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
             if infotype == "type"
                 v = parse( rest_str )
                 if isexpr( v, :incomplete )
-                    msg( ctx, :ERROR, "Incomplete expression " * rest_str )
+                    msg( ctx, :ERROR, 138, rest_str, "incomplete expression $rest_str" )
                     str = ""
                 else
-                    str = "typeof( " * rest_str * " ) == " * string( guesstype( v, ctx ) )
+                    str = "typeof(" * rest_str * ") == " * string( guesstype( v, ctx ) )
                 end
             elseif infotype == "me"
                 str = rest_str
@@ -33,11 +33,11 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
             if action == "Print"
                 println( str )
             elseif action == "Info"
-                msg( ctx, :INFO, str )
+                msg( ctx, :INFO, 271, str )
             elseif action == "Warn"
-                msg( ctx, :WARN, str )
+                msg( ctx, :WARN, 241, str )
             else
-                msg( ctx, :ERROR, str )
+                msg( ctx, :ERROR, 221, str )
             end
         else
             if !ctx.versionreachable( VERSION )
@@ -46,7 +46,7 @@ function lintlintpragma( ex::Expr, ctx::LintContext )
             ctx.callstack[end].pragmas[ ex.args[2] ] = PragmaInfo( ctx.line, false )
         end
     else
-        msg( ctx, :ERROR, "@lintpragma must be called using only string literals.")
+        msg(ctx, :ERROR, 137, "@lintpragma must be called using only string literals")
     end
 end
 

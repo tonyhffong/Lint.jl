@@ -6,7 +6,7 @@ function popVarScope( ctx::LintContext; checkargs::Bool=false )
         for v in unused
             if !pragmaexists( "Ignore unused " * utf8( v ), ctx ) && v != :_
                 ctx.line = stacktop.localvars[end][ v ].line
-                msg( ctx, :WARN, "Local vars declared but not used: " * utf8( v ) )
+                msg( ctx, :WARN, 341, v, "Local vars declared but not used: " * utf8( v ) )
             end
         end
         if checkargs
@@ -14,7 +14,7 @@ function popVarScope( ctx::LintContext; checkargs::Bool=false )
             for v in unusedargs
                 if !pragmaexists( "Ignore unused " * utf8( v ), ctx ) && v != :_
                     ctx.line = stacktop.localarguments[end][ v ].line
-                    msg( ctx, :INFO, "Argument declared but not used: " * utf8( v ) )
+                    msg( ctx, :INFO, 382, v, "argument declared but not used: " * utf8( v ) )
                 end
             end
         end
@@ -141,9 +141,9 @@ function registersymboluse( sym::Symbol, ctx::LintContext, strict::Bool=true )
         return :Any
     end
     if ctx.quoteLvl == 0
-        msg( ctx, :ERROR, "Use of undeclared symbol " *utf8(sym))
+        msg(ctx, :ERROR, 321, sym, "use of undeclared symbol " * utf8(sym))
     elseif ctx.isstaged
-        msg( ctx, :INFO, "Use of undeclared symbol " *utf8(sym))
+        msg(ctx, :INFO, 371, sym, "use of undeclared symbol " * utf8(sym))
     end
     return :Any
 end
@@ -161,7 +161,7 @@ function lintglobal( ex::Expr, ctx::LintContext )
         elseif isexpr( sym, ASSIGN_OPS )
             lintassignment( sym, sym.head, ctx; isGlobal=true )
         else
-            msg( ctx, :ERROR, "unknown global pattern $sym")
+            msg(ctx, :ERROR, 134, sym, "unknown global pattern $sym")
         end
     end
 end
@@ -174,7 +174,7 @@ function lintlocal( ex::Expr, ctx::LintContext )
             continue
         end
         if typeof(sube) != Expr
-            msg( ctx, :ERROR, "local declaration not understood by lint. please check")
+            msg(ctx, :ERROR, 135, sube, "local declaration $sube not understood by Lint")
             continue
         end
         if sube.head == :(=)
@@ -217,10 +217,10 @@ function resolveLHSsymbol( ex, syms::Array{Any,1}, ctx::LintContext, typeassert:
             lintexpr( ex, ctx )
             return
         else
-            msg( ctx, :INFO, "LHS in assignment not understood by Lint. please check: $ex" )
+            msg( ctx, :INFO, 171, ex, "LHS in assignment not understood by Lint. please check: $ex" )
         end
     else
-        msg( ctx, :INFO, "LHS in assignment not understood by Lint. please check: $ex" )
+        msg( ctx, :INFO, 171, ex, "LHS in assignment not understood by Lint. please check: $ex" )
     end
 end
 
@@ -235,7 +235,7 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
 
     if isForLoop
         if rhstype <: Number
-            msg( ctx, :INFO, "Iteration works for a number but it may be a typo." )
+            msg( ctx, :INFO, 672, "iteration works for a number but it may be a typo" )
         end
 
         if rhstype <: Tuple
@@ -253,11 +253,13 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
 
         if VERSION < v"0.4.0-dev+4139"
             if rhstype <: Tuple && length( rhstype ) != tuplelen
-                msg( ctx, :INFO, "Iteration generates tuples of $rhstype. N of variables used: $tuplelen" )
+                msg( ctx, :INFO, 474, rhstype, "iteration generates tuples of $rhstype. " *
+                    "N of variables used: $tuplelen" )
             end
         else
             if rhstype <: Tuple && length( rhstype.parameters ) != tuplelen
-                msg( ctx, :INFO, "Iteration generates tuples of $rhstype. N of variables used: $tuplelen" )
+                msg( ctx, :INFO, 474, rhstype, "iteration generates tuples of $rhstype. " *
+                    "N of variables used: $tuplelen" )
             end
         end
     end
@@ -265,13 +267,15 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
     if VERSION < v"0.4.0-dev+4139"
         if typeof( rhstype ) != Symbol && rhstype <: Tuple && length( rhstype ) != tuplelen && !isForLoop
             if length( syms ) > 1
-                msg( ctx, :ERROR, "RHS is a tuple of $rhstype. N of variables used: $tuplelen" )
+                msg( ctx, :ERROR, 418, rhstype, "RHS is a tuple of $rhstype. N of " *
+                    "variables used: $tuplelen" )
             end
         end
     else
         if typeof(rhstype) != Symbol && rhstype <: Tuple && length( rhstype.parameters ) != tuplelen && !isForLoop
             if tuplelen > 1
-                msg( ctx, :ERROR, "RHS is a tuple of $rhstype. N of variables used: $tuplelen" )
+                msg( ctx, :ERROR, 418, rhstype, "RHS is a tuple of $rhstype. N of " *
+                    "variables used: $tuplelen" )
             end
         end
     end
@@ -281,24 +285,25 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
             if isexpr( s, [ :(.), :ref ] )
                 containertype = guesstype( s.args[1], ctx )
                 if containertype != Any && typeof( containertype ) == DataType && !containertype.mutable
-                    msg( ctx, :ERROR, string( s.args[1]) * " is of an immutable type " * string( containertype ) )
+                    msg( ctx, :ERROR, 525, s.args[1], "$(s.args[1]) is of an immutable type $(containertype)" )
                 end
             end
 
             continue
         end
         if string(s) == ctx.scope && !islocal
-            msg( ctx, :WARN, "Variable " *ctx.scope * " == function name." )
+            msg( ctx, :WARN, 355, ctx.scope, "variable $(ctx.scope) == function name" )
         end
         if s == :call
-            msg( ctx, :ERROR, "You should not use '"*string(s)*"' as a variable name.")
+            msg(ctx, :ERROR, 332, s, "$(s) should not be used as a variable name")
         elseif in( s, knownsyms )
             if in( s, [ :e, :pi, :eu, :catalan, :eulergamma, :golden, :π, :γ, :φ ] )
                 if ctx.file != "constants.jl"
-                    msg( ctx, :WARN, "You are redefining a mathematical constant " * string(s) )
+                    msg( ctx, :WARN, 351, s, "you are redefining a mathematical constant $(s)" )
                 end
             else
-                msg( ctx, :WARN, "\"$s\" as a local variable might cause confusion with a synonymous export from Base" )
+                msg( ctx, :WARN, 356, s, "$s as a local variable might cause " *
+                    "confusion with a synonymous export from Base" )
             end
         end
 
@@ -332,7 +337,8 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
                 if typeof( dt ) == DataType
                     vi.typeactual = dt
                     if !isAnyOrTupleAny( dt ) && !isAnyOrTupleAny( rhstype ) && !( rhstype <: dt )
-                        msg( ctx, :INFO, "Assert " * string(s) * " type= " * string( dt ) * " but assign a value of " * string( rhstype ) )
+                        msg( ctx, :INFO, 572, "assert $(s) type= $(dt) but assign a " *
+                            "value of $(rhstype)" )
                     end
                 else
                     vi.typeexpr = typeassert[ s ]
@@ -341,7 +347,7 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
                 vi.typeactual = rhst
             end
         catch er
-            msg( ctx, :WARN, string( er )* " \n"* string( ex )* "\n Symbol=" * string( s ) * "\n rhstype="* string( rhst ) )
+            msg( ctx, :WARN, 251, s, "$(er); $(ex); Symbol=$(s); rhstype=$(rhst)" )
             if haskey( typeassert, s )
                 vi.typeexpr = typeassert[s]
             end
@@ -367,15 +373,17 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
                         continue
                     elseif !isAnyOrTupleAny( vi.typeactual ) && typeof( vi.typeactual ) != Symbol && !( vi.typeactual <: prevvi.typeactual ) &&
                         !( vi.typeactual <: AbstractString && prevvi.typeactual <: vi.typeactual ) &&
-                        !pragmaexists( "Ignore unstable type variable " * string( s ), ctx )
-                        msg( ctx, :WARN, "Previously used " * string( s ) * " has apparent type " * string( prevvi.typeactual ) * ", but now assigned " * string( vi.typeactual ) )
+                        !pragmaexists( "Ignore unstable type variable $(s)", ctx )
+                        msg( ctx, :WARN, 545, s, "previously used $(s) has apparent type " *
+                            "$(prevvi.typeactual), but now assigned $(vi.typeactual)" )
                     end
                     ctx.callstack[end].localvars[i][ s] = vi
                 end
             end
 
             if !found && in( s, ctx.callstack[end].oosvars )
-                msg( ctx, :INFO, string(s) * " has been used in a local scope. Improve readability by using 'local' or another name.")
+                msg( ctx, :INFO, 482, s, "$(s) has been used in a local scope. Improve " *
+                    "readability by using 'local' or another name")
             end
 
             if !found && !isGlobal && !haskey( ctx.callstack[end].declglobs, s )
@@ -387,7 +395,7 @@ function lintassignment( ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal
                         l = split( src, "\n" )
                         splice!( l, 1)
                         src = join( l, "\n" )
-                        msg( ctx, :INFO, string( s ) * " is also a global, from \n" * src * "\nPlease check." )
+                        msg( ctx, :INFO, 391, s, "$(s) is also a global, from :  $(src); Please check" )
                         break;
                     end
                 end

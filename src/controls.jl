@@ -1,15 +1,15 @@
 function lintifexpr( ex::Expr, ctx::LintContext )
     if ex.args[1] == false
-        msg(ctx, :WARN, "true branch is unreachable")
+        msg(ctx, :WARN, 642, "true branch is unreachable")
         if length(ex.args) > 2
             lintexpr( ex.args[3], ctx )
         end
     elseif ex.args[1] == true
         lintexpr( ex.args[2], ctx )
         if length(ex.args) > 2
-            msg(ctx, :WARN, "false branch is unreachable")
+            msg(ctx, :WARN, 643, "false branch is unreachable")
         else
-            msg(ctx, :WARN, "redundant if-true statement")
+            msg(ctx, :WARN, 644, "redundant if-true statement")
         end
     else
         lintboolean( ex.args[1], ctx )
@@ -21,7 +21,7 @@ function lintifexpr( ex::Expr, ctx::LintContext )
                 isexpr( ex.args[2].args[2], :call ) && ex.args[2].args[2].args[1] == :(!) ||
                 isexpr( ex.args[2].args[2], [ :(&&), :(||) ] ) &&
                 !isexpr(ex.args[2].args[2].args[end], [ :call, :error, :throw, :return ] ) )
-            msg(ctx, :INFO, "The 1st statement under the true-branch is a boolean expression. Typo?")
+            msg(ctx, :INFO, 571, "the 1st statement under the true-branch is a boolean expression. Typo?")
         end
         (verconstraint1, verconstraint2) = versionconstraint( ex.args[1] )
         if verconstraint1 != nothing
@@ -127,9 +127,10 @@ end
 function lintboolean( ex, ctx::LintContext )
     if typeof( ex ) <: Expr
         if ex.head == :(=)
-            msg( ctx, :INFO, "Assignment in the if-predicate clause." )
+            msg( ctx, :INFO, 472, "assignment in the if-predicate clause" )
         elseif ex.head == :call && ex.args[1] in [ :(&), :(|), :($) ]
-            msg( ctx, :WARN, "Bit-wise " * string( ex.args[1]) * " in a boolean context. (&,|) do not have short-circuit behavior." )
+            msg( ctx, :WARN, 442, ex.args[1], "bit-wise $(ex.args[1]) in a boolean " *
+                "context. (&,|) do not have short-circuit behavior" )
         elseif ex.head == :(&&) || ex.head == :(||)
             n = length(ex.args)
             for a in ex.args
@@ -143,16 +144,17 @@ function lintboolean( ex, ctx::LintContext )
         elseif ex.head == :comparison
             lintcomparison( ex, ctx )
         elseif ex.head == :call && ex.args[1] == :length
-            msg( ctx, :ERROR, "Incorrect usage of length() in a Boolean context. You want to use isempty()." )
+            msg( ctx, :ERROR, 431, ex.args[1], "incorrect usage of length() in a Boolean " *
+                "context. You want to use isempty()" )
         end
     elseif typeof( ex ) == Symbol
         # can we figure of if that symbol is Bool?
         gt = guesstype( ex, ctx )
         if gt != Any && gt != Bool
-            msg( ctx, :ERROR, "Variable " * string( ex ) * " has apparent non-Bool type." )
+            msg( ctx, :ERROR, 511, ex, "variable $(ex) has apparent non-Bool type" )
         end
     else
-        msg( ctx, :ERROR, "Lint doesn't understand " * string( ex ) * " in a boolean context" )
+        msg( ctx, :ERROR, 512, ex, "Lint doesn't understand $(ex) in a boolean context" )
     end
     lintexpr( ex, ctx )
 end
@@ -183,8 +185,8 @@ function lintcomparison( ex::Expr, ctx::LintContext )
                     problem = true
                 end
                 if problem && !pragmaexists( utf8( "Ignore incompatible type comparison" ), ctx )
-                    msg(ctx, :WARN, "Comparing apparently incompatible types (#$(i>>1)) " *
-                        "LHS:$(lefttype) RHS:$(righttype)")
+                    msg(ctx, :WARN, 542, "comparing apparently incompatible types " *
+                        "(#$(i>>1)) LHS:$(lefttype) RHS:$(righttype)")
                 end
             end
             lefttype = righttype
@@ -212,7 +214,7 @@ end
 
 function lintwhile( ex::Expr, ctx::LintContext )
     if ex.args[1] == false
-        msg(ctx, :WARN, "while false block is unreachable")
+        msg(ctx, :WARN, 645, "while false block is unreachable")
     elseif typeof(ex.args[1]) == Expr
             lintboolean( ex.args[1], ctx )
     end
@@ -232,13 +234,15 @@ function lintcomprehension( ex::Expr, ctx::LintContext; typed::Bool = false )
                 declktype = ex.args[1].args[1]
                 declvtype = ex.args[1].args[2]
                 if declktype == TopNode( :Any ) && declvtype == TopNode( :Any ) && VERSION < v"0.4-"
-                    msg(ctx, :INFO, "Untyped dictionary {a=>b for (a,b) in c}, may be deprecated by Julia 0.4. Use (Any=>Any)[a=>b for (a,b) in c].")
+                    msg(ctx, :INFO, 484, "untyped dictionary {a=>b for (a,b) in c}, may " *
+                        "be deprecated by Julia 0.4. Use (Any=>Any)[a=>b for (a,b) in c]")
                 end
             end
         else
             declvtype = ex.args[1]
             if declvtype == TopNode( :Any ) && VERSION < v"0.4-"
-                msg(ctx, :INFO, "Untyped dictionary {a for a in c}, may be deprecated by Julia 0.4. Use (Any)[a for a in c].")
+                msg(ctx, :INFO, 485, "untyped dictionary {a for a in c}, may be " *
+                    "deprecated by Julia 0.4. Use (Any)[a for a in c].")
             end
         end
     end

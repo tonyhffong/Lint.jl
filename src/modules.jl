@@ -18,14 +18,14 @@ function lintmodule( ex::Expr, ctx::LintContext )
     undefs = setdiff( undefs, stacktop.imports )
 
     for sym in undefs
-        msg( ctx, :ERROR, "exporting undefined symbol " * string(sym))
+        msg(ctx, :ERROR, 322, sym, "exporting undefined symbol $(sym)")
     end
     popcallstack( ctx )
 end
 
 function lintusing( ex::Expr, ctx::LintContext )
     if ctx.functionLvl > 0
-        msg(ctx, :ERROR, "using is not allowed inside function definitions.")
+        msg(ctx, :ERROR, 414, "using is not allowed inside function definitions")
     end
     for s in ex.args
         if s != :(.)
@@ -62,8 +62,8 @@ function lintusing( ex::Expr, ctx::LintContext )
                 ctx.callstack[end].linthelpers[ path ] = m.lint_helper
             end
         else
-            if !pragmaexists( "Ignore undefined module " * string( path ), ctx )
-                msg(ctx, :WARN, string(path) * " doesn't eval into a Module")
+            if !pragmaexists( "Ignore undefined module $(path)", ctx )
+                msg(ctx, :WARN, 541, path, "$(path) doesn't eval into a Module")
             end
         end
     end
@@ -71,11 +71,11 @@ end
 
 function lintexport( ex::Expr, ctx::LintContext )
     if ctx.functionLvl > 0
-        msg(ctx, :ERROR, "export is not allowed inside function definitions.")
+        msg(ctx, :ERROR, 415, "export is not allowed inside function definitions")
     end
     for sym in ex.args
         if in(sym, ctx.callstack[end].exports )
-            msg( ctx, :ERROR, "duplicate exports of symbol " * string( sym ))
+            msg(ctx, :ERROR, 333, sym, "duplicate exports of symbol $(sym)")
         else
             push!( ctx.callstack[end].exports, sym )
         end
@@ -84,7 +84,7 @@ end
 
 function lintimport( ex::Expr, ctx::LintContext; all::Bool = false )
     if ctx.functionLvl > 0
-        msg(ctx, :ERROR, "import is not allowed inside function definitions.")
+        msg(ctx, :ERROR, 416, "import is not allowed inside function definitions")
     end
     if !ctx.versionreachable( VERSION )
         return
