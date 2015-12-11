@@ -88,7 +88,7 @@ Errors codes
 | E538 | you should use {T<:...} instead of a known type in parametric data type
 |      |         |
 |      |         |
- |**E6**| *Structure Info*
+|**E6**| *Structure Error*
 |      |         |
 | E611 | constructor doesn't seem to return the constructed object
 | E611 | constructor doesn't seem to return the constructed object
