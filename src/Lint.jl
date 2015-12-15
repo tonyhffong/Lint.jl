@@ -146,8 +146,14 @@ function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), li
 end
 
 function msg(ctx::LintContext, level::Symbol, code::Int, variable, str::AbstractString)
-    push!(ctx.messages, LintMessage(ctx.file, level, code, ctx.scope,
-            ctx.lineabs + ctx.line, variable, str))
+    variable = string(variable)
+    m = LintMessage(ctx.file, level, code, ctx.scope, ctx.lineabs + ctx.line, variable, str)
+    i = findfirst(ctx.ignore, LintIgnore(Symbol(string(string(level)[1], code)), variable))
+    if i == 0
+        push!(ctx.messages, m)
+    else
+        push!(ctx.ignore[i].messages, m)
+    end
 end
 
 function msg(ctx::LintContext, level::Symbol, code::Int, str::AbstractString)

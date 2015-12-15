@@ -4,7 +4,7 @@ type LintMessage
     code    :: Int # [1-9][1-9][1-9]
     scope   :: UTF8String
     line    :: Int
-    variable:: Any
+    variable:: UTF8String
     message :: UTF8String
 end
 
@@ -197,7 +197,7 @@ end
 function register_global(ctx::LintContext, glob, info, callstackindex=length(ctx.callstack))
     ctx.callstack[callstackindex].declglobs[glob] = info
     filter!(message -> begin
-                return !(message.code == 321 && message.variable == glob &&
+                return !(message.code == 321 && message.variable == string(glob) &&
                         (!isempty(message.scope) || message.file != ctx.file))
             end,
         ctx.messages
