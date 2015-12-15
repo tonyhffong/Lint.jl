@@ -129,17 +129,19 @@ function LintStack(t::Bool)
     x
 end
 
-type LintIgnoreState
-    ignoreUnused::Set{Symbol}
-    ignoreUndeclared::Set{Symbol}
-    ignore::Dict{Symbol, Bool}
+type LintIgnore
+    errorcode::Symbol
+    variable::AbstractString
+    messages::Array{LintMessage, 1} # messages that have been ignored
+    LintIgnore(e::Symbol, v::AbstractString) = new(e, v, LintMessage[])
 end
 
-function LintIgnoreState()
-    x = LintIgnoreState(Set{Symbol}(), Set{Symbol}(), Dict{Symbol,Bool}())
-    x.ignore[:similarity] = true
-    x
+function ==(m1::LintIgnore, m2::LintIgnore)
+    m1.errorcode == m2.errorcode &&
+    m1.variable == m2.variable
 end
+
+const LINT_IGNORE_DEFAULT = LintIgnore[LintIgnore(:W651, "")]
 
 type LintContext
     file         :: UTF8String
@@ -159,14 +161,15 @@ type LintContext
     callstack    :: Array{Any, 1}
     messages     :: Array{LintMessage, 1}
     versionreachable:: Function # VERSION -> true means this code is reachable by VERSION
-    ignoreState  :: LintIgnoreState
+    ignore       :: Array{LintIgnore, 1}
     LintContext() = new("none", 0, 1, "", false, ".", AbstractString[],
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0, 0,
-            Any[LintStack(true)], LintMessage[], _ -> true, LintIgnoreState())
+            Any[LintStack(true)], LintMessage[], _ -> true, deepcopy(LINT_IGNORE_DEFAULT))
 end
 
-function LintContext(file::AbstractString)
+function LintContext(file::AbstractString; ignore::Array{LintIgnore, 1} = LintIgnore[])
     ctx = LintContext()
+    append!(ctx.ignore, ignore)
     ctx.file = file
     if ispath(file)
         ctx.path = dirname(abspath(file))
@@ -198,5 +201,5 @@ function register_global(ctx::LintContext, glob, info, callstackindex=length(ctx
                         (!isempty(message.scope) || message.file != ctx.file))
             end,
         ctx.messages
-   )
+    )
 end

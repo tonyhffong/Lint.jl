@@ -2,8 +2,7 @@ function lintblock(ex::Expr, ctx::LintContext)
     lastexpr = nothing
     similarexprs = Expr[]
     diffs = Float64[]
-    checksimilarityflag = (!haskey(ctx.ignoreState.ignore, :similarity) ||
-        !ctx.ignoreState.ignore[:similarity])
+    checksimilarityflag = !(LintIgnore(:W651, "") in ctx.ignore)
 
     if checksimilarityflag
         checksimilarity = ()->begin

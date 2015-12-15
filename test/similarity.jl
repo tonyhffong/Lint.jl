@@ -21,7 +21,7 @@ end
 """
 
 ctx = LintContext()
-ctx.ignoreState.ignore[:similarity] = false
+filter!(i->!(i==Lint.LintIgnore(:W651, "")), ctx.ignore)
 msgs = lintstr(s, ctx)
 @test length(msgs) == 1
 @test msgs[1].code == 651
