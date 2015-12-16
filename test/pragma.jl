@@ -31,7 +31,7 @@ end
 """
 msgs = lintstr(s)
 @test length(msgs) == 1
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(b) == Int")
 
 s = """
@@ -43,7 +43,7 @@ end
 """
 msgs = lintstr(s)
 @test length(msgs) == 1
-@test msgs[1].code == 241
+@test msgs[1].code == :W241
 @test contains(msgs[1].message, "typeof(b) == Int")
 
 s = """
@@ -55,7 +55,7 @@ end
 """
 msgs = lintstr(s)
 @test length(msgs) == 1
-@test msgs[1].code == 221
+@test msgs[1].code == :E221
 @test contains(msgs[1].message, "typeof(b) == Int")
 
 s = """
@@ -76,7 +76,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 138
+@test msgs[1].code == :E138
 @test contains(msgs[1].message, "incomplete expression")
 
 s = """
@@ -87,7 +87,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "my own reminder")
 
 s = """
@@ -98,7 +98,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 137
+@test msgs[1].code == :E137
 @test contains(msgs[1].message, "@lintpragma must be called using only string literals")
 
 s = """
@@ -110,12 +110,12 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 381
+@test msgs[1].code == :I381
 @test contains(msgs[1].message, "unused @lintpragma Ignore unused a")
 
 s = """
 @lintpragma()
 """
 msgs = lintstr(s)
-@test msgs[1].code == 137
+@test msgs[1].code == :E137
 @test contains(msgs[1].message, "@lintpragma must be called using")

@@ -6,7 +6,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 341
+@test msgs[1].code == :W341
 @test contains(msgs[1].message, "declared but not used")
 @test msgs[1].line == 2
 
@@ -17,7 +17,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 341
+@test msgs[1].code == :W341
 @test contains(msgs[1].message, "declared but not used")
 @test msgs[1].line == 2
 
@@ -31,7 +31,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 341
+@test msgs[1].code == :W341
 @test contains(msgs[1].message, "declared but not used")
 
 s = """
@@ -42,7 +42,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 341
+@test msgs[1].code == :W341
 @test contains(msgs[1].message, "declared but not used")
 
 s = """
@@ -53,7 +53,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 341
+@test msgs[1].code == :W341
 @test contains(msgs[1].message, "declared but not used")
 
 s = """

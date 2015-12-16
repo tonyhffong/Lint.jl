@@ -20,7 +20,7 @@ function lintblock(ex::Expr, ctx::LintContext)
                 # look for screw up at the end
                 #println(diffs, "\nm=", m, " s=", s, " m2=", m2, " m-m2=", m-m2)
                 if m2 < m && m-m2 > s/2.5 && s / m > 0.0001
-                    msg(ctx, :WARN, 651, "the last of a $(n)-expr block looks different" *
+                    msg(ctx, :W651, "the last of a $(n)-expr block looks different" *
                         ";  Avg similarity score: " * @sprintf("%8.2f", m) *
                         ";  Last part: " * @sprintf("%9.2f", m2))
                 end
@@ -47,7 +47,7 @@ function lintblock(ex::Expr, ctx::LintContext)
                 =#
                 continue
             elseif sube.head == :return && i != length(ex.args)
-                msg(ctx, :WARN, 641, "unreachable code after return")
+                msg(ctx, :W641, "unreachable code after return")
                 lintexpr(sube, ctx)
                 break
             else

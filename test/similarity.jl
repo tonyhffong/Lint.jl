@@ -24,5 +24,5 @@ ctx = LintContext()
 filter!(i->!(i==Lint.LintIgnore(:W651, "")), ctx.ignore)
 msgs = lintstr(s, ctx)
 @test length(msgs) == 1
-@test msgs[1].code == 651
+@test msgs[1].code == :W651
 @test contains(msgs[1].message, "looks different")

@@ -7,7 +7,7 @@ function lintref(ex::Expr, ctx::LintContext)
         if what == :Any
             str = string(sub1)
             #if !isupper(str[1]) || length(str) <= 2
-            msg(ctx, :WARN, 544, str, "Lint cannot determine if $str is a DataType or not")
+            msg(ctx, :W544, str, "Lint cannot determine if $str is a DataType or not")
             #end
         end
     else
@@ -17,10 +17,10 @@ function lintref(ex::Expr, ctx::LintContext)
     for i=2:length(ex.args)
         if ex.args[i] == sub1
             if length(ex.args)==2 && sub1type <: Array{Int}
-                msg(ctx, :INFO, 473, sub1, "value at position #$(i-1) is the referenced " *
+                msg(ctx, :I473, sub1, "value at position #$(i-1) is the referenced " *
                     "$(sub1). OK if it represents permutations")
             else # almost certain it's an error
-                msg(ctx, :ERROR, 434, sub1, "value at position #$(i-1) is the " *
+                msg(ctx, :E434, sub1, "value at position #$(i-1) is the " *
                     "referenced $(sub1). Possible typo?")
             end
         end

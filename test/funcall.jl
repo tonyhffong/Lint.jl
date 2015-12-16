@@ -35,7 +35,7 @@ function f(x, y, x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 331
+@test msgs[1].code == :E331
 @test contains(msgs[1].message, "duplicate argument")
 
 s = """
@@ -44,7 +44,7 @@ function f{Int64}(x::Int64, y::Int64)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 534
+@test msgs[1].code == :E534
 @test contains(msgs[1].message, "unrelated to the type")
 
 s = """
@@ -53,7 +53,7 @@ function f{T<:Int64}(x::T, y::T)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 513
+@test msgs[1].code == :E513
 @test contains(msgs[1].message, "leaf type")
 
 s = """
@@ -62,7 +62,7 @@ function f{Int<:Real}(x::Int, y::Int)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 536
+@test msgs[1].code == :E536
 @test contains(msgs[1].message, "known type")
 
 s = """
@@ -79,7 +79,7 @@ function f(x, args..., bogus...)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 413
+@test msgs[1].code == :E413
 @test contains(msgs[1].message, "can only be the last argument")
 
 s = """
@@ -88,7 +88,7 @@ function f(x=1, y, args...)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 411
+@test msgs[1].code == :E411
 @test contains(msgs[1].message, "non-default argument following default")
 
 s = """
@@ -97,7 +97,7 @@ function f(x, y; z, q=1)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 423
+@test msgs[1].code == :E423
 @test contains(msgs[1].message, "must have a default")
 
 s = """
@@ -106,7 +106,7 @@ function f(x, y; args..., z=1)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 412
+@test msgs[1].code == :E412
 @test contains(msgs[1].message, "can only be the last argument")
 
 s = """
@@ -123,7 +123,7 @@ function f(x::Array{Number,1})
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 533
+@test msgs[1].code == :E533
 @test contains(msgs[1].message, "type parameters in Julia are invariant")
 
 s = """
@@ -132,7 +132,7 @@ function f(x::Dict{Symbol,Number})
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 533
+@test msgs[1].code == :E533
 @test contains(msgs[1].message, "type parameters in Julia are invariant")
 
 s = """
@@ -142,7 +142,7 @@ function f(x, y)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 414
+@test msgs[1].code == :E414
 @test contains(msgs[1].message, "using is not allowed inside function")
 
 s = """
@@ -152,7 +152,7 @@ function f(x, y)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 416
+@test msgs[1].code == :E416
 @test contains(msgs[1].message, "import is not allowed inside function")
 
 s = """
@@ -162,7 +162,7 @@ function f(x, y)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 415
+@test msgs[1].code == :E415
 @test contains(msgs[1].message, "export is not allowed inside function")
 
 s = """
@@ -171,7 +171,7 @@ function f(x; y = 1, z::Int = 0.1)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 516
+@test msgs[1].code == :E516
 @test contains(msgs[1].message, "type assertion and default")
 
 s = """
@@ -217,17 +217,17 @@ function f{T}(a::Array{T,1})
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(a) == Array{Any,1}")
-@test msgs[2].code == 271
+@test msgs[2].code == :I271
 @test contains(msgs[2].message, "typeof(n) == Int")
-@test msgs[3].code == 271
+@test msgs[3].code == :I271
 @test contains(msgs[3].message, "typeof(tmp) == Array{Any,1}")
-@test msgs[4].code == 271
+@test msgs[4].code == :I271
 @test contains(msgs[4].message, "typeof(T) == DataType")
-@test msgs[5].code == 271
+@test msgs[5].code == :I271
 @test contains(msgs[5].message, "typeof(tmp2) == Array{Any,1}")
-@test msgs[6].code == 271
+@test msgs[6].code == :I271
 @test contains(msgs[6].message, "typeof(tmp3) == Array{Float64,3}")
 
 s = """
@@ -237,7 +237,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 355
+@test msgs[1].code == :W355
 @test contains(msgs[1].message, "variable f == function name")
 
 s = """
@@ -264,7 +264,7 @@ function f(x=1)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Int")
 
 s = """
@@ -274,7 +274,7 @@ function f(x::Int8=Int8(1))
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Int8")
 
 s = """
@@ -285,7 +285,7 @@ function f(c::Char)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Int")
 
 s = """
@@ -296,9 +296,9 @@ function f(args...; dict...)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(args) == Tuple")
-@test msgs[2].code == 271
+@test msgs[2].code == :I271
 @test contains(msgs[2].message, "typeof(dict) == Tuple")
 
 s = """
@@ -308,7 +308,7 @@ function f(args::Float64...)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(args) == Tuple{Vararg{Float64}}")
 
 s = """
@@ -333,7 +333,7 @@ function f(x::Symbol)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 542
+@test msgs[1].code == :W542
 @test contains(msgs[1].message, "comparing apparently incompatible type")
 
 s = """
@@ -382,7 +382,7 @@ s = """
 f(; 2)
 """
 msgs = lintstr(s)
-@test msgs[1].code == 133
+@test msgs[1].code == :E133
 @test contains(msgs[1].message, "unknown keyword pattern")
 
 s = """

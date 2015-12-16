@@ -53,7 +53,7 @@ macro mymacro(expr::Int)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 522
+@test msgs[1].code == :E522
 @test contains(msgs[1].message, "macro arguments can only be Symbol/Expr")
 
 s = """
@@ -75,5 +75,5 @@ macro ()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 121
+@test msgs[1].code == :E121
 @test contains(msgs[1].message, "Lint does not understand")

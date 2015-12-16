@@ -3,11 +3,11 @@ wrap(pos::Int, len::Int) = true ? 1 : (pos > len ? len : pos)
 """
 msgs = lintstr(s)
 @test length(msgs) == 3
-@test msgs[1].code == 643
+@test msgs[1].code == :W643
 @test contains(msgs[1].message, "false branch")
-@test msgs[2].code == 382
+@test msgs[2].code == :I382
 @test contains(msgs[2].message, "argument declared but not used")
-@test msgs[3].code == 382
+@test msgs[3].code == :I382
 @test contains(msgs[3].message, "argument declared but not used")
 
 s = """
@@ -15,7 +15,7 @@ wrap(pos::Int, len::Int) = false ? 1 : (pos > len ? len : pos)
 """
 msgs = lintstr(s)
 @test length(msgs) == 1
-@test msgs[1].code == 642
+@test msgs[1].code == :W642
 @test contains(msgs[1].message, "true branch")
 @test msgs[1].line == 1
 
@@ -23,21 +23,21 @@ s = """
 f(x) = (x=1) ? 1 : 2 # clearly not what we want
 """
 msgs = lintstr(s)
-@test msgs[1].code == 472
+@test msgs[1].code == :I472
 @test contains(msgs[1].message, "if-predicate")
 
 s = """
 f(x) = ifelse(length(x), 1 , 2) # clearly not what we want
 """
 msgs = lintstr(s)
-@test msgs[1].code == 431
+@test msgs[1].code == :E431
 @test contains(msgs[1].message, "incorrect usage of length")
 
 s = """
 f(x,y) = (0 <= x < y = 6) ? 1 : 2 # clearly not what we want
 """
 msgs = lintstr(s)
-@test msgs[1].code == 472
+@test msgs[1].code == :I472
 @test contains(msgs[1].message, "if-predicate")
 
 s = """
@@ -48,7 +48,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 644
+@test msgs[1].code == :W644
 @test contains(msgs[1].message, "redundant if-true")
 
 s = """
@@ -60,7 +60,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 431
+@test msgs[1].code == :E431
 @test contains(msgs[1].message, "incorrect usage of length")
 
 s = """
@@ -71,7 +71,7 @@ function f(b::Boolean, x::Int, y::Int)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(a) == Int")
 
 s = """
@@ -82,7 +82,7 @@ function f(b::Boolean, x::Int, y::Any)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(a) == Any")
 
 s = """
@@ -95,9 +95,9 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 512
+@test msgs[1].code == :E512
 @test contains(msgs[1].message, "Lint doesn't understand :a in a boolean context")
-@test msgs[2].code == 512
+@test msgs[2].code == :E512
 @test contains(msgs[2].message, "Lint doesn't understand :b in a boolean context")
 
 s = """
@@ -111,7 +111,7 @@ function f(a, b)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 571
+@test msgs[1].code == :I571
 @test contains(msgs[1].message, "the 1st statement under the true-branch is a boolean expression")
 
 s = """
@@ -125,7 +125,7 @@ function f(a, b)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 571
+@test msgs[1].code == :I571
 @test contains(msgs[1].message, "the 1st statement under the true-branch is a boolean expression")
 
 s = """

@@ -16,6 +16,7 @@ end
 lintfile(path)
 
 println("...OK\n\nTest core lint functionalities...")
+include("messages.jl")
 include("basics.jl")
 include("array.jl")
 include("badvars.jl")

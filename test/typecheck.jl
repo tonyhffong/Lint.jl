@@ -5,7 +5,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 572
+@test msgs[1].code == :I572
 @test contains(msgs[1].message, "but assign a value of")
 
 s = """
@@ -23,9 +23,9 @@ function f(c::Char)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 545
+@test msgs[1].code == :W545
 @test contains(msgs[1].message, "but now assigned")
-@test msgs[end].code == 271
+@test msgs[end].code == :I271
 @test contains(msgs[end].message, "typeof(x) == Complex")
 
 s = """
@@ -36,7 +36,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Float64")
 
 s = """
@@ -47,7 +47,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Array{Float64,1}")
 
 s = """
@@ -59,7 +59,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 474
+@test msgs[1].code == :I474
 @test contains(msgs[1].message, "iteration generates tuples of")
 
 s = """
@@ -71,7 +71,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 545
+@test msgs[1].code == :W545
 @test contains(msgs[1].message, "but now assigned Float64")
 
 s = """
@@ -83,7 +83,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 518
+@test msgs[1].code == :E518
 @test contains(msgs[1].message, "key type expects")
 
 s = """
@@ -94,7 +94,7 @@ function f(arr::Array{Any,1})
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Int")
 
 s = """
@@ -107,7 +107,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Function")
 
 s = """
@@ -121,7 +121,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Module")
 
 s = """
@@ -132,7 +132,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 525
+@test msgs[1].code == :E525
 @test contains(msgs[1].message, "z is of an immutable type")
 
 s = """
@@ -143,7 +143,7 @@ for i in 1:n
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 521
+@test msgs[1].code == :E521
 @test contains(msgs[1].message, "has apparent type DataType, not a container")
 
 s = """
@@ -154,7 +154,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(d) == Dict")
 
 s = """
@@ -165,7 +165,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(d) == Dict")
 
 s = """
@@ -183,7 +183,7 @@ function f(n)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(a) == Array{Float64,3}")
 @test contains(msgs[2].message, "typeof(b) == Array{Float64,N}")
 @test contains(msgs[3].message, "typeof(c) == Array{Float64,3}")
@@ -198,7 +198,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(s) == Tuple{Int64,Int64,Int64}")
 
 s = """
@@ -208,7 +208,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(a) == Array{Complex{Float64},1}")
 
 s = """
@@ -221,14 +221,14 @@ s = """
     Complex(1.0,0.0) > 0
 """
 msgs = lintstr(s)
-@test msgs[1].code == 542
+@test msgs[1].code == :W542
 @test contains(msgs[1].message, "comparing apparently incompatible type")
 
 s = """
 s = Union(Int,Double)
 """
 msgs = lintstr(s)
-@test msgs[1].code == 421
+@test msgs[1].code == :E421
 @test contains(msgs[1].message, "use Union")
 
 s = """

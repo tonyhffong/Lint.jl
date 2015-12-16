@@ -6,5 +6,5 @@ msgs = lintfile("DEMOMODULE2.jl"; returnMsgs = true)
 @test isempty(msgs)
 
 msgs = lintfile("DEMOMODULE3.jl"; returnMsgs = true)
-@test msgs[1].code == 311
+@test msgs[1].code == :E311
 @test contains(msgs[1].message, "cannot find include file:")

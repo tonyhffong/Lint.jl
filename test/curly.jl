@@ -2,14 +2,14 @@ s = """
 a = Dict{:Symbol, Any}
 """
 msgs = lintstr(s)
-@test msgs[1].code == 471
+@test msgs[1].code == :I471
 @test contains(msgs[1].message, "probably illegal use of")
 
 s = """
 a = Dict{:Symbol, Any}()
 """
 msgs = lintstr(s)
-@test msgs[1].code == 471
+@test msgs[1].code == :I471
 @test contains(msgs[1].message, "probably illegal use of")
 
 s = """
@@ -23,7 +23,7 @@ b = :Symbol
 a = Dict{b, Any}()
 """
 msgs = lintstr(s)
-@test msgs[1].code == 441
+@test msgs[1].code == :W441
 @test contains(msgs[1].message, "probably illegal use of")
 
 s = """

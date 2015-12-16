@@ -8,7 +8,7 @@ else
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "Reachable by 0.3")
 @test contains(msgs[2].message, "Unreachable by 0.4")
 @test contains(msgs[3].message, "Unreachable by 0.3")
@@ -25,7 +25,7 @@ end
 """
 msgs = lintstr(s)
 @test length(msgs) == 4
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "Reachable by 0.3")
 @test contains(msgs[2].message, "Unreachable by 0.4")
 @test contains(msgs[3].message, "Reachable by 0.3")
@@ -42,7 +42,7 @@ end
 """
 msgs = lintstr(s)
 @test length(msgs) == 4
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "Reachable by 0.3")
 @test contains(msgs[2].message, "Reachable by 0.4")
 @test contains(msgs[3].message, "Unreachable by 0.3")
@@ -60,7 +60,7 @@ end
 """
 msgs = lintstr(s)
 @test length(msgs) == 4
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "Unreachable by 0.3")
 @test contains(msgs[2].message, "Reachable by 0.4")
 @test contains(msgs[3].message, "Reachable by 0.3")
@@ -76,7 +76,7 @@ else
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "Reachable by 0.3")
 @test contains(msgs[2].message, "Unreachable by 0.4")
 @test contains(msgs[3].message, "Unreachable by 0.3")

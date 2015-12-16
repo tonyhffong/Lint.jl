@@ -1,7 +1,6 @@
 type LintMessage
     file    :: UTF8String
-    level   :: Symbol # INFO, WARN, ERROR
-    code    :: Int # [1-9][1-9][1-9]
+    code    :: Symbol #[E|W|I][1-9][1-9][1-9]
     scope   :: UTF8String
     line    :: Int
     variable:: UTF8String
@@ -138,7 +137,7 @@ function popcallstack(ctx::LintContext)
         if !b.used
             tmpline = ctx.line
             ctx.line = b.line
-            msg(ctx, :INFO, 381, "unused @lintpragma $p")
+            msg(ctx, :I381, "unused @lintpragma $p")
             ctx.line = tmpline
         end
     end
@@ -148,7 +147,7 @@ end
 function register_global(ctx::LintContext, glob, info, callstackindex=length(ctx.callstack))
     ctx.callstack[callstackindex].declglobs[glob] = info
     filter!(message -> begin
-                return !(message.code == 321 && message.variable == string(glob) &&
+                return !(message.code == :E321 && message.variable == string(glob) &&
                         (!isempty(message.scope) || message.file != ctx.file))
             end,
         ctx.messages

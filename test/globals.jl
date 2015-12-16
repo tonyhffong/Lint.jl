@@ -25,7 +25,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 391
+@test msgs[1].code == :I391
 @test contains(msgs[1].message, "also a global")
 
 s = """
@@ -55,14 +55,14 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 111
+@test msgs[1].code == :E111
 @test contains(msgs[1].message, "expected assignment after \\\"const\\\"")
 
 s = """
 global 5
 """
 msgs = lintstr(s)
-@test msgs[1].code == 134
+@test msgs[1].code == :E134
 @test contains(msgs[1].message, "unknown global pattern")
 
 s = """
@@ -78,7 +78,7 @@ x
 x = 5
 """
 msgs = lintstr(s)
-@test msgs[1].code == 321
+@test msgs[1].code == :E321
 @test contains(msgs[1].message, "use of undeclared symbol")
 
 # Test gloabls defined in other files

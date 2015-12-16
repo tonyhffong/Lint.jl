@@ -96,7 +96,7 @@ function lintfile(file::AbstractString, code::AbstractString; returnMsgs::Bool =
 
     # If we have an undeclared symbol, lint the package to try and resolve
     for message in msgs
-        if message.code == 321 # undeclared symbol
+        if message.code == :E321 # undeclared symbol
             message = lintpkgforfile(ctx.file, ctx)
             break
         end
@@ -132,7 +132,7 @@ function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), li
             (ex, i) = parse(str,i)
         catch y
             if typeof(y) != ParseError || y.msg != "end of input"
-                msg(ctx, :ERROR, 111, string(y))
+                msg(ctx, :E111, string(y))
             end
             problem = true
         end
@@ -279,7 +279,7 @@ function lintexpr(ex::Any, ctx::LintContext)
         lintboolean(ex.args[1], ctx)
         lintexpr(ex.args[2], ctx) # do not enforce boolean. e.g. b==1 || error("b must be 1!")
     elseif ex.head == :incomplete
-        msg(ctx, :ERROR, 112, ex.args[1])
+        msg(ctx, :E112, ex.args[1])
     else
         for sube in ex.args
             if typeof(sube)== Expr

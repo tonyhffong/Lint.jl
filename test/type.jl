@@ -12,7 +12,7 @@ type MyType{Int64}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 535
+@test msgs[1].code == :E535
 @test contains(msgs[1].message, "unrelated to the type")
 
 s = """
@@ -20,7 +20,7 @@ type MyType{Int64} <: Float64
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 535
+@test msgs[1].code == :E535
 @test contains(msgs[1].message, "unrelated to the type")
 
 s = """
@@ -28,7 +28,7 @@ type MyType{T<:Int}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 514
+@test msgs[1].code == :E514
 @test contains(msgs[1].message, "leaf type")
 
 s = """
@@ -36,9 +36,9 @@ type MyType{T<:Int, Int<:Real}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 514
+@test msgs[1].code == :E514
 @test contains(msgs[1].message, "leaf type")
-@test msgs[2].code == 538
+@test msgs[2].code == :E538
 @test contains(msgs[2].message, "parametric data type")
 
 s = """
@@ -46,7 +46,7 @@ type MyType{Int<:Real}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 538
+@test msgs[1].code == :E538
 @test contains(msgs[1].message, "instead of a known type")
 
 s = """
@@ -56,7 +56,7 @@ type MyType{SomeType<:Real}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 538
+@test msgs[1].code == :E538
 @test contains(msgs[1].message, "instead of a known type")
 
 s = """
@@ -77,7 +77,7 @@ type MyType <: Integer
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 517
+@test msgs[1].code == :E517
 @test contains(msgs[1].message, "constructor-like function")
 
 s = """
@@ -99,7 +99,7 @@ type MyType{TT}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 535
+@test msgs[1].code == :E535
 @test contains(msgs[1].message, "unrelated to the type")
 
 s = """
@@ -127,7 +127,8 @@ type MyType{T<:Integer}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 611
+println(msgs[1].code)
+@test msgs[1].code == :E611
 @test contains(msgs[1].message, "constructor doesn't seem to return the constructed object")
 
 s = """
@@ -149,7 +150,7 @@ type MyType
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 691
+@test msgs[1].code == :I691
 @test contains(msgs[1].message, "a type is not given to the field a")
 
 s = """
@@ -167,7 +168,7 @@ type MyType
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 692
+@test msgs[1].code == :I692
 @test contains(msgs[1].message, "array field a has no dimension")
 
 s = """
@@ -186,14 +187,14 @@ type MyType
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 425
+@test msgs[1].code == :E425
 @test contains(msgs[1].message, "use @lintpragma macro inside type declaration")
 
 s = """
 bitstype a 8
 """
 msgs = lintstr(s)
-@test msgs[1].code == 524
+@test msgs[1].code == :E524
 @test contains(msgs[1].message, "bitstype needs its 2nd argument to be a new type symbol")
 
 s = """
@@ -222,9 +223,9 @@ type MyType
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 417
+@test msgs[1].code == :E417
 @test contains(msgs[1].message, "what is an anonymous function doing inside a type definition")
-@test msgs[2].code == 517
+@test msgs[2].code == :E517
 @test contains(msgs[2].message, "constructor-like function")
 
 s = """
@@ -235,7 +236,7 @@ type MyType
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 671
+@test msgs[1].code == :I671
 @test contains(msgs[1].message, "new is provided with fewer arguments than fields")
 
 s = """
@@ -245,7 +246,7 @@ type MyType{T}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 523
+@test msgs[1].code == :E523
 @test contains(msgs[1].message, "constructor parameter (within curly brackets)")
 
 s = """
@@ -255,7 +256,7 @@ type MyType{T}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 523
+@test msgs[1].code == :E523
 @test contains(msgs[1].message, "constructor parameter (within curly brackets)")
 
 s = """
@@ -275,7 +276,7 @@ type MyType
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 435
+@test msgs[1].code == :E435
 @test contains(msgs[1].message, "new is provided with more arguments than fields")
 
 s = """
@@ -318,5 +319,5 @@ type myType{T}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 771
+@test msgs[1].code == :I771
 @test contains(msgs[1].message, "Julia style recommends type names start with an upper case")

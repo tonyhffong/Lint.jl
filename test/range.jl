@@ -2,7 +2,7 @@ s = """
 r = 10:1
 """
 msgs = lintstr(s)
-@test msgs[1].code == 433
+@test msgs[1].code == :E433
 @test contains(msgs[1].message, "decreasing range")
 
 s = """
@@ -32,9 +32,9 @@ function f(r::UnitRange)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(r) == UnitRange")
-@test msgs[2].code == 271
+@test msgs[2].code == :I271
 @test contains(msgs[2].message, "typeof(a) == Any")
-@test msgs[3].code == 271
+@test msgs[3].code == :I271
 @test contains(msgs[3].message, "typeof(b) == UnitRange")

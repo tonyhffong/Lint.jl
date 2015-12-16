@@ -7,7 +7,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 474
+@test msgs[1].code == :I474
 @test contains(msgs[1].message, "iteration generates tuples of")
 
 s = """
@@ -19,7 +19,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 645
+@test msgs[1].code == :W645
 @test contains(msgs[1].message, "while false block is unreachable")
 
 s = """
@@ -55,9 +55,9 @@ function f(x::Int)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 271
+@test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Int")
-@test msgs[2].code == 672
+@test msgs[2].code == :I672
 @test contains(msgs[2].message, "iteration works for a number but it may be a typo")
 
 s = """
@@ -68,5 +68,5 @@ function f(a::Array{Int,1})
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 474
+@test msgs[1].code == :I474
 @test contains(msgs[1].message, "iteration generates tuples of")

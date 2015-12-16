@@ -7,7 +7,7 @@ end
 """
 msgs = lintstr(s)
 
-@test msgs[1].code == 352
+@test msgs[1].code == :W352
 println(msgs[1].message)
 @test contains(msgs[1].message, "lambda argument")
 
@@ -17,7 +17,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 353
+@test msgs[1].code == :W353
 @test contains(msgs[1].message, "lambda argument")
 
 s = """
@@ -28,7 +28,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 354
+@test msgs[1].code == :W354
 @test contains(msgs[1].message, "lambda argument")
 
 s = """

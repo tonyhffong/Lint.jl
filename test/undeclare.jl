@@ -5,7 +5,7 @@ end
 """
 msgs = lintstr(s)
 @test length(msgs) == 1
-@test msgs[1].code == 321
+@test msgs[1].code == :E321
 @test contains(msgs[1].message, "use of undeclared symbol")
 
 s = """
@@ -54,7 +54,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == 482
+@test msgs[1].code == :I482
 @test contains(msgs[1].message, "used in a local scope")
 
 s = """
