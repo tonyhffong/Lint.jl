@@ -21,6 +21,7 @@ import Base: ==, utf8
 utf8(s::Symbol) = utf8(string(s))
 
 include("linttypes.jl")
+include("messages.jl")
 include("knownsyms.jl")
 include("guesstype.jl")
 include("variables.jl")
@@ -143,40 +144,6 @@ function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), li
         end
     end
     return ctx.messages
-end
-
-function msg(ctx::LintContext, level::Symbol, code::Int, variable, str::AbstractString)
-    variable = string(variable)
-    m = LintMessage(ctx.file, level, code, ctx.scope, ctx.lineabs + ctx.line, variable, str)
-    i = findfirst(ctx.ignore, LintIgnore(Symbol(string(string(level)[1], code)), variable))
-    if i == 0
-        push!(ctx.messages, m)
-    else
-        push!(ctx.ignore[i].messages, m)
-    end
-end
-
-function msg(ctx::LintContext, level::Symbol, code::Int, str::AbstractString)
-    msg(ctx, level, code, "", str)
-end
-
-"Process messages. Sort and remove duplicates."
-function clean_messages!(msgs::Array{LintMessage})
-    sort!(msgs)
-    delids = Int[]
-    for i in 2:length(msgs)
-        if  msgs[i] == msgs[i-1]
-            push!(delids, i)
-        end
-    end
-    deleteat!(msgs, delids)
-end
-
-function display_messages(msgs::Array{LintMessage})
-    colors = Dict{Symbol, Symbol}(:INFO => :bold, :WARN => :yellow, :ERROR => :magenta)
-    for m in msgs
-        Base.println_with_color(colors[m.level], string(m))
-    end
 end
 
 function lintexpr(ex::Any, ctx::LintContext)

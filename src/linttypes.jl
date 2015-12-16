@@ -8,55 +8,6 @@ type LintMessage
     message :: UTF8String
 end
 
-import Base.string
-function string(m::LintMessage)
-    s = @sprintf("%s:%d ", m.file, m.line)
-    s = s * @sprintf("%s%s ", string(m.level)[1], m.code)
-    s = s * @sprintf("%s: ", m.variable)
-    ident = min(60, length(s))
-    lines = split(m.message, "\n")
-    for (i,l) in enumerate(lines)
-        if i==1
-            s = s * l
-        else
-            s = s * "\n" *  (" " ^ ident) * l
-        end
-    end
-    return s
-end
-
-import Base.show
-function Base.show(io::IO, m::LintMessage)
-    print(io, string(m))
-end
-
-import Base.isless
-function Base.isless(m1::LintMessage, m2::LintMessage)
-    if m1.file != m2.file
-        return isless(m1.file, m2.file)
-    end
-    if m1.level != m2.level
-        return m1.level == :ERROR || m2.level == :INFO
-    end
-    if m1.line != m2.line
-        return m1.line < m2.line
-    end
-    if m1.code != m2.code
-        return m1.code < m2.code
-    end
-    return m1.message < m2.message
-end
-
-function ==(m1::LintMessage, m2::LintMessage)
-    m1.file == m2.file &&
-    m1.level == m2.level &&
-    m1.code == m2.code &&
-    m1.scope == m2.scope &&
-    m1.line == m2.line &&
-    m1.variable == m2.variable &&
-    m1.message == m2.message
-end
-
 type VarInfo
     line::Int
     typeactual::Any # most of the time it's DataType, but could be Tuple of types, too
