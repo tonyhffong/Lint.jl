@@ -153,10 +153,13 @@ function lintboolean(ex, ctx::LintContext)
         if gt != Any && gt != Bool
             msg(ctx, :E511, ex, "variable $(ex) has apparent non-Bool type")
         end
-    else
+    elseif typeof(ex) != Bool
         msg(ctx, :E512, ex, "Lint doesn't understand $(ex) in a boolean context")
     end
-    lintexpr(ex, ctx)
+
+    if typeof(ex) <: Expr || typeof(ex) == Symbol
+        lintexpr(ex, ctx)
+    end
 end
 
 function lintcomparison(ex::Expr, ctx::LintContext)

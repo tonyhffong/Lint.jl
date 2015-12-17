@@ -231,6 +231,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
     typeassert = Dict{Symbol, Any}()
     resolveLHSsymbol(ex.args[1], syms, ctx, typeassert)
     tuplelen = length(syms)
+    lhsIsTuple = Meta.isexpr(ex.args[1], :tuple)
     rhstype = guesstype(ex.args[2], ctx)
 
     if isForLoop
@@ -243,40 +244,20 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         elseif rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
             rhstype = eltype(rhstype)
         elseif rhstype <: Associative
-            @lintpragma("Ignore unstable type variable rhstype")
-            if VERSION < v"0.4.0-dev+4139"
-                rhstype = (keytype(rhstype), valuetype(rhstype))
-            else
-                rhstype = Tuple{keytype(rhstype), valuetype(rhstype)}
-            end
+            # @lintpragma("Ignore unstable type variable rhstype")
+            rhstype = Tuple{keytype(rhstype), valuetype(rhstype)}
         end
 
-        if VERSION < v"0.4.0-dev+4139"
-            if rhstype <: Tuple && length(rhstype) != tuplelen
-                msg(ctx, :I474, rhstype, "iteration generates tuples of $rhstype. " *
-                    "N of variables used: $tuplelen")
-            end
-        else
-            if rhstype <: Tuple && length(rhstype.parameters) != tuplelen
-                msg(ctx, :I474, rhstype, "iteration generates tuples of $rhstype. " *
-                    "N of variables used: $tuplelen")
-            end
+        if rhstype <: Tuple && length(rhstype.parameters) != tuplelen
+            msg(ctx, :I474, rhstype, "iteration generates tuples of $rhstype. N of " *
+                "variables used: $tuplelen")
         end
     end
 
-    if VERSION < v"0.4.0-dev+4139"
-        if typeof(rhstype) != Symbol && rhstype <: Tuple && length(rhstype) != tuplelen && !isForLoop
-            if length(syms) > 1
-                msg(ctx, :E418, rhstype, "RHS is a tuple of $rhstype. N of " *
-                    "variables used: $tuplelen")
-            end
-        end
-    else
-        if typeof(rhstype) != Symbol && rhstype <: Tuple && length(rhstype.parameters) != tuplelen && !isForLoop
-            if tuplelen > 1
-                msg(ctx, :E418, rhstype, "RHS is a tuple of $rhstype. N of " *
-                    "variables used: $tuplelen")
-            end
+    if typeof(rhstype) != Symbol && rhstype <: Tuple && length(rhstype.parameters) != tuplelen && !isForLoop
+        if tuplelen > 1
+            msg(ctx, :E418, rhstype, "RHS is a tuple of $rhstype. N of variables used: " *
+                "$tuplelen")
         end
     end
 
@@ -285,7 +266,8 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             if isexpr(s, [:(.), :ref])
                 containertype = guesstype(s.args[1], ctx)
                 if containertype != Any && typeof(containertype) == DataType && !containertype.mutable
-                    msg(ctx, :E525, s.args[1], "$(s.args[1]) is of an immutable type $(containertype)")
+                    msg(ctx, :E525, s.args[1], "$(s.args[1]) is of an immutable type " *
+                        "$(containertype)")
                 end
             end
 
@@ -312,24 +294,17 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             registersymboluse(s, ctx)
         end
         vi = VarInfo(ctx.line)
-        #@lintpragma("Ignore incompatible type comparison")
-        if VERSION < v"0.4.0-dev+4139"
-            if rhstype == Any || length(syms) == 1
-                rhst = rhstype
-            elseif rhstype <: Tuple && length(rhstype) == length(syms)
-                @lintpragma("DataType is a container type")
-                rhst = rhstype[symidx]
-            else
+        # @lintpragma("Ignore incompatible type comparison")
+        if rhstype == Any || !lhsIsTuple
+            rhst = rhstype
+        elseif rhstype <: Tuple && lhsIsTuple
+            if length(rhstype.parameters) <= symidx
                 rhst = Any
+            else
+                rhst = rhstype.parameters[ symidx ]
             end
         else
-            if rhstype == Any || length(syms) == 1
-                rhst = rhstype
-            elseif rhstype <: Tuple && length(rhstype.parameters) == length(syms)
-                rhst = rhstype.parameters[symidx]
-            else
-                rhst = Any
-            end
+            rhst = Any
         end
         try
             if haskey(typeassert, s)
@@ -337,8 +312,8 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
                 if typeof(dt) == DataType
                     vi.typeactual = dt
                     if !isAnyOrTupleAny(dt) && !isAnyOrTupleAny(rhstype) && !(rhstype <: dt)
-                        msg(ctx, :I572, "assert $(s) type= $(dt) but assign a " *
-                            "value of $(rhstype)")
+                        msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *
+                            "$(rhstype)")
                     end
                 else
                     vi.typeexpr = typeassert[s]
@@ -388,9 +363,8 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
 
             if !found && !isGlobal && !haskey(ctx.callstack[end].declglobs, s)
                 for i in length(ctx.callstack)-1:-1:1
-                    if haskey(ctx.callstack[i].declglobs, s) &&
-                        length(string(s)) > 4 &&
-                        !in(s, [:value, :index, :fname, :fargs])
+                    if haskey(ctx.callstack[i].declglobs, s) && length(string(s)) > 4 &&
+                            !in(s, [:value, :index, :fname, :fargs])
                         src = string(ctx.callstack[i].declglobs[s])
                         l = split(src, "\n")
                         splice!(l, 1)
