@@ -1,4 +1,4 @@
-#Lint.jl
+# Lint.jl
 
 [![Package Evaluator](http://pkg.julialang.org/badges/Lint_release.svg)](http://pkg.julialang.org/?pkg=Lint&ver=0.3)
 [![Build Status](https://travis-ci.org/tonyhffong/Lint.jl.svg?branch=master)](https://travis-ci.org/tonyhffong/Lint.jl)
@@ -6,8 +6,7 @@
 
 ## Introduction
 
-Lint.jl is a tool to hunt for imperfections and dodgy structures that could be
-improved.
+Lint.jl is a tool to hunt for imperfections and dodgy structures that could be improved.
 
 ## Installation
 ```julia
@@ -17,22 +16,22 @@ Pkg.add("Lint")
 ## Usage
 ```julia
 using Lint
-lintfile("your_.jl_file")
+lintpkg("PackageName")
+lintfile("your_file.jl")
+lintstr("code")
 ```
-It'd follow any `include` statements.
+It will follow any `include` statements.
 
 The output is of the following form:
 ```
-filename.jl:Line [function name] CODE  Explanation
+filename.jl:Line CODE variable: message
 ```
+`filename.jl` is the file that contains the problem.
 `Line` is the line number relative to the start of the file.
-`CODE` gives an indication of severity, and is one of `INFO`, `WARN`, `ERROR`, or `FATAL`.
-
-To simplify life, there is a convenience function for packages:
-```julia
-using Lint
-lintpkg("MyPackage")
-```
+`CODE` identifies the problem and gives an indication of severity.
+Starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or `I`:`INFO` then has 3 numbers identifying the error.
+`variable` is the variable causing the error.
+`message` is an explanation of the error.
 
 If your package always lints clean, you may want to keep it that way in a test:
 ```julia
@@ -197,8 +196,7 @@ Key info about adding a `lint_helper` function in your module
   so that Lint can give other modules a go at it. Note that
   if you always returning true in your code you will break Lint.
 * `lint_helper` takes two argument, an `Expr` instance and a context.
-  - if you find an issue in your expression, call `Lint.msg(ctx, level, "explanation")`
-  - level is 0: INFO, 1:WARN, 2:ERROR, 4:FATAL
+  - if you find an issue in your expression, call `Lint.msg(ctx, code, variable, "explanation")`
 * typical structure looks like this
 ```julia
 function lint_helper(ex::Expr, ctx)
@@ -241,20 +239,45 @@ push!(ctx.callstack[end].types, roottypesymbol)
 You just need to put in the root symbol for a parametric type, for example
 `:A` for `A{T<:Any}`.
 
-## Lintserver feature - experimental
+## Lintserver feature
 
-Lint now contains a function `linteserver` making Julia start listening on a given port and returning lint messages to the connection.
+Make Julia start listening on a given port and return lint messages to requests on that connection.
+This feature is useful when you want to lint julia code in a non julia environment (e.g. an IDE like Sublime Text).
 
-It has been tried out and the following example works on OS X, suggestions are welcome for other systems.
+The protocol for the server is:
+1. The file path followed by a new line
+2. The number of bytes of code being sent followed by a new line
+3. The actual code
 
-### Example
-First open julia and do:
-````{julia}
+The server will respond with the messages produced when linting the code followed by a empty line (i.e. if it linted cleanly it will respond with a single newline).
+
+Launch the server:
+```julia
 using Lint
 lintserver(2222)
-````
-Then, assuming you have a file named `test.jl` in your documents to be linted, from bash you can do:
-````{bash}
-(echo "~/Documents/test.jl"; sleep 2) | nc -w 2 localhost 2222
-````
-For the first time you might have to do that multiple times because the linting functions are being imported and compiled.
+```
+
+Connect and send requests:
+```julia
+socket = connect(2222)
+
+println(socket, "none") # filename
+
+str = """
+test = "Hello" + "World"
+"""
+
+println(socket, sizeof(str)) # bytes of code
+println(socket, str) # code
+
+response = ""
+line = ""
+while line != "\n"
+    response *= line
+    line = readline(socket)
+end
+
+@assert response == "none:1 E422 : string uses * to concatenate\n"
+```
+
+Note that the first request might take some time because the linting functions are being imported and compiled.
