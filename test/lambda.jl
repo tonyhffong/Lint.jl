@@ -8,7 +8,6 @@ end
 msgs = lintstr(s)
 
 @test msgs[1].code == :W352
-println(msgs[1].message)
 @test contains(msgs[1].message, "lambda argument")
 
 s = """

@@ -127,7 +127,6 @@ type MyType{T<:Integer}
 end
 """
 msgs = lintstr(s)
-println(msgs[1].code)
 @test msgs[1].code == :E611
 @test contains(msgs[1].message, "constructor doesn't seem to return the constructed object")
 

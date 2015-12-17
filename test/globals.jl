@@ -70,7 +70,6 @@ f() = x
 x = 5
 """
 msgs = lintstr(s)
-println(msgs)
 @test isempty(msgs)
 
 s = """
