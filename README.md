@@ -245,6 +245,7 @@ Make Julia start listening on a given port and return lint messages to requests 
 This feature is useful when you want to lint julia code in a non julia environment (e.g. an IDE like Sublime Text).
 
 The protocol for the server is:
+
 1. The file path followed by a new line
 2. The number of bytes of code being sent followed by a new line
 3. The actual code
