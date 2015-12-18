@@ -24,6 +24,7 @@ lintstr("code")
 ```
 It will follow any `include` statements.
 
+## Output
 The output is of the following form:
 ```
 filename.jl:Line CODE variable: message
