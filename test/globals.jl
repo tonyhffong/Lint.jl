@@ -47,6 +47,7 @@ end
 """
 msgs = lintstr(s)
 @test isempty(msgs) # short names are grandfathered to be ok
+
 s = """
 const y
 function f(x)

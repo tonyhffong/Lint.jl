@@ -187,7 +187,7 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :block)
-        return guesstype(ex.args[end], ctx)
+        return isempty(ex.args) ? Void : guesstype(ex.args[end], ctx)
     end
 
     if isexpr(ex, :call) && ex.args[1] == :convert && typeof(ex.args[2]) == Symbol
