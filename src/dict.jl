@@ -41,9 +41,9 @@ function lintdict4( ex::Expr, ctx::LintContext )
                     end
                 end
             end
-
-            lintexpr( a.args[2], ctx )
         end
+
+        lintexpr( a, ctx )
     end
 
     if typed

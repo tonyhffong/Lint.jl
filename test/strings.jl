@@ -5,6 +5,14 @@ msgs = lintstr( s )
 @test( contains( msgs[1].message, "String uses * to concat"))
 
 s = """
+function f(x)
+    Dict("a" + "b" => x)
+end
+"""
+msgs = lintstr(s)
+@test contains( msgs[1].message, "String uses * to concat" )
+
+s = """
 s = String(1)
 """
 msgs = lintstr( s )
