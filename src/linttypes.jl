@@ -6,30 +6,20 @@ type LintMessage
     message :: UTF8String
 end
 
-import Base.string
-function string( m::LintMessage )
-    s = @sprintf( "%s:%d ", m.file, m.line )
-    s = s * @sprintf( "[%-15s] ", m.scope )
+function Base.show( io::IO, m::LintMessage )
+    s  = @sprintf( "%s:%d ", m.file, m.line )
+    s *= @sprintf( "[%-15s] ", m.scope )
     arr = [ "INFO", "WARN", "ERROR", "FATAL" ]
-    s = s * @sprintf( "%-5s  ", arr[ m.level+1 ] )
+    s *= @sprintf( "%-5s  ", arr[ m.level+1 ] )
+    print( io, s )
     ident = min( 60, length(s) )
     lines = split(m.message, "\n")
-    for (i,l) in enumerate(lines)
-        if i==1
-            s = s * l
-        else
-            s = s * "\n" *  (" " ^ ident) * l
-        end
+    print( io, lines[1] )
+    for l in lines[2:end]
+        print( io, "\n", " " ^ ident, l )
     end
-    return s
 end
 
-import Base.show
-function Base.show( io::IO, m::LintMessage )
-    print( io, string(m) )
-end
-
-import Base.isless
 function Base.isless( m1::LintMessage, m2::LintMessage )
     if m1.file != m2.file
         return isless(m1.file, m2.file)
