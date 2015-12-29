@@ -1,4 +1,4 @@
-import Lint: iserror, iswarning, isinfo, level
+import Lint: level
 
 msg1 = LintMessage("none", :W001, "", 1, "foo", "message")
 msg2 = LintMessage("none", :E002, "", 2, "", "message\nmessage")

@@ -7,6 +7,7 @@ using Compat
 
 export LintMessage, LintContext, LintStack
 export lintfile, lintstr, lintpkg, lintserver, @lintpragma
+export iserror, iswarning, isinfo
 export test_similarity_string
 
 const SIMILARITY_THRESHOLD = 10.0
