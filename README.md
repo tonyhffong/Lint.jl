@@ -24,6 +24,16 @@ lintstr("code")
 ```
 It will follow any `include` statements.
 
+If your package always lints clean, you may want to keep it that way in a test:
+```julia
+@test isempty(lintpkg("MyPackage", returnMsgs=true))
+```
+If you only care about errors you could use:
+```julia
+errors = filter(i -> iserror(i), lintpkg("MyPackage", returnMsgs=true))
+@test isempty(errors)
+```
+
 ## Output
 The output is of the following form:
 ```
@@ -35,13 +45,6 @@ filename.jl:Line CODE variable: message
 Starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or `I`:`INFO` then has 3 numbers identifying the error.
 `variable` is the variable causing the error.
 `message` is an explanation of the error.
-
-If your package always lints clean, you may want to keep it that way in a test:
-```julia
-using Test
-using Lint
-@test isempty(lintpkg("MyPackage", returnMsgs=true))
-```
 
 ## What can it find?
 * simple deadcode detection (e.g if true/false)
