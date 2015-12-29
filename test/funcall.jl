@@ -365,6 +365,12 @@ msgs = lintstr(s)
 @test isempty(msgs)
 
 s = """
+function f end
+"""
+msgs = lintstr(s)
+@test isempty(msgs)
+
+s = """
 a = :b
 f(; a => 1)
 """

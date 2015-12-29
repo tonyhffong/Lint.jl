@@ -91,7 +91,6 @@ Errors codes
 |**E6**| *Structure Error*
 |      |         |
 | E611 | constructor doesn't seem to return the constructed object
-| E611 | constructor doesn't seem to return the constructed object
 |      |         |
 |      |         |
 |**W2**| *Miscellaneous Warning*
@@ -118,6 +117,8 @@ Errors codes
 | W443 | did you forget an -> after @doc or make it inline?
 | W444 | nested vcat is treated as a 1-dimensional array
 | W445 | nested hcat is treated as a 1-row horizontal array of dim=2
+| W446 | too many type parameters for h
+| W447 | t can't be # type parameter for h; it should be of type t2
 |      |         |
 |      |         |
 |**W5**| *Type Warning*

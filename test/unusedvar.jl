@@ -63,3 +63,11 @@ end
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+
+s = """
+function f(x...)
+    Dict(x...)
+end
+"""
+msgs = lintstr(s)
+@test isempty(msgs)

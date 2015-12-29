@@ -119,7 +119,7 @@ function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
         t = typeof(m)
         if t == Module
             union!(ctx.callstack[end].imports, names(m, all))
-        elseif typeof(lastpart ) == Symbol
+        elseif typeof(lastpart) == Symbol
             push!(ctx.callstack[end].imports, lastpart)
             #push!(ctx.callstack[end].declglobs, lastport)
         end

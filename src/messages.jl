@@ -1,17 +1,14 @@
-function Base.string(m::LintMessage)
+function Base.show(io::IO, m::LintMessage)
     s = @sprintf("%s:%d ", m.file, m.line)
-    s = s * @sprintf("%s ", m.code)
-    s = s * @sprintf("%s: ", m.variable)
+    s *= @sprintf("%s ", m.code)
+    s *= @sprintf("%s: ", m.variable)
+    print(io, s)
     ident = min(60, length(s))
     lines = split(m.message, "\n")
-    for (i,l) in enumerate(lines)
-        if i == 1
-            s = s * l
-        else
-            s = s * "\n" *  (" " ^ ident) * l
-        end
+    print(io, lines[1])
+    for l in lines[2:end]
+        print(io, "\n", " " ^ ident, l)
     end
-    return s
 end
 
 function ==(m1::LintMessage, m2::LintMessage)
@@ -21,10 +18,6 @@ function ==(m1::LintMessage, m2::LintMessage)
     m1.line == m2.line &&
     m1.variable == m2.variable &&
     m1.message == m2.message
-end
-
-function Base.show(io::IO, m::LintMessage)
-    print(io, string(m))
 end
 
 function Base.isless(m1::LintMessage, m2::LintMessage)

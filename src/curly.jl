@@ -3,25 +3,40 @@
 # declaring a parametric function or parametric type are separately
 # considered in lintfunction and linttype, respectively.
 
+# contracts for common collections / type parametrized types
+# TODO: Can we be more specific here? What about detecting contract?
+const CURLY_CONTRACTS = Dict{Symbol, Any}(
+    :Array  => (DataType, Integer),
+    :Dict   => (DataType, DataType),
+    :Matrix => (DataType,),
+    :Set    => (DataType,),
+    :Type   => (DataType,),
+    :Val    => (Any,),
+    :Vector => (DataType,))
+
 function lintcurly(ex::Expr, ctx::LintContext)
-    if ex.args[1] == :Ptr && length(ex.args)==2 && ex.args[2] == :Void
+    head = ex.args[1]
+    if head == :Ptr && length(ex.args) == 2 && ex.args[2] == :Void
         return
     end
+    contract = get(CURLY_CONTRACTS, head, nothing)
     for i = 2:length(ex.args)
         a = ex.args[i]
         if isexpr(a, :parameters) # only used for Traits.jl, AFAIK
             continue # grandfathered. We worry about linting this later
         elseif isexpr(a, :($))
             continue # grandfathered
-        elseif typeof(a) == QuoteNode || isexpr(a, :quote)
-            if ex.args[1] != :Val
-                msg(ctx, :I471, a, "probably illegal use of $(a) inside curly")
-            end
         else
             t = guesstype(a, ctx)
-            if t == Symbol || t != Any && t != () && typeof(t) != DataType &&
-                !(typeof(t) <: Tuple && all(x->typeof(x) == DataType, t)) && !(t <: Integer)
+            if !(t == DataType || t == Symbol || isbits(t) || t == Any)
                 msg(ctx, :W441, a, "probably illegal use of $(a) inside curly")
+            elseif contract != nothing
+                if i - 1 > length(contract)
+                    msg(ctx, :W446, "too many type parameters for $head")
+                elseif !(t <: contract[i - 1] || t == Any)
+                    msg(ctx, :W447, "$t can't be #$(i-1) type parameter for $head;" *
+                        "it should be of type $(contract[i-1])")
+                end
             end
             lintexpr(a, ctx)
         end

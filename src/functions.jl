@@ -516,10 +516,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
 
         en = length(ex.args)
 
-        if isexpr(ex.args[1], :curly)
-            # Dict{Symbol, Int}
-            lintexpr(ex.args[1], ctx)
-        elseif isexpr(ex.args[1], :(.))
+        if isexpr(ex.args[1], :(.))
             lintexpr(ex.args[1], ctx)
         elseif typeof(ex.args[1]) == Symbol
             push!(ctx.callstack[end].calledfuncs, ex.args[1])
