@@ -1,5 +1,40 @@
-Errors codes
-============
+# LintMessage
+
+When you lint some code Lint.jl will print the error messages in the [format described below](#format). By default nothing will be returned. If you want the messages to be returned then you have to set the `returnMsgs` keyword argument to `true` which will make Lint.jl return and array of `LintMessage`.
+
+```julia
+lintpkg("MyPackage", returnMsgs=true)
+```
+
+## Format
+A message is of the following form:
+```
+filename.jl:Line CODE variable: message
+```
+`filename.jl` is the file that contains the problem.  
+`Line` is the line number relative to the start of the file.  
+`CODE` identifies the error and gives an indication of severity.  
+`variable` is the variable causing the error.  
+`message` is an explanation of the error.  
+
+## Levels
+
+There are 3 levels of severity a LintMessage can be:
+
+* **Error:** The most sever level. Will probably lead to program failure.
+* **Warning:** Code that will run but is probably wrong.
+* **Info:** Suggestions and best practices.
+
+You can use `iserror`, `iswarning` and `isinfo` to check a particular messages error level.
+
+If you only want to test for error and warning level messages you could use:
+```julia
+errors = filter(i -> !isinfo(i), lintpkg("MyPackage", returnMsgs=true))
+@test isempty(errors)
+```
+
+## Errors codes
+Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or `I`:`INFO` then has 3 numbers identifying the error. Below is a complete list of error codes:
 
 | code | message |
 |:----:|:--------|
