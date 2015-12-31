@@ -1,6 +1,6 @@
 function lintmacro(ex::Expr, ctx::LintContext)
     if !isa(ex.args[1], Expr) || length(ex.args[1].args) < 2
-        msg(ctx, :E121, ex.args[1], "Lint does not understand: $(ex.args[1])")
+        msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
         return
     end
     fname = ex.args[1].args[1]
@@ -24,7 +24,7 @@ function lintmacro(ex::Expr, ctx::LintContext)
         elseif sube.head == :(::) && length(sube.args) == 2
             typeex = sube.args[2]
             if  typeex != :Expr && typeex != :Symbol
-                msg(ctx, :E522, sube, "macro arguments can only be Symbol/Expr: $(sube)")
+                msg(ctx, :E522, sube, "macro arguments can only be Symbol/Expr")
             end
             resolveArguments(sube.args[1])
         elseif sube.head == :(...)
@@ -34,7 +34,7 @@ function lintmacro(ex::Expr, ctx::LintContext)
             lintexpr(sube.args[1], ctx)
         =#
         else
-            msg(ctx, :E136, sube, "Lint does not understand: $(sube)")
+            msg(ctx, :E136, sube, "Lint does not understand macro")
         end
     end
 

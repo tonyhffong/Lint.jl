@@ -343,7 +343,7 @@ function lintserver(port)
         while true
             conn = accept(server)
             @async try
-                println("Connection accepted.")
+                println("Connection accepted")
                 # Get file, code length and code
                 file = strip(readline(conn))
                 println("file: ", file)
@@ -360,7 +360,7 @@ function lintserver(port)
                 end
                 # Blank line to indicate end of messages
                 write(conn, "\n")
-                println("Connection closed.")
+                println("Connection closed")
             catch err
               println("connection ended with error $err")
             end

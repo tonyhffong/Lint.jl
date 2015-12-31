@@ -77,7 +77,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E138
-@test contains(msgs[1].message, "incomplete expression")
+@test contains(msgs[1].message, "incomplete pragma expression")
 
 s = """
 function f(x)
@@ -99,7 +99,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E137
-@test contains(msgs[1].message, "@lintpragma must be called using only string literals")
+@test contains(msgs[1].message, "lintpragma must be called using only string literals")
 
 s = """
 function f(x)
@@ -111,11 +111,12 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I381
-@test contains(msgs[1].message, "unused @lintpragma Ignore unused a")
+@test msgs[1].variable == "Ignore unused a"
+@test contains(msgs[1].message, "unused lintpragma")
 
 s = """
 @lintpragma()
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E137
-@test contains(msgs[1].message, "@lintpragma must be called using")
+@test contains(msgs[1].message, "lintpragma must be called using only string literals")

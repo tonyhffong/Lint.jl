@@ -7,7 +7,7 @@ function lintref(ex::Expr, ctx::LintContext)
         if what == :Any
             str = string(sub1)
             #if !isupper(str[1]) || length(str) <= 2
-            msg(ctx, :W544, str, "Lint cannot determine if $str is a DataType or not")
+            msg(ctx, :W544, str, "Lint cannot determine if DataType or not")
             #end
         end
     else

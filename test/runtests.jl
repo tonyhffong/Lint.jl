@@ -10,7 +10,7 @@ elseif basename(pwd()) == "src"
 elseif basename(pwd()) == "test"
     path = "DEMOFILE.jl"
 else
-    throw("doesn't know where I am.")
+    throw("doesn't know where I am")
 end
 
 lintfile(path)

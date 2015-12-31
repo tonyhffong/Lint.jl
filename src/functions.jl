@@ -43,8 +43,7 @@ function lintfuncargtype(ex, ctx::LintContext)
         end
         for i in st:en
             if in(ex.args[i], [:Number])
-                msg(ctx, :E533, ex, "type parameters in Julia are invariant, " *
-                    "meaning $(ex) may not do what you want. Try f{T<:Number}(x::T)... ")
+                msg(ctx, :E533, ex, "type parameters are invariant, try f{T<:Number}(x::T)...")
             end
         end
     end
@@ -60,7 +59,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     end
 
     if !isa(ex.args[1], Expr)
-        msg(ctx, :E121, ex.args[1], "Lint does not understand: $(ex.args[1])")
+        msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
         return
     end
 
@@ -80,7 +79,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         fname = ex.args[1].args[1]
         push!(ctx.callstack[end].functions, fname)
     elseif !isa(ex.args[1].args[1], Expr)
-        msg(ctx, :E121, ex.args[1].args[1], "Lint does not understand: $(ex.args[1].args[1])")
+        msg(ctx, :E121, ex.args[1].args[1], "Lint does not understand the expression")
         return
     elseif ex.args[1].args[1].head == :curly
         fname = ex.args[1].args[1].args[1]
@@ -89,9 +88,8 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             adt = ex.args[1].args[1].args[i]
             if typeof(adt) == Symbol
                 if in(adt, knowntypes)
-                    msg(ctx, :E534, adt, "you mean {T<:$(adt)}? You are introducing it " *
-                        "as a new name for an implicit argument to the function, " *
-                        "unrelated to the type $(adt)")
+                    msg(ctx, :E534, adt, "introducing a new name for an implicit " *
+                        "argument to the function, use {T<:$(adt)}")
                 else
                     push!(temporaryTypes, adt)
                 end
@@ -99,13 +97,12 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
                 if in(temptype, knowntypes)
-                    msg(ctx, :E536, temptype, "you should use {T<:...} instead of a known type $temptype")
+                    msg(ctx, :E536, temptype, "use {T<:...} instead of a known type")
                 end
                 if in(typeconstraint, knowntypes)
                     dt = eval(typeconstraint)
                     if typeof(dt) == DataType && isleaftype(dt)
-                        msg(ctx, :E513, dt, "$(dt) is a leaf type. As a type constraint " *
-                            "it makes no sense in $(adt)")
+                        msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
                 end
                 push!(temporaryTypes, adt.args[1])
@@ -119,8 +116,8 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     if fname != Symbol("") && !contains(ctx.file, "deprecate")
         isDeprecated = functionIsDeprecated(ex.args[1])
         if isDeprecated != nothing && !pragmaexists("Ignore deprecated $fname", ctx)
-            msg(ctx, :E211, isDeprecated.message,
-                "$(isDeprecated.message); See: deprecated.jl $(isDeprecated.line)")
+            msg(ctx, :E211, ex.args[1], "$(isDeprecated.message); See: " *
+                "deprecated.jl $(isDeprecated.line)")
         end
     end
 
@@ -144,11 +141,10 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     resolveArguments = (sube, position) -> begin # zero position means it's not called at the top level
         if typeof(sube) == Symbol
             if in(sube, argsSeen)
-                msg(ctx, :E331, sube, "duplicate argument: $(sube)")
+                msg(ctx, :E331, sube, "duplicate argument")
             end
             if position != 0 && optionalposition != 0
-                msg(ctx, :E411, sube,
-                    "you cannot have non-default argument following default arguments")
+                msg(ctx, :E411, sube, "non-default argument following default arguments")
             end
             push!(argsSeen, sube)
             stacktop.localarguments[end][sube] = VarInfo(ctx.line)
@@ -174,7 +170,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     end
                     return
                 elseif typeof(kw) != Expr || (kw.head != :(=) && kw.head != :kw)
-                    msg(ctx, :E423, kw, "named keyword argument must have a default: $(kw)")
+                    msg(ctx, :E423, kw, "named keyword argument must have a default")
                     return
                 else
                     resolveArguments(kw, 0)
@@ -202,8 +198,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                             dt = parsetype(sube.args[2])
                             typeassert[sym] = dt
                         catch er
-                            msg(ctx, :E139, sube.args[2],
-                                "Lint fails to parse type $(sube.args[2]): $(er)")
+                            msg(ctx, :E139, sube.args[2], "Lint fails to parse type: $(er)")
                         end
                     end
                 end
@@ -239,7 +234,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         elseif sube.head == :($)
             lintexpr(sube.args[1], ctx)
         else
-            msg(ctx, :E131, sube.head, "Lint does not understand: $(sube) as an argument $(position)")
+            msg(ctx, :E131, sube, "Lint does not understand argument #$(position)")
         end
         return nothing
     end
@@ -265,7 +260,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     vi.typeactual = dt
                     if dt != Any && haskey(typeRHShints, s) && typeRHShints[s] != Any &&
                         !(typeRHShints[s] <: dt)
-                        msg(ctx, :E516, s, "$s type assertion and default seem inconsistent")
+                        msg(ctx, :E516, s, "type assertion and default seem inconsistent")
                     end
                 end
             elseif haskey(typeRHShints, s)
@@ -281,17 +276,16 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
 
     if ctorType != Symbol("") && fname != ctorType &&
             in(:new, ctx.callstack[end].calledfuncs)
-        msg(ctx, :E517, fname, "constructor-like function $(fname) within type " *
-            "$(ctorType). Shouldn't they match?")
+        msg(ctx, :E517, fname, "constructor-like function name doesn't match type $(ctorType)")
     end
     if ctorType != Symbol("") && fname == ctorType
         t = guesstype(ex.args[2], ctx)
         if typeof(t) == DataType
             if t.name.name != ctorType
-                msg(ctx, :E611, "constructor doesn't seem to return the constructed object.")
+                msg(ctx, :E611, "constructor doesn't seem to return the constructed object")
             end
         elseif t != ctorType
-            msg(ctx, :E611, "constructor doesn't seem to return the constructed object.")
+            msg(ctx, :E611, "constructor doesn't seem to return the constructed object")
         end
     end
     popVarScope(ctx, checkargs=true)
@@ -317,22 +311,20 @@ function lintlambda(ex::Expr, ctx::LintContext)
     checklambdaarg = (sym)->begin
         for i in length(stacktop.localvars):-1:1
             if haskey(stacktop.localvars[i], sym)
-                msg(ctx, :W352, sym, "lambda argument $(sym) conflicts with a local " *
-                    "variable. Best to rename.")
+                msg(ctx, :W352, sym, "lambda argument conflicts with a local variable")
                 break
             end
         end
         for i in length(stacktop.localarguments):-1:1
             if haskey(stacktop.localarguments[i], sym)
-                msg(ctx, :W353, sym, "lambda argument $(sym) conflicts with an " *
-                    "argument. Best to rename.")
+                msg(ctx, :W353, sym, "lambda argument conflicts with an argument")
                 break
             end
         end
         for i in length(ctx.callstack):-1:1
             if haskey(ctx.callstack[i].declglobs, sym)
-                msg(ctx, :W354, sym, "lambda argument $(sym) conflicts with an declared " *
-                    "global from: $(ctx.callstack[i].declglobs[sym]): Better to rename.")
+                msg(ctx, :W354, sym, "lambda argument conflicts with an declared " *
+                    "global from $(ctx.callstack[i].declglobs[sym])")
             end
         end
         stacktop.localarguments[end][sym] = VarInfo(ctx.line)
@@ -359,7 +351,7 @@ function lintlambda(ex::Expr, ctx::LintContext)
                 resolveArguments(sube.args[1])
             end
         else
-            msg(ctx, :E132, sube, "Lint does not understand: $(sube) as an argument.")
+            msg(ctx, :E132, sube, "Lint does not understand argument")
         end
     end
 
@@ -395,7 +387,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
         inclfile = joinpath(ctx.path, inclfile)
 
         if !ispath(inclfile)
-            msg(ctx, :E311, inclfile, "cannot find include file: $inclfile")
+            msg(ctx, :E311, inclfile, "cannot find include file")
             return
         else
             #println("include: ", inclfile)
@@ -434,8 +426,8 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
         versionreachable = ctx.versionreachable(VERSION)
         for row in deprector
             if VERSION < v"0.4.0-dev+1830" && versionreachable && ex.args[1] == row[2]
-                msg(ctx, :E432, row[2],
-                    "though valid in 0.4, you want $(row[1])() instead of $(row[2])()")
+                msg(ctx, :E432, row[2], "though valid in 0.4, use $(row[1])() instead of " *
+                    "$(row[2])()")
             end
             if VERSION >= v"0.4.0-dev+1830" && versionreachable && ex.args[1] == row[1]
                 repl = string(row[2])
@@ -448,10 +440,10 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
             end
         end
         if ex.args[1] == :String
-            msg(ctx, :E537, ex.args[1], "you want string(), i.e. string " *
-                "conversion, instead of a non-existent constructor")
+            msg(ctx, :E537, ex.args[1], "non-existent constructor, use string() for " *
+                "string conversion")
         elseif ex.args[1] == :Union
-            msg(ctx, :E421, "use Union{...}, with curly, instead of parentheses.")
+            msg(ctx, :E421, "use Union{...}, with curly, instead of parentheses")
         elseif ex.args[1] == :(+)
             lintplus(ex, ctx)
             known = true
@@ -472,7 +464,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
                 try
                     which(getfield(Main, s), tuple(typesig...))
                 catch er
-                    msg(ctx, :E231, s, "$(s): $(er); Signature: $(tuple(typesig...))")
+                    msg(ctx, :E231, s, "$(er); Signature: $(tuple(typesig...))")
                 end
             end
         end
@@ -537,7 +529,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
                     elseif isa(kw, Symbol)
                         lintexpr(kw, ctx)
                     else
-                        msg(ctx, :E133, kw, "unknown keyword pattern $(kw)")
+                        msg(ctx, :E133, kw, "unknown keyword pattern")
                     end
                 end
             elseif isexpr(ex.args[i], :kw)

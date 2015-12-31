@@ -3,7 +3,7 @@ s = """
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E418
-@test contains(msgs[1].message, "RHS is a tuple of")
+@test contains(msgs[1].message, "RHS is a tuple, 2 of 3 variables used")
 
 s = """
     a, = (1,2,3)
@@ -25,4 +25,4 @@ s = """
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E418
-@assert contains(msgs[1].message, "RHS is a tuple of")
+@assert contains(msgs[1].message, "RHS is a tuple, 3 of 2 variables used")

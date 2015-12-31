@@ -29,12 +29,12 @@ function lintcurly(ex::Expr, ctx::LintContext)
         else
             t = guesstype(a, ctx)
             if !(t == DataType || t == Symbol || isbits(t) || t == Any)
-                msg(ctx, :W441, a, "probably illegal use of $(a) inside curly")
+                msg(ctx, :W441, a, "probably illegal use inside curly")
             elseif contract != nothing
                 if i - 1 > length(contract)
-                    msg(ctx, :W446, "too many type parameters for $head")
+                    msg(ctx, :W446, head, "too many type parameters")
                 elseif !(t <: contract[i - 1] || t == Any)
-                    msg(ctx, :W447, "$t can't be #$(i-1) type parameter for $head;" *
+                    msg(ctx, :W447, t, "can't be #$(i-1) type parameter for $head;" *
                         "it should be of type $(contract[i-1])")
                 end
             end

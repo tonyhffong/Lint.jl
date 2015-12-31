@@ -20,9 +20,8 @@ function linttype(ex::Expr, ctx::LintContext)
                     end
                 end
                 if typefound && adt != :T
-                    msg(ctx, :E535, adt, "you mean {T<:$(adt)}? You are " *
-                        "introducing it as a new name for an algebric data type, " *
-                        "unrelated to the type $(adt)")
+                    msg(ctx, :E535, adt, "introducing a new name for an algebric data " *
+                        "type, use {T<:$(adt)}")
                 end
                 push!(ctx.callstack[end].types, adt)
                 push!(typeparams, adt)
@@ -41,15 +40,14 @@ function linttype(ex::Expr, ctx::LintContext)
                         end
                     end
                     if typefound
-                        msg(ctx, :E538, temptype, "you should use {T<:...} instead " *
-                            "of a known type $(temptype) in parametric data type")
+                        msg(ctx, :E538, temptype, "known type in parametric data type, " *
+                            "use {T<:...}")
                     end
                 end
                 if in(typeconstraint, knowntypes)
                     dt = eval(typeconstraint)
                     if typeof(dt) == DataType && isleaftype(dt)
-                        msg(ctx, :E514, dt, "$(dt) is a leaf type. As a type " *
-                            "constraint it makes no sense in $(adt)")
+                        msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
                 end
                 push!(ctx.callstack[end].types, temptype)
@@ -76,8 +74,7 @@ function linttype(ex::Expr, ctx::LintContext)
     end
     if typename != Symbol("")
         if islower(string(typename)[1])
-            msg(ctx, :I771, typename, "Julia style recommends type names start with " *
-                "an upper case: $(typename)")
+            msg(ctx, :I771, typename, "type names should start with an upper case")
         end
         push!(ctx.callstack[end-1].types, typename)
     end
@@ -91,38 +88,34 @@ function linttype(ex::Expr, ctx::LintContext)
         elseif typeof(def) == Symbol
             # it means Any, probably not a very efficient choice
             if !pragmaexists(utf8("Ignore untyped field $(def)"), ctx, deep=false)
-                msg(ctx, :I691, def, "a type is not given to the field $(def), " *
-                    "which can be slow.")
+                msg(ctx, :I691, def, "a type is not given to the field which can be slow")
             end
             push!(fields, (def, Any))
         elseif isexpr(def, :macrocall) && def.args[1] == Symbol("@lintpragma")
             lintlintpragma(def, ctx)
         elseif isexpr(def, :call) && def.args[1] == Symbol("lintpragma")
             lintlintpragma(def, ctx)
-            msg(ctx, :E425, "use @lintpragma macro inside type declaration")
+            msg(ctx, :E425, "use lintpragma macro inside type declaration")
         elseif def.head == :(::)
             if isexpr(def.args[2], :curly) && def.args[2].args[1] == :Array && length(def.args[2].args) <= 2 &&
                 !pragmaexists("Ignore dimensionless array field $(def.args[1])", ctx, deep=false)
-                msg(ctx, :I692, def.args[1], "array field $(def.args[1]) has no " *
-                    "dimension, which can be slow")
+                msg(ctx, :I692, def.args[1], "array field has no dimension which can be slow")
             end
             push!(fields, (def.args[1], def.args[2]))
         elseif def.head == :(=) && isexpr(def.args[1], :call) || def.head == :function
             # curly bracket doesn't belong here. catch it first before linting the rest of the function body
             if def.args[1].head == :tuple
                 # if julia supports anonymous constructor syntactic sugar, remove this, and make sure ctx.scope is type name
-                msg(ctx, :E417, "what is an anonymous function doing inside a type definition?")
+                msg(ctx, :E417, "anonymous function inside type definition")
             elseif isexpr(def.args[1].args[1], :curly)
                 for i in 2:length(def.args[1].args[1].args)
                     fp = def.args[1].args[1].args[i]
                     if typeof(fp) == Symbol && in(fp, typeparams)
-                        msg(ctx, :E523, fp, "constructor parameter (within curly " *
-                            "brackets) $(fp) collides with a type parameter")
+                        msg(ctx, :E523, fp, "constructor parameter collides with a type parameter")
                     end
                     if isexpr(fp, :(<:)) && in(fp.args[1], typeparams)
                         tmp = fp.args[1]
-                        msg(ctx, :E523, fp, "constructor parameter (within curly " *
-                            "brackets) $(tmp) collides with a type parameter")
+                        msg(ctx, :E523, tmp, "constructor parameter collides with a type parameter")
                     end
                 end
             end

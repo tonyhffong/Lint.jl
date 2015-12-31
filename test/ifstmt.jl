@@ -4,7 +4,7 @@ wrap(pos::Int, len::Int) = true ? 1 : (pos > len ? len : pos)
 msgs = lintstr(s)
 @test length(msgs) == 3
 @test msgs[1].code == :W643
-@test contains(msgs[1].message, "false branch")
+@test contains(msgs[1].message, "false branch is unreachable")
 @test msgs[2].code == :I382
 @test contains(msgs[2].message, "argument declared but not used")
 @test msgs[3].code == :I382
@@ -16,7 +16,7 @@ wrap(pos::Int, len::Int) = false ? 1 : (pos > len ? len : pos)
 msgs = lintstr(s)
 @test length(msgs) == 1
 @test msgs[1].code == :W642
-@test contains(msgs[1].message, "true branch")
+@test contains(msgs[1].message, "true branch is unreachable")
 @test msgs[1].line == 1
 
 s = """
@@ -24,21 +24,21 @@ f(x) = (x=1) ? 1 : 2 # clearly not what we want
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I472
-@test contains(msgs[1].message, "if-predicate")
+@test contains(msgs[1].message, "assignment in the if-predicate clause")
 
 s = """
 f(x) = ifelse(length(x), 1 , 2) # clearly not what we want
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E431
-@test contains(msgs[1].message, "incorrect usage of length")
+@test contains(msgs[1].message, "use of length() in a Boolean context, use isempty()")
 
 s = """
 f(x,y) = (0 <= x < y = 6) ? 1 : 2 # clearly not what we want
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I472
-@test contains(msgs[1].message, "if-predicate")
+@test contains(msgs[1].message, "assignment in the if-predicate clause")
 
 s = """
 function f()
@@ -49,7 +49,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W644
-@test contains(msgs[1].message, "redundant if-true")
+@test contains(msgs[1].message, "redundant if-true statement")
 
 s = """
 function f()
@@ -61,7 +61,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E431
-@test contains(msgs[1].message, "incorrect usage of length")
+@test contains(msgs[1].message, "use of length() in a Boolean context, use isempty()")
 
 s = """
 function f(b::Boolean, x::Int, y::Int)
@@ -96,9 +96,11 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E512
-@test contains(msgs[1].message, "Lint doesn't understand :a in a boolean context")
+@test msgs[1].variable == ":a"
+@test contains(msgs[1].message, "Lint doesn't understand in a boolean context")
 @test msgs[2].code == :E512
-@test contains(msgs[2].message, "Lint doesn't understand :b in a boolean context")
+@test msgs[2].variable == ":b"
+@test contains(msgs[2].message, "Lint doesn't understand in a boolean context")
 
 s = """
 function f(a, b)

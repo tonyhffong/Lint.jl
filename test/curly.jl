@@ -23,7 +23,7 @@ a = Set{(Int, Int)}()
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W441
-@test contains(msgs[1].message, "probably illegal use of")
+@test contains(msgs[1].message, "probably illegal use inside curly")
 
 s = """
 b = :Symbol

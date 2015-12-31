@@ -26,7 +26,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I391
-@test contains(msgs[1].message, "also a global")
+@test contains(msgs[1].message, "also a global from ")
 
 s = """
 y= 1

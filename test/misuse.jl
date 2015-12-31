@@ -12,7 +12,7 @@ x = d[]
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E121
-@test contains(msgs[1].message, "Lint does not understand")
+@test contains(msgs[1].message, "Lint does not understand the expression")
 
 s = """
 a = ""
@@ -20,4 +20,4 @@ a[]
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E121
-@test contains(msgs[1].message, "Lint does not understand")
+@test contains(msgs[1].message, "Lint does not understand the expression")

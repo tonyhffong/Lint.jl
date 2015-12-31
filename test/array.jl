@@ -4,14 +4,15 @@ r = [[1;2];[3;4]]
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W444
-@test contains(msgs[1].message, "nested vcat")
+@test contains(msgs[1].message, "nested vcat is treated as a 1-dimensional array")
 
 s = """
 r = [[1,2],[3,4]]
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E424
-@test contains(msgs[1].message, "nested vect")
+@test contains(msgs[1].message, "nested vect is treated as a 1-dimensional array. Use " *
+    "[a;b] instead")
 
 @assert [[1 2] [3 4]] == [1 2 3 4]
 s = """
@@ -19,7 +20,8 @@ r = [[1 2]  [3 4]]
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W445
-@test contains(msgs[1].message, "nested hcat")
+@test contains(msgs[1].message, "nested hcat is treated as a 1-row horizontal array of " *
+    "dim=2")
 
 s = """
 x = Any[[1,2],[7,8]]
@@ -36,7 +38,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E436
-@test contains(msgs[1].message, "has more indices than dimensions")
+@test contains(msgs[1].message, "more indices than dimensions")
 
 s = """
 function f(x::Array{Float64,2})
@@ -45,7 +47,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E436
-@test contains(msgs[1].message, "has more indices than dimensions")
+@test contains(msgs[1].message, "more indices than dimensions")
 
 s = """
 function f(x::Array{Float64,2})

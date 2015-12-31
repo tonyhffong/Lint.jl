@@ -137,7 +137,7 @@ function popcallstack(ctx::LintContext)
         if !b.used
             tmpline = ctx.line
             ctx.line = b.line
-            msg(ctx, :I381, "unused @lintpragma $p")
+            msg(ctx, :I381, p, "unused lintpragma")
             ctx.line = tmpline
         end
     end

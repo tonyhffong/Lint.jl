@@ -24,7 +24,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W545
-@test contains(msgs[1].message, "but now assigned")
+@test contains(msgs[1].message, "previously used variable has apparent type")
 @test msgs[end].code == :I271
 @test contains(msgs[end].message, "typeof(x) == Complex")
 
@@ -60,7 +60,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I474
-@test contains(msgs[1].message, "iteration generates tuples of")
+@test contains(msgs[1].message, "iteration generates tuples, 1 of 2 variables used")
 
 s = """
 function f(x)
@@ -72,7 +72,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W545
-@test contains(msgs[1].message, "but now assigned Float64")
+@test contains(msgs[1].message, "previously used variable has apparent type Int64, but " *
+    "now assigned Float64")
 
 s = """
 function f()
@@ -84,7 +85,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E518
-@test contains(msgs[1].message, "key type expects")
+@test msgs[1].variable == "a"
+@test contains(msgs[1].message, "key type expects Symbol, provided Int64")
 
 s = """
 function f(arr::Array{Any,1})
@@ -133,7 +135,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E525
-@test contains(msgs[1].message, "z is of an immutable type")
+@test msgs[1].variable == "z"
+@test contains(msgs[1].message, "is of an immutable type Complex")
 
 s = """
 n = 32
@@ -144,7 +147,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E521
-@test contains(msgs[1].message, "has apparent type DataType, not a container")
+@test msgs[1].variable == "a"
+@test contains(msgs[1].message, "apparent type DataType is not a container type")
 
 s = """
 function f()
@@ -229,7 +233,7 @@ s = Union(Int,Double)
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E421
-@test contains(msgs[1].message, "use Union")
+@test contains(msgs[1].message, "use Union{...}, with curly, instead of parentheses")
 
 s = """
 a = 1.0

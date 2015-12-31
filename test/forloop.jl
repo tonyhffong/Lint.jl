@@ -8,7 +8,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I474
-@test contains(msgs[1].message, "iteration generates tuples of")
+@test contains(msgs[1].message, "iteration generates tuples, 1 of 2 variables used")
 
 s = """
 function f(x)
@@ -69,4 +69,4 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I474
-@test contains(msgs[1].message, "iteration generates tuples of")
+@test contains(msgs[1].message, "iteration generates tuples, 1 of 2 variables used")

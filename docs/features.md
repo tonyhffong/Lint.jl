@@ -136,7 +136,7 @@ julia> s = """
        """
 julia> lintstr(s)
 1-element Array{Lint.LintMessage,1}:
- none:3 E321 bar: use of undeclared symbol bar
+ none:3 E321 bar: use of undeclared symbol
 ```
 Using the keyword argument `ignore` you can create a [LintContext](context/#lintcontext) that will ignore any messages you specified.
 `ignore` takes and array of `LintIgnore`. `LintIgnore` is a combinition of a messages error code and the messages variable.

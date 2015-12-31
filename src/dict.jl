@@ -25,7 +25,7 @@ function lintdict4(ex::Expr, ctx::LintContext)
         if typeof(a) == Expr && a.head == :(=>)
             if typeof(a.args[1]) != Expr
                 if in(a.args[1], ks)
-                    msg(ctx, :E334, a.args[1], "duplicate key in Dict: $(a.args[1])")
+                    msg(ctx, :E334, a.args[1], "duplicate key in Dict")
                 end
                 push!(ks, a.args[1])
             end

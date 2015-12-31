@@ -7,7 +7,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W341
-@test contains(msgs[1].message, "declared but not used")
+@test contains(msgs[1].message, "local variable declared but not used")
 @test msgs[1].line == 2
 
 s = """
@@ -18,7 +18,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W341
-@test contains(msgs[1].message, "declared but not used")
+@test contains(msgs[1].message, "local variable declared but not used")
 @test msgs[1].line == 2
 
 s = """
@@ -32,7 +32,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W341
-@test contains(msgs[1].message, "declared but not used")
+@test contains(msgs[1].message, "local variable declared but not used")
 
 s = """
 function f(x)
@@ -43,7 +43,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W341
-@test contains(msgs[1].message, "declared but not used")
+@test contains(msgs[1].message, "local variable declared but not used")
 
 s = """
 function f(x)
@@ -54,7 +54,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W341
-@test contains(msgs[1].message, "declared but not used")
+@test contains(msgs[1].message, "local variable declared but not used")
 
 s = """
 function f(x)

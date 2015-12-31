@@ -21,7 +21,7 @@ function lintifexpr(ex::Expr, ctx::LintContext)
                 isexpr(ex.args[2].args[2], :call) && ex.args[2].args[2].args[1] == :(!) ||
                 isexpr(ex.args[2].args[2], [:(&&), :(||)]) &&
                 !isexpr(ex.args[2].args[2].args[end], [:call, :error, :throw, :return]))
-            msg(ctx, :I571, "the 1st statement under the true-branch is a boolean expression. Typo?")
+            msg(ctx, :I571, "the 1st statement under the true-branch is a boolean expression")
         end
         (verconstraint1, verconstraint2) = versionconstraint(ex.args[1])
         if verconstraint1 != nothing
@@ -129,7 +129,7 @@ function lintboolean(ex, ctx::LintContext)
         if ex.head == :(=)
             msg(ctx, :I472, "assignment in the if-predicate clause")
         elseif ex.head == :call && ex.args[1] in [:(&), :(|), :($)]
-            msg(ctx, :W442, ex.args[1], "bit-wise $(ex.args[1]) in a boolean " *
+            msg(ctx, :W442, ex.args[1], "bit-wise in a boolean " *
                 "context. (&,|) do not have short-circuit behavior")
         elseif ex.head == :(&&) || ex.head == :(||)
             n = length(ex.args)
@@ -144,17 +144,16 @@ function lintboolean(ex, ctx::LintContext)
         elseif ex.head == :comparison
             lintcomparison(ex, ctx)
         elseif ex.head == :call && ex.args[1] == :length
-            msg(ctx, :E431, ex.args[1], "incorrect usage of length() in a Boolean " *
-                "context. You want to use isempty()")
+            msg(ctx, :E431, ex.args[1], "use of length() in a Boolean context, use isempty()")
         end
     elseif typeof(ex) == Symbol
         # can we figure of if that symbol is Bool?
         gt = guesstype(ex, ctx)
         if gt != Any && gt != Bool
-            msg(ctx, :E511, ex, "variable $(ex) has apparent non-Bool type")
+            msg(ctx, :E511, ex, "apparent non-Bool type")
         end
     elseif typeof(ex) != Bool
-        msg(ctx, :E512, ex, "Lint doesn't understand $(ex) in a boolean context")
+        msg(ctx, :E512, ex, "Lint doesn't understand in a boolean context")
     end
 
     if typeof(ex) <: Expr || typeof(ex) == Symbol
@@ -245,7 +244,7 @@ function lintcomprehension(ex::Expr, ctx::LintContext; typed::Bool = false)
             declvtype = ex.args[1]
             if declvtype == TopNode(:Any) && VERSION < v"0.4-"
                 msg(ctx, :I485, "untyped dictionary {a for a in c}, may be " *
-                    "deprecated by Julia 0.4. Use (Any)[a for a in c].")
+                    "deprecated by Julia 0.4. Use (Any)[a for a in c]")
             end
         end
     end

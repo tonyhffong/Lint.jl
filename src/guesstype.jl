@@ -440,8 +440,7 @@ function guesstype(ex, ctx::LintContext)
                 elt = parsetype(ex.args[1])
                 return Array{elt, 1}
             elseif what == :Any
-                msg(ctx, :W543, ex.args[1], "Lint cannot determine if $(ex.args[1]) " *
-                    "is a DataType or not")
+                msg(ctx, :W543, ex.args[1], "Lint cannot determine if DataType or not")
                 return Any
             end
         end
@@ -451,7 +450,7 @@ function guesstype(ex, ctx::LintContext)
             return Any
         elseif partyp <: UnitRange
             if length(ex.args) < 2
-                msg(ctx, :E121, ex.args[1], "Lint does not understand: $(ex.args[1])")
+                msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
                 return Any
             end
             ktypeactual = guesstype(ex.args[2], ctx)
@@ -473,7 +472,7 @@ function guesstype(ex, ctx::LintContext)
                     if nd == 0 && ex.args[2] == 1 # ok to do A[1] for a 0-dimensional array
                         return eletyp
                     else
-                        msg(ctx, :E436, ex, "$(ex) has more indices than dimensions")
+                        msg(ctx, :E436, ex, "more indices than dimensions")
                         return Any
                     end
                 end
@@ -506,24 +505,23 @@ function guesstype(ex, ctx::LintContext)
             ktypeexpect = keytype(partyp)
             vtypeexpect = valuetype(partyp)
             if length(ex.args) < 2
-                msg(ctx, :E121, ex.args[1], "Lint does not understand: $(ex.args[1])")
+                msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
                 return Any
             end
             ktypeactual = guesstype(ex.args[2], ctx)
             if ktypeactual != Any && !(ktypeactual <: ktypeexpect)
-                msg(ctx, :E518, ktypeactual, "key type expects $(ktypeexpect), " *
+                msg(ctx, :E518, ex.args[2], "key type expects $(ktypeexpect), " *
                     "provided $(ktypeactual)")
             end
             return vtypeexpect
         elseif partyp <: AbstractString
             if length(ex.args) < 2
-                msg(ctx, :E121, ex.args[1], "Lint does not understand: $(ex.args[1])")
+                msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
                 return Any
             end
             ktypeactual = guesstype(ex.args[2], ctx)
             if ktypeactual != Any && !(ktypeactual <: Integer) && !(ktypeactual <: Range)
-                msg(ctx, :E519, ktypeactual, "string[] expects Integer, provided " *
-                    "$(ktypeactual)")
+                msg(ctx, :E519, ex.args[2], "string[] expects Integer, provided $(ktypeactual)")
             end
             if ktypeactual <: Integer
                 return Char
@@ -568,8 +566,7 @@ function guesstype(ex, ctx::LintContext)
         =#
         elseif partyp != Any
             if ctx.versionreachable(VERSION) && !pragmaexists("$(partyp) is a container type", ctx)
-                msg(ctx, :E521, partyp, "$(ex.args[1]) has apparent type " *
-                    "$(partyp), not a container type")
+                msg(ctx, :E521, ex.args[1], "apparent type $(partyp) is not a container type")
             end
         end
         return Any

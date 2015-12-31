@@ -105,7 +105,7 @@ function parseDeprecate(ex, lineabs)
         if typeof(ex.args[2]) == Symbol
             funcname = ex.args[2]
             sig = nothing
-            msg = string(ex.args[2], " is deprecated. Use ", ex.args[3], " instead.")
+            msg = string(ex.args[2], " is deprecated. Use ", ex.args[3], " instead")
             if !haskey(deprecates, funcname)
                 deprecates[funcname] =  DeprecateInfo[]
             end
@@ -126,7 +126,7 @@ function parseDeprecate(ex, lineabs)
             if !haskey(deprecates, funcname)
                 deprecates[funcname] =  DeprecateInfo[]
             end
-            msg = string(oldcall, " is deprecated. Use ", newcall, " instead.")
+            msg = string(oldcall, " is deprecated. Use ", newcall, " instead")
             push!(deprecates[funcname], DeprecateInfo(funcname, sig, msg, lineabs))
         end
     end

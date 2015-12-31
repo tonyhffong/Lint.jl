@@ -18,7 +18,7 @@ function lintmodule(ex::Expr, ctx::LintContext)
     undefs = setdiff(undefs, stacktop.imports)
 
     for sym in undefs
-        msg(ctx, :E322, sym, "exporting undefined symbol $(sym)")
+        msg(ctx, :E322, sym, "exporting undefined symbol")
     end
     popcallstack(ctx)
 end
@@ -63,7 +63,7 @@ function lintusing(ex::Expr, ctx::LintContext)
             end
         else
             if !pragmaexists("Ignore undefined module $(path)", ctx)
-                msg(ctx, :W541, path, "$(path) doesn't eval into a Module")
+                msg(ctx, :W541, path, "doesn't eval into a Module")
             end
         end
     end
@@ -75,7 +75,7 @@ function lintexport(ex::Expr, ctx::LintContext)
     end
     for sym in ex.args
         if in(sym, ctx.callstack[end].exports)
-            msg(ctx, :E333, sym, "duplicate exports of symbol $(sym)")
+            msg(ctx, :E333, sym, "duplicate exports of symbol")
         else
             push!(ctx.callstack[end].exports, sym)
         end

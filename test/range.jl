@@ -1,9 +1,9 @@
 s = """
-r = 10:1
+r = 5:1
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E433
-@test contains(msgs[1].message, "decreasing range")
+@test contains(msgs[1].message, "for a decreasing range, use a negative step e.g. 10:-1:1")
 
 s = """
 x = [1,2,7,8]

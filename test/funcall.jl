@@ -45,7 +45,9 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E534
-@test contains(msgs[1].message, "unrelated to the type")
+@test msgs[1].variable == "Int64"
+@test contains(msgs[1].message, "introducing a new name for an implicit argument to the " *
+    "function, use {T<:Int64}")
 
 s = """
 function f{T<:Int64}(x::T, y::T)
@@ -54,7 +56,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E513
-@test contains(msgs[1].message, "leaf type")
+@test msgs[1].variable == "T <: Int64"
+@test contains(msgs[1].message, "leaf type as a type constraint makes no sense")
 
 s = """
 function f{Int<:Real}(x::Int, y::Int)
@@ -63,7 +66,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E536
-@test contains(msgs[1].message, "known type")
+@test contains(msgs[1].message, "use {T<:...} instead of a known type")
 
 s = """
 function f(x, args...)
@@ -80,7 +83,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E413
-@test contains(msgs[1].message, "can only be the last argument")
+@test contains(msgs[1].message, "positional ellipsis ... can only be the last argument")
 
 s = """
 function f(x=1, y, args...)
@@ -89,7 +92,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E411
-@test contains(msgs[1].message, "non-default argument following default")
+@test contains(msgs[1].message, "non-default argument following default arguments")
 
 s = """
 function f(x, y; z, q=1)
@@ -98,7 +101,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E423
-@test contains(msgs[1].message, "must have a default")
+@test contains(msgs[1].message, "named keyword argument must have a default")
 
 s = """
 function f(x, y; args..., z=1)
@@ -107,7 +110,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E412
-@test contains(msgs[1].message, "can only be the last argument")
+@test contains(msgs[1].message, "named ellipsis ... can only be the last argument")
 
 s = """
 function f(x, args...; kwargs...)
@@ -124,7 +127,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E533
-@test contains(msgs[1].message, "type parameters in Julia are invariant")
+@test contains(msgs[1].message, "type parameters are invariant, try f{T<:Number}(x::T)...")
 
 s = """
 function f(x::Dict{Symbol,Number})
@@ -133,7 +136,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E533
-@test contains(msgs[1].message, "type parameters in Julia are invariant")
+@test contains(msgs[1].message, "type parameters are invariant, try f{T<:Number}(x::T)...")
 
 s = """
 function f(x, y)
@@ -143,7 +146,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E414
-@test contains(msgs[1].message, "using is not allowed inside function")
+@test contains(msgs[1].message, "using is not allowed inside function definitions")
 
 s = """
 function f(x, y)
@@ -153,7 +156,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E416
-@test contains(msgs[1].message, "import is not allowed inside function")
+@test contains(msgs[1].message, "import is not allowed inside function definitions")
 
 s = """
 function f(x, y)
@@ -163,7 +166,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E415
-@test contains(msgs[1].message, "export is not allowed inside function")
+@test contains(msgs[1].message, "export is not allowed inside function definitions")
 
 s = """
 function f(x; y = 1, z::Int = 0.1)
@@ -238,7 +241,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W355
-@test contains(msgs[1].message, "variable f == function name")
+@test msgs[1].variable == "f"
+@test contains(msgs[1].message, "conflicts with function name")
 
 s = """
 function f(x)

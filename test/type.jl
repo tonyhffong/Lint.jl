@@ -13,7 +13,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E535
-@test contains(msgs[1].message, "unrelated to the type")
+@test msgs[1].variable == "Int64"
+@test contains(msgs[1].message, "introducing a new name for an algebric data type")
 
 s = """
 type MyType{Int64} <: Float64
@@ -21,25 +22,28 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E535
-@test contains(msgs[1].message, "unrelated to the type")
+@test msgs[1].variable == "Int64"
+@test contains(msgs[1].message, "introducing a new name for an algebric data type")
 
 s = """
 type MyType{T<:Int}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == :E514
-@test contains(msgs[1].message, "leaf type")
+@test msgs[1].code == :E513
+@test msgs[1].variable == "T <: Int"
+@test contains(msgs[1].message, "leaf type as a type constraint makes no sense")
 
 s = """
 type MyType{T<:Int, Int<:Real}
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == :E514
-@test contains(msgs[1].message, "leaf type")
+@test msgs[1].code == :E513
+@test msgs[1].variable == "T <: Int"
+@test contains(msgs[1].message, "leaf type as a type constraint makes no sense")
 @test msgs[2].code == :E538
-@test contains(msgs[2].message, "parametric data type")
+@test contains(msgs[2].message, "known type in parametric data type, use {T<:...}")
 
 s = """
 type MyType{Int<:Real}
@@ -47,7 +51,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E538
-@test contains(msgs[1].message, "instead of a known type")
+@test contains(msgs[1].message, "known type in parametric data type, use {T<:...}")
 
 s = """
 type SomeType
@@ -57,7 +61,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E538
-@test contains(msgs[1].message, "instead of a known type")
+@test contains(msgs[1].message, "known type in parametric data type, use {T<:...}")
 
 s = """
 type MyType{T<:Integer}
@@ -78,7 +82,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E517
-@test contains(msgs[1].message, "constructor-like function")
+@test msgs[1].variable == "MyTypo"
+@test contains(msgs[1].message, "constructor-like function name doesn't match type MyType")
 
 s = """
 type MyType
@@ -100,7 +105,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E535
-@test contains(msgs[1].message, "unrelated to the type")
+@test msgs[1].variable == "TT"
+@test contains(msgs[1].message, "introducing a new name for an algebric data type")
 
 s = """
 abstract SomeAbsType
@@ -150,7 +156,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I691
-@test contains(msgs[1].message, "a type is not given to the field a")
+@test msgs[1].variable == "a"
+@test contains(msgs[1].message, "a type is not given to the field which can be slow")
 
 s = """
 type MyType
@@ -168,7 +175,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I692
-@test contains(msgs[1].message, "array field a has no dimension")
+@test msgs[1].variable == "a"
+@test contains(msgs[1].message, "array field has no dimension which can be slow")
 
 s = """
 type MyType
@@ -187,7 +195,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E425
-@test contains(msgs[1].message, "use @lintpragma macro inside type declaration")
+@test contains(msgs[1].message, "use lintpragma macro inside type declaration")
 
 s = """
 bitstype a 8
@@ -223,9 +231,10 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E417
-@test contains(msgs[1].message, "what is an anonymous function doing inside a type definition")
+@test contains(msgs[1].message, "anonymous function inside type definition")
 @test msgs[2].code == :E517
-@test contains(msgs[2].message, "constructor-like function")
+@test msgs[2].variable == ""
+@test contains(msgs[2].message, "constructor-like function name doesn't match type MyType")
 
 s = """
 type MyType
@@ -246,7 +255,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E523
-@test contains(msgs[1].message, "constructor parameter (within curly brackets)")
+@test msgs[1].variable == "T"
+@test contains(msgs[1].message, "constructor parameter collides with a type parameter")
 
 s = """
 type MyType{T}
@@ -256,7 +266,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E523
-@test contains(msgs[1].message, "constructor parameter (within curly brackets)")
+@test msgs[1].variable == "T"
+@test contains(msgs[1].message, "constructor parameter collides with a type parameter")
 
 s = """
 type MyType{T}
@@ -319,4 +330,4 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I771
-@test contains(msgs[1].message, "Julia style recommends type names start with an upper case")
+@test contains(msgs[1].message, "type names should start with an upper case")

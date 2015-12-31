@@ -8,7 +8,7 @@ end
 msgs = lintstr(s)
 
 @test msgs[1].code == :W352
-@test contains(msgs[1].message, "lambda argument")
+@test contains(msgs[1].message, "lambda argument conflicts with a local variable")
 
 s = """
 function f(x)
@@ -17,7 +17,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W353
-@test contains(msgs[1].message, "lambda argument")
+@test contains(msgs[1].message, "lambda argument conflicts with an argument")
 
 s = """
 x = 1
@@ -28,7 +28,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W354
-@test contains(msgs[1].message, "lambda argument")
+@test contains(msgs[1].message, "lambda argument conflicts with an declared global")
 
 s = """
 function f()
