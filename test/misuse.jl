@@ -21,3 +21,21 @@ a[]
 msgs = lintstr(s)
 @test msgs[1].code == :E121
 @test contains(msgs[1].message, "Lint does not understand the expression")
+
+s = """
+local 5
+"""
+msgs = lintstr(s)
+@test msgs[1].code == :E135
+@test msgs[1].variable == "5"
+@test contains(msgs[1].message, "local declaration not understood by Lint")
+
+s = """
+a = 5
+if a
+end
+"""
+msgs = lintstr(s)
+@test msgs[1].code == :E511
+@test msgs[1].variable == "a"
+@test contains(msgs[1].message, "apparent non-Bool type")
