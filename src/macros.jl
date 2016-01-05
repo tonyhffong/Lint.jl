@@ -1,5 +1,5 @@
 function lintmacro(ex::Expr, ctx::LintContext)
-    if !isa(ex.args[1], Expr) || length(ex.args[1].args) < 2
+    if !isa(ex.args[1], Expr) || isempty(ex.args[1].args)
         msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
         return
     end
