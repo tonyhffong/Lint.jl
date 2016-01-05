@@ -1,5 +1,9 @@
 # Frequently Asked Questions
 
+## What can Lint.jl find?
+See [what can it find](features/#what-can-it-find).
+
+
 ## Lint is giving me a false positive. What should I do?
 If Lint.jl is giving you a warning that you disagree with you have 2 choices:
 

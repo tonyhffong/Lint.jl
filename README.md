@@ -7,7 +7,7 @@
 [![Lint](http://pkg.julialang.org/badges/Lint_0.5.svg)](http://pkg.julialang.org/?pkg=Lint&ver=0.5)
 
 
-Lint.jl is a tool to hunt for imperfections and dodgy structures that could be improved.
+Lint.jl is a tool that uses static analysis to assist in the development process by detecting common bugs and potential issues.
 
 
 ## Installation
@@ -16,6 +16,15 @@ Lint.jl can be installed through the Julia package manager:
 ```julia
 Pkg.add("Lint")
 ```
+
+
+## Usage
+
+There are 3 functions you can use to lint your code.
+
+* `lintpkg("MyPackage")` for linting an entire package
+* `lintfile("my_file.jl")` for linting a file
+* `lintstr("my string")` for linting a string
 
 
 ## Documentation

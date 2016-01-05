@@ -1,6 +1,6 @@
 # Getting Started
 
-You have [installed Lint.jl](../#installation) and now you want to use it to find potential problems in your code. There are 3 function you can use to lint your code.
+You have installed Lint.jl and now you want to use it to find potential problems in your code. There are 3 functions you can use to lint your code.
 
 * [lintpkg](#lintpkg) for linting an entire package
 * [lintfile](#lintfile) for linting a file

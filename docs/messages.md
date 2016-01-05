@@ -36,11 +36,9 @@ errors = filter(i -> !isinfo(i), lintpkg("MyPackage", returnMsgs=true))
 ## Errors codes
 Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or `I`:`INFO` then has 3 numbers identifying the error. Below is a complete list of error codes:
 
-| code | message |
-|:----:|:--------|
-|      |         |
+| code | sample message |
+|:----:|:---------------|
 |**E1**| *Parsing Error*
-|      |         |
 | E111 | failed to parse
 | E112 | incomplete expression
 | E121 | Lint does not understand the expression
@@ -53,17 +51,13 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E137 | lintpragma must be called using only string literals
 | E138 | incomplete pragma expression
 | E139 | Lint fails to parse type: error
-|      |         |
-|      |         |
+|      |
 |**E2**| *Miscellaneous Error*
-|      |         |
 | E211 | deprecated message
 | E221 | custum error
 | E231 | error; Signature: ...
-|      |         |
-|      |         |
+|      |
 |**E3**| *Existence Error*
-|      |         |
 | E311 | cannot find include file
 | E321 | use of undeclared symbol
 | E322 | exporting undefined symbol
@@ -71,10 +65,8 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E332 | should not be used as a variable name
 | E333 | duplicate exports of symbol
 | E334 | duplicate key in Dict
-|      |         |
-|      |         |
+|      |
 |**E4**| *Usage Error*
-|      |         |
 | E411 | non-default argument following default arguments
 | E412 | named ellipsis ... can only be the last argument
 | E413 | positional ellipsis ... can only be the last argument
@@ -94,10 +86,8 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E434 | value at position #i is the referenced x. Possible typo?
 | E435 | new is provided with more arguments than fields
 | E436 | more indices than dimensions
-|      |         |
-|      |         |
+|      |
 |**E5**| *Type Error*
-|      |         |
 | E511 | apparent non-Bool type
 | E512 | lint doesn't understand expresion in a boolean context
 | E513 | leaf type as a type constraint it makes no sense
@@ -118,21 +108,15 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E536 | use {T<:...} instead of a known type
 | E537 | non-existent constructor, use string() for string conversion
 | E538 | known type in parametric data type, use {T<:...}
-|      |         |
-|      |         |
+|      |
 |**E6**| *Structure Error*
-|      |         |
 | E611 | constructor doesn't seem to return the constructed object
-|      |         |
-|      |         |
+|      |
 |**W2**| *Miscellaneous Warning*
-|      |         |
 | W241 | custum warning
 | W251 | error; Symbol= X; rhstype= ...
-|      |         |
-|      |         |
+|      |
 |**W3**| *Existence Warning*
-|      |         |
 | W341 | local variable declared but not used
 | W351 | redefining mathematical constant
 | W352 | lambda argument conflicts with a local variable
@@ -140,10 +124,8 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W354 | lambda argument conflicts with an declared global
 | W355 | conflicts with function name
 | W356 | local variable might cause confusion with a synonymous export from Base
-|      |         |
-|      |         |
+|      |
 |**W4**| *Usage Warning*
-|      |         |
 | W441 | probably illegal use of inside curly
 | W442 | bit-wise in a boolean context. (&,|) do not have short-circuit behavior
 | W443 | did you forget an -> after @doc or make it inline?
@@ -151,47 +133,35 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W445 | nested hcat is treated as a 1-row horizontal array of dim=2
 | W446 | too many type parameters
 | W447 | can't be #i type parameter for h; it should be of type t2
-|      |         |
-|      |         |
+|      |
 |**W5**| *Type Warning*
-|      |         |
 | W541 | doesn't eval into a Module
 | W542 | comparing apparently incompatible types
 | W543 | cannot determine if DataType or not
 | W544 | cannot determine if DataType or not
 | W545 | previously used variable has apparent type X, but now assigned Y
-|      |         |
-|      |         |
+|      |
 |**W6**| *Structure Warning*
-|      |         |
 | W641 | unreachable code after return
 | W642 | true branch is unreachable
 | W643 | false branch is unreachable
 | W644 | redundant if-true statement
 | W645 | while false block is unreachable
 | W651 | the last of a expresion block looks different. Avg similarity score: X; Last part: Y
-|      |         |
-|      |         |
+|      |
 |**I1**| *Parsing Info*
-|      |         |
 | I171 | LHS in assignment not understood by Lint
-|      |         |
-|      |         |
+|      |
 |**I2**| *Miscellaneous Info*
-|      |         |
 | I271 | custum info
-|      |         |
-|      |         |
+|      |
 |**I3**| *Existence Info*
-|      |         |
 | I371 | use of undeclared symbol
 | I381 | unused lintpragma
 | I382 | argument declared but not used
 | I391 | also a global from src
-|      |         |
-|      |         |
+|      |
 |**I4**| *Usage Info*
-|      |         |
 | I472 | assignment in the if-predicate clause
 | I473 | value at position #i is the referenced y. OK if it represents permutations
 | I474 | iteration generates tuples, n of m variables used
@@ -202,28 +172,19 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I485 | untyped dictionary {a for a in c}, may be deprecated. Use (Any)[a for a in c]
 | I486 | dictionary [a=>b,...], may be deprecated. Use @compat Dict(a=>b,...)
 | I487 | (K=>V)[a=>b,...] may be deprecated. Use @compat Dict{K,V}(a=>b,...)
-|      |         |
-|      |         |
+|      |
 |**I5**| *Type Info*
-|      |         |
 | I571 | the 1st statement under the true-branch is a boolean expression
 | I572 | assert x type= X but assign a value of Y
 | I581 | there is only 1 key type && 1 value type. Use explicit Dict{K,V}() for better performances
-|      |         |
-|      |         |
+|      |
 |**I6**| *Structure Info*
-|      |         |
 | I671 | new is provided with fewer arguments than fields
 | I672 | iteration works for a number but it may be a typo
 | I681 | ambiguity of :end as a symbol vs as part of a range
 | I682 | ambiguity of [end -n] as a matrix row vs index [end-n]
 | I691 | a type is not given to the field which can be slow
 | I692 | array field has no dimension which can be slow
-|      |         |
-|      |         |
+|      |
 |**I7**| *Style Info*
-|      |         |
 | I771 | type names should start with an upper case
-|      |         |
-|      |         |
-|      |         |
