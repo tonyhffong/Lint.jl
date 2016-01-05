@@ -39,3 +39,14 @@ msgs = lintstr(s)
 @test msgs[1].code == :E511
 @test msgs[1].variable == "a"
 @test contains(msgs[1].message, "apparent non-Bool type")
+
+s = """
+d = Dict{int, int}()
+"""
+msgs = lintstr(s)
+@test msgs[1].code == :W441
+@test msgs[1].variable == "int"
+@test contains(msgs[1].message, "probably illegal use inside curly")
+@test msgs[2].code == :W441
+@test msgs[2].variable == "int"
+@test contains(msgs[2].message, "probably illegal use inside curly")

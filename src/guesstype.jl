@@ -40,14 +40,19 @@ function isAnyOrTupleAny(x)
     return false
 end
 
+function evaltype(ex)
+    ret = Any
+    try
+        ret = eval(Main, ex)
+    end
+    return isa(ret, DataType) ? ret : Any
+end
+
 # ex should be a type. figure out what it is
 function parsetype(ex)
     ret = Any
     if typeof(ex) <: Symbol
-        try
-            ret = eval(Main, ex)
-        end
-        return ret
+        return evaltype(ex)
     elseif typeof(ex) <: Expr
         if isexpr(ex, :curly)
             if ex.args[1] == :Array
@@ -55,10 +60,7 @@ function parsetype(ex)
                 if length(ex.args) == 1
                     return Array
                 elseif length(ex.args) >= 2
-                    elt = Any
-                    try
-                        elt = eval(Main, ex.args[2])
-                    end
+                    elt = evaltype(ex.args[2])
                     if length(ex.args) == 2
                         return Array{elt}
                     elseif typeof(ex.args[3]) <: Integer
@@ -152,8 +154,7 @@ function guesstype(ex, ctx::LintContext)
             end
         end
         try
-            tmp = eval(Main, ex)
-            return typeof(tmp)
+            return typeof(eval(ex))
         end
         return Any
     end
@@ -179,11 +180,7 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :(::)) && length(ex.args) == 2
-        t = Any
-        try
-            t = eval(Main, ex.args[2])
-        end
-        return t
+        return evaltype(ex.args[2])
     end
 
     if isexpr(ex, :block)
@@ -191,11 +188,7 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :call) && ex.args[1] == :convert && typeof(ex.args[2]) == Symbol
-        ret = Any
-        try
-            ret = eval(Main, ex.args[2])
-        end
-        return ret
+        return evaltype(ex.args[2])
     end
 
     # this is hackish because the return type is a Symbol, not a DataType
@@ -278,8 +271,7 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :call) && isexpr(ex.args[1], :curly)
-        ret=parsetype(ex.args[1])
-        return ret
+        return parsetype(ex.args[1])
     end
 
     if isexpr(ex, :call) && ex.args[1] == :rand
@@ -292,10 +284,7 @@ function guesstype(ex, ctx::LintContext)
 
     if isexpr(ex, :call) && ex.args[1] == :Array
         ret = Array
-        elt = Any
-        try
-            elt = eval(Main, ex.args[2])
-        end
+        elt = evaltype(ex.args[2])
 
         try
             if length(ex.args) == 3
@@ -327,10 +316,8 @@ function guesstype(ex, ctx::LintContext)
         for i = 2:length(ex.args)
             push!(sig, guesstype(ex.args[i], ctx))
         end
-        elt = Any
-        try
-            elt = eval(Main, ex.args[2])
-        end
+
+        elt = evaltype(ex.args[2])
         if length(sig) >= 1 && sig[1] == DataType
             if length(sig) == 2 && isexpr(ex.args[3], :tuple)
                 ret = Array{elt, length(ex.args[3].args)}
@@ -535,7 +522,7 @@ function guesstype(ex, ctx::LintContext)
                     return Any
                 end
                 if length(partyp) == 1 || partyp[1].name.name == :Vararg
-                    return eval(Main, partyp[1].name.name)
+                    return evaltype(partyp[1].name.name)
                 end
                 elt = partyp[1]
                 if all(x->x == elt, partyp)
@@ -547,7 +534,7 @@ function guesstype(ex, ctx::LintContext)
                 end
                 if length(partyp.parameters) == 1 || partyp.parameters[1].name.name == :Vararg
                     if typeof(partyp.parameters[1].parameters[1]) <: DataType
-                        return eval(Main, partyp.parameters[1].parameters[1].name.name)
+                        return evaltype(partyp.parameters[1].parameters[1].name.name)
                     end
                 end
                 elt = partyp.parameters[1]
@@ -580,11 +567,7 @@ function guesstype(ex, ctx::LintContext)
 
     if isexpr(ex, :typed_dict) && isexpr(ex.args[1], :(=>)) &&
         typeof(ex.args[1].args[1]) == Symbol && typeof(ex.args[1].args[2]) == Symbol
-        ret = Dict
-        try
-            ret = Dict{eval(Main, ex.args[1].args[1]), eval(Main, ex.args[1].args[2])}
-        end
-        return ret
+        return Dict{evaltype(ex.args[1].args[1]), evaltype(ex.args[1].args[2])}
     end
     if isexpr(ex, :dict)
         return Dict
