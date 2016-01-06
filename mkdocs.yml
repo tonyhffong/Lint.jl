@@ -1,0 +1,14 @@
+site_name: Lint.jl
+repo_url: https://github.com/tonyhffong/Lint.jl.git
+site_description: A lint tool for Julia code
+pages:
+- Introduction: index.md
+- Getting Started: getting-started.md
+- Messages: messages.md
+- Features: features.md
+- Context: context.md
+- Frequently Asked Questions: faq.md
+theme: readthedocs
+markdown_extensions:
+- toc:
+    permalink: True

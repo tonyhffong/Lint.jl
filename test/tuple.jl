@@ -1,23 +1,28 @@
 s = """
     (a,b) = (1,2,3)
 """
-msgs = lintstr( s )
-@assert( contains( msgs[1].message, "RHS is a tuple of" ) )
+msgs = lintstr(s)
+@test msgs[1].code == :E418
+@test contains(msgs[1].message, "RHS is a tuple, 2 of 3 variables used")
+
 s = """
     a, = (1,2,3)
 """
-msgs = lintstr( s )
-@assert( isempty( msgs ) )
+msgs = lintstr(s)
+@test isempty(msgs)
+
 s = """
 function f()
     (a,b,c) = (1,2,3)
     return (b,c,a)
 end
 """
-msgs = lintstr( s )
-@assert( isempty( msgs ) )
+msgs = lintstr(s)
+@test isempty(msgs)
+
 s = """
     (a,b,c) = (1,2)
 """
-msgs = lintstr( s )
-@assert( contains( msgs[1].message, "RHS is a tuple of" ) )
+msgs = lintstr(s)
+@test msgs[1].code == :E418
+@assert contains(msgs[1].message, "RHS is a tuple, 3 of 2 variables used")

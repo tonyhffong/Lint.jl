@@ -7,8 +7,8 @@ return(s)
 end
 """
 
-msgs = lintstr( s )
-@test( isempty(msgs) )
+msgs = lintstr(s)
+@test isempty(msgs)
 
 # can you spot the error?
 s = """
@@ -21,7 +21,8 @@ end
 """
 
 ctx = LintContext()
-ctx.ignoreState.ignore[ :similarity ] = false
-msgs = lintstr( s, ctx )
-@test( length(msgs)==1 )
-@test( contains( msgs[1].message, "looks different" ) )
+filter!(i->!(i==Lint.LintIgnore(:W651, "")), ctx.ignore)
+msgs = lintstr(s, ctx)
+@test length(msgs) == 1
+@test msgs[1].code == :W651
+@test contains(msgs[1].message, "looks different")

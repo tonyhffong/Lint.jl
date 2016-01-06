@@ -1,0 +1,1 @@
+testglobal = 42

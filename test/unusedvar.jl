@@ -6,8 +6,10 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "declared but not used" ))
-@test( msgs[1].line == 2 )
+@test msgs[1].code == :W341
+@test contains(msgs[1].message, "local variable declared but not used")
+@test msgs[1].line == 2
+
 s = """
 function f(x)
     local (a,b) = (1,2)
@@ -15,19 +17,23 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "declared but not used" ))
-@test( msgs[1].line == 2 )
+@test msgs[1].code == :W341
+@test contains(msgs[1].message, "local variable declared but not used")
+@test msgs[1].line == 2
+
 s = """
 function f(x)
     let a = 1
         b = 2
         y = x+b
-        println( y )
+        println(y)
     end
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "declared but not used" ))
+@test msgs[1].code == :W341
+@test contains(msgs[1].message, "local variable declared but not used")
+
 s = """
 function f(x)
     local a::Int
@@ -36,7 +42,9 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "declared but not used" ))
+@test msgs[1].code == :W341
+@test contains(msgs[1].message, "local variable declared but not used")
+
 s = """
 function f(x)
     local a
@@ -45,14 +53,16 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "declared but not used" ))
+@test msgs[1].code == :W341
+@test contains(msgs[1].message, "local variable declared but not used")
+
 s = """
 function f(x)
     x+=1
 end
 """
 msgs = lintstr(s)
-@test( isempty( msgs ) )
+@test isempty(msgs)
 
 s = """
 function f(x...)
@@ -60,4 +70,4 @@ function f(x...)
 end
 """
 msgs = lintstr(s)
-@test isempty( msgs )
+@test isempty(msgs)

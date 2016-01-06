@@ -4,8 +4,8 @@ function f(x)
     x + y
 end
 """
-msgs = lintstr( s )
-@test( length(msgs) == 0)
+msgs = lintstr(s)
+@test isempty(msgs)
 
 s = """
 y = 1
@@ -15,7 +15,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test( length(msgs) == 0 )
+@test isempty(msgs)
 
 s = """
 yyyyyy = 1
@@ -25,37 +25,69 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test( contains( msgs[1].message, "also a global"))
+@test msgs[1].code == :I391
+@test contains(msgs[1].message, "also a global from ")
 
 s = """
 y= 1
 function f(x)
-    y= 2
+    y = 2
     x + y
 end
 """
 msgs = lintstr(s)
-@test( length(msgs)==0 ) # short names are grandfathered to be ok
+@test isempty(msgs) # short names are grandfathered to be ok
+
 s = """
-const y= 1
+const y = 1
 function f(x)
-    y= 2
+    y = 2
     x + y
 end
 """
 msgs = lintstr(s)
-@test( length(msgs)==0 ) # short names are grandfathered to be ok
+@test isempty(msgs) # short names are grandfathered to be ok
+
 s = """
 const y
 function f(x)
-    y= 2
+    y = 2
     x + y
 end
 """
 msgs = lintstr(s)
-@test( contains(msgs[1].message, "expected assignment after \\\"const\\\"") )
+@test msgs[1].code == :E111
+@test contains(msgs[1].message, "expected assignment after \\\"const\\\"")
+
 s = """
 global 5
 """
 msgs = lintstr(s)
-@test( contains(msgs[1].message, "unknown global pattern") )
+@test msgs[1].code == :E134
+@test contains(msgs[1].message, "unknown global pattern")
+
+s = """
+f() = x
+x = 5
+"""
+msgs = lintstr(s)
+@test isempty(msgs)
+
+s = """
+x
+x = 5
+"""
+msgs = lintstr(s)
+@test msgs[1].code == :E321
+@test contains(msgs[1].message, "use of undeclared symbol")
+
+# Test gloabls defined in other files
+# File in package src
+msgs = lintfile("FakePackage/src/subfolder2/file2.jl"; returnMsgs = true)
+@test isempty(msgs)
+# File in package test
+msgs = lintfile("FakePackage/test/file2.jl"; returnMsgs = true)
+@test isempty(msgs)
+# File in base julia
+msgs = lintfile("FakeJulia/base/file2.jl"; returnMsgs = true)
+@test isempty(msgs)

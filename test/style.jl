@@ -15,5 +15,5 @@ function f(Y::Array)
   end
 end
 """
-msgs = lintstr( s )
-@test isempty( msgs )
+msgs = lintstr(s)
+@test isempty(msgs)

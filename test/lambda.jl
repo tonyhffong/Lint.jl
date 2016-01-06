@@ -1,42 +1,48 @@
 s = """
 function f()
     local x = 1
-    g  = x-> x+1
+    g = x-> x+1
     g(x)
 end
 """
 msgs = lintstr(s)
 
-@assert( contains( msgs[1].message, "Lambda argument" ) )
+@test msgs[1].code == :W352
+@test contains(msgs[1].message, "lambda argument conflicts with a local variable")
+
 s = """
 function f(x)
-    map( x-> x+1, x )
+    map(x-> x+1, x)
 end
 """
 msgs = lintstr(s)
-@assert( contains( msgs[1].message, "Lambda argument" ) )
+@test msgs[1].code == :W353
+@test contains(msgs[1].message, "lambda argument conflicts with an argument")
+
 s = """
 x = 1
 function f()
-    g  = x-> x+1
+    g = x-> x+1
     return g
 end
 """
 msgs = lintstr(s)
-@assert( contains( msgs[1].message, "Lambda argument" ) )
+@test msgs[1].code == :W354
+@test contains(msgs[1].message, "lambda argument conflicts with an declared global")
+
 s = """
 function f()
-    @lintpragma( "Ignore unused y")
-    @lintpragma( "Ignore unused z")
-    @lintpragma( "Ignore unused args")
-    g  = (x, y::Int, z::Float64=0.0, args... )-> x+1
+    @lintpragma("Ignore unused y")
+    @lintpragma("Ignore unused z")
+    @lintpragma("Ignore unused args")
+    g  = (x, y::Int, z::Float64=0.0, args...)-> x+1
 end
 """
 msgs = lintstr(s)
+@test isempty(msgs)
 
-@assert( isempty(msgs) )
 s = """
-ntuple( 4, _->0)
+ntuple(4, _->0)
 """
 msgs = lintstr(s)
-@assert( isempty( msgs ) )
+@test isempty(msgs)
