@@ -380,7 +380,9 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
             try
                 inclfile = eval(ex.args[2])
             catch
-                inclfile = string(ex.args[2])
+                # inclfile = string(ex.args[2])
+                # Avoid warning users about dynamic includes.
+                return
             end
         end
 
