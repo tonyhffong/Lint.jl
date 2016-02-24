@@ -380,8 +380,9 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
             try
                 inclfile = eval(ex.args[2])
             catch
-                # inclfile = string(ex.args[2])
-                # Avoid warning users about dynamic includes.
+                inclfile = string(ex.args[2])
+                # Avoid ERROR level warnings about dynamic includes.
+                msg(ctx, :I372, inclfile, "Unable to verify non-literal include file exists")
                 return
             end
         end

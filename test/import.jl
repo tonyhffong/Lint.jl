@@ -23,4 +23,4 @@ s = """
 script = \"test.jl\"; include(script)
 """
 msgs = lintstr(s)
-@test isempty(msgs)
+@test msgs[1].code == :I372
