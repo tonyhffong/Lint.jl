@@ -157,7 +157,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 |      |
 |**I3**| *Existence Info*
 | I371 | use of undeclared symbol
-| I372 | Unable to verify non-literal include file exists
+| I372 | unable to follow non-literal include file
 | I381 | unused lintpragma
 | I382 | argument declared but not used
 | I391 | also a global from src
