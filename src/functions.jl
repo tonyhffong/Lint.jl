@@ -381,6 +381,9 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
                 inclfile = eval(ex.args[2])
             catch
                 inclfile = string(ex.args[2])
+                # Avoid ERROR level warnings about dynamic includes.
+                msg(ctx, :I372, inclfile, "unable to follow non-literal include file")
+                return
             end
         end
 
