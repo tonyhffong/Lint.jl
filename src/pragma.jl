@@ -1,8 +1,3 @@
-type PragmaInfo
-    line :: Int
-    used :: Bool
-end
-
 function lintlintpragma(ex::Expr, ctx::LintContext)
     if length(ex.args) >= 2 && typeof(ex.args[2]) <: AbstractString
         m = match(r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)|(version)) +(.+)"s, ex.args[2])
