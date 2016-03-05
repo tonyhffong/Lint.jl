@@ -44,9 +44,7 @@ s = """
 d = Dict{int, int}()
 """
 msgs = lintstr(s)
-@test msgs[1].code == :W441
-@test msgs[1].variable == "int"
-@test contains(msgs[1].message, "probably illegal use inside curly")
-@test msgs[2].code == :W441
-@test msgs[2].variable == "int"
-@test contains(msgs[2].message, "probably illegal use inside curly")
+@test msgs[1].code == :W447
+@test contains(msgs[1].message, "it should be of type DataType")
+@test msgs[2].code == :W447
+@test contains(msgs[2].message, "it should be of type DataType")
