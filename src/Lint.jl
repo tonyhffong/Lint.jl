@@ -86,7 +86,7 @@ function lintfile{T<:AbstractString}(file::T; returnMsgs::Bool = false)
     if !ispath(file)
         throw("no such file exists")
     end
-    str = open(readall, file)
+    str = open(readstring, file)
     lintfile(file, str, returnMsgs=returnMsgs)
 end
 
@@ -308,7 +308,7 @@ function lintinclude{T<:AbstractString}(ctx::LintContext, file::T)
         oldfile = deepcopy(ctx.file)
         oldlineabs = ctx.lineabs
 
-        str = open(readall, file)
+        str = open(readstring, file)
         ctx.file = deepcopy(file)
         ctx.path = dirname(file)
         ctx.lineabs = 1

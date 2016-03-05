@@ -65,10 +65,18 @@ end
 msgs = lintstr(s)
 @test isempty(msgs)
 
+if VERSION < v"0.5"
 s = """
 function f()
     open(readall, "tmp.txt")
 end
 """
+else
+s = """
+function f()
+    open(readstring, "tmp.txt")
+end
+"""
+end
 msgs = lintstr(s)
 @test isempty(msgs)
