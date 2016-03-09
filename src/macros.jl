@@ -63,6 +63,9 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
         if isexpr(ex.args[2], :(->))
             lintexpr(ex.args[2].args[2], ctx) # no need to lint the doc string
             return
+        elseif typeof(ex.args[2]) <: AbstractString && length(ex.args) >= 3 && isexpr(ex.args[3], :call)
+            # grandfather as a docstring of a previously declared function
+            return
         elseif (typeof(ex.args[2]) <: AbstractString ||
               isexpr(ex.args[2], :macrocall) && ex.args[2].args[1] == Symbol("@mstr")
              )

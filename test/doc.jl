@@ -35,3 +35,13 @@ s = """
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+
+s = """
+func(v) = v
+\"\"\"
+Documentation
+\"\"\"
+func(v)
+"""
+msgs = lintstr(s)
+@test isempty(msgs)
