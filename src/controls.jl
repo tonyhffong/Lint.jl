@@ -18,7 +18,8 @@ function lintifexpr(ex::Expr, ctx::LintContext)
         # generate a INFO, as it could have been a typo
         if isexpr(ex.args[2], :block) && length(ex.args[2].args) >= 2 &&
                 (isexpr(ex.args[2].args[2], :comparison) ||
-                isexpr(ex.args[2].args[2], :call) && ex.args[2].args[2].args[1] == :(!) ||
+                isexpr(ex.args[2].args[2], :call) &&
+                   ( ex.args[2].args[2].args[1] == :(!) || ex.args[2].args[2].args[1] in COMPARISON_OPS ) ||
                 isexpr(ex.args[2].args[2], [:(&&), :(||)]) &&
                 !isexpr(ex.args[2].args[2].args[end], [:call, :error, :throw, :return]))
             msg(ctx, :I571, "the 1st statement under the true-branch is a boolean expression")
@@ -48,7 +49,29 @@ end
 # return a duplet of functions, the true branch version predicate and the false-branch version predicate
 # if none exists, return (nothing, nothing)
 function versionconstraint(ex)
-    if isexpr(ex, :comparison)
+
+    if isexpr(ex, :call) && ex.args[1] in COMPARISON_OPS
+        if ex.args[2] == :VERSION || ex.args[3] == :VERSION
+            if ex.args[2] == :VERSION && isexpr(ex.args[3], :macrocall) &&
+                ex.args[3].args[1] == Symbol( "@v_str" ) &&
+                typeof(ex.args[3].args[2]) <: AbstractString ||
+                isexpr(ex.args[2], :macrocall) &&
+                ex.args[2].args[1] == Symbol( "@v_str" ) &&
+                typeof(ex.args[2].args[2]) <: AbstractString
+
+                localex = deepcopy(ex)
+                for i in 1:length(localex.args)
+                    if localex.args[i] == :VERSION
+                        localex.args[i] = :_
+                    end
+                end
+                l = eval(Main, Expr(:(->), :_, localex))
+                return (l, _ -> !(l(_)))
+            else
+                return (nothing,nothing)
+            end
+        end
+    elseif isexpr(ex, :comparison)
         if in(:VERSION, ex.args)
             for i = 1:2:length(ex.args)
                 a = ex.args[i]
@@ -63,7 +86,7 @@ function versionconstraint(ex)
             localex = deepcopy(ex)
             for i in 1:length(localex.args)
                 if localex.args[i] == :VERSION
-                    localex.args[1] = :_
+                    localex.args[i] = :_
                 end
             end
             l = eval(Main, Expr(:(->), :_, localex))
@@ -141,6 +164,9 @@ function lintboolean(ex, ctx::LintContext)
                 a = ex.args[i]
                 lintboolean(a, ctx)
             end
+        elseif ex.head == :call && ex.args[1] in COMPARISON_OPS
+            #reuse lintcomparison by synthetically construct the expr
+            lintcomparison( Expr( :comparison, ex.args[2], ex.args[1], ex.args[3] ), ctx )
         elseif ex.head == :comparison
             lintcomparison(ex, ctx)
         elseif ex.head == :call && ex.args[1] == :length
@@ -169,7 +195,7 @@ function lintcomparison(ex::Expr, ctx::LintContext)
     lefttype = Any
     righttype = Any
     for i in 2:2:length(ex.args)
-        if ex.args[i] in [:(==), :(<), :(>), :(<=), :(>=), :(!=)]
+        if ex.args[i] in COMPARISON_OPS
             if pos != i-1
                 pos = i-1
                 lefttype = guesstype(ex.args[i-1], ctx)

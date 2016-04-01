@@ -12,6 +12,7 @@ export test_similarity_string
 
 const SIMILARITY_THRESHOLD = 10.0
 const ASSIGN_OPS = [:(=), :(+=), :(-=), :(*=), :(/=), :(&=), :(|=)]
+const COMPARISON_OPS = [:(==), :(<), :(>), :(<=), :(>=), :(!=) ]
 
 # no-op. We have to use macro inside type declaration as it disallows actual function calls
 macro lintpragma(s)

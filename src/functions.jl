@@ -371,7 +371,7 @@ function lintlambda(ex::Expr, ctx::LintContext)
     pop!(stacktop.localusedargs)
 end
 
-function lintfunctioncall(ex::Expr, ctx::LintContext)
+function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
     if ex.args[1] == :include
         if typeof(ex.args[2]) <: AbstractString
             inclfile = string(ex.args[2])
@@ -517,28 +517,50 @@ function lintfunctioncall(ex::Expr, ctx::LintContext)
             push!(ctx.callstack[end].calledfuncs, ex.args[1])
         end
 
-        for i in st:en
-            if in(i, skiplist)
-                continue
-            elseif isexpr(ex.args[i], :parameters)
-                for kw in ex.args[i].args
-                    if isexpr(kw, :(...))
-                        lintexpr(kw.args[1], ctx)
-                    elseif isexpr(kw, :(=>))
-                        lintexpr(kw.args[1], ctx)
-                        lintexpr(kw.args[2], ctx)
-                    elseif isa(kw, Expr) && length(kw.args) == 2
-                        lintexpr(kw.args[2], ctx)
-                    elseif isa(kw, Symbol)
-                        lintexpr(kw, ctx)
-                    else
-                        msg(ctx, :E133, kw, "unknown keyword pattern")
+
+        if ex.args[1] in COMPARISON_OPS
+            #reuse lintcomparison by synthetically construct the expr
+            lintcomparison( Expr( :comparison, ex.args[2], ex.args[1], ex.args[3] ), ctx )
+        end
+
+        if !inthrow && typeof(ex.args[1]) == Symbol
+            s = lowercase(string(ex.args[1]))
+            if contains(s,"error") || contains(s,"exception") || contains(s,"mismatch") || contains(s,"fault")
+                try
+                    dt = eval(ex.args[1])
+                    if typeof(dt) == DataType && dt <: Exception
+                        msg(ctx, :W448, string(ex.args[1]) * " is an Exception but it is not enclosed in a throw()")
                     end
                 end
-            elseif isexpr(ex.args[i], :kw)
-                lintexpr(ex.args[i].args[2], ctx)
-            else
-                lintexpr(ex.args[i], ctx)
+            end
+        end
+
+        if !inthrow && ex.args[1] == :throw && isexpr(ex.args[2], :call)
+            lintfunctioncall(ex.args[2], ctx, inthrow=true)
+        else
+            for i in st:en
+                if in(i, skiplist)
+                    continue
+                elseif isexpr(ex.args[i], :parameters)
+                    for kw in ex.args[i].args
+                        if isexpr(kw, :(...))
+                            lintexpr(kw.args[1], ctx)
+                        elseif isexpr(kw, :(=>))
+                            lintexpr(kw.args[1], ctx)
+                            lintexpr(kw.args[2], ctx)
+                        elseif isa(kw, Expr) && length(kw.args) == 2
+                            lintexpr(kw.args[2], ctx)
+                        elseif isa(kw, Symbol)
+                            lintexpr(kw, ctx)
+                        else
+                            msg(ctx, :E133, kw, "unknown keyword pattern")
+                        end
+                    end
+                elseif isexpr(ex.args[i], :kw)
+                    lintexpr(ex.args[i].args[2], ctx)
+                else
+                    lintexpr(ex.args[i], ctx)
+                end
             end
         end
     end
