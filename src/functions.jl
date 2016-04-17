@@ -528,7 +528,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             if contains(s,"error") || contains(s,"exception") || contains(s,"mismatch") || contains(s,"fault")
                 try
                     dt = eval(ex.args[1])
-                    if typeof(dt) == DataType && dt <: Exception
+                    if typeof(dt) == DataType && dt <: Exception && !pragmaexists( "Ignore unthrown " * string(ex.args[1]), ctx)
                         msg(ctx, :W448, string(ex.args[1]) * " is an Exception but it is not enclosed in a throw()")
                     end
                 end
