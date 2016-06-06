@@ -509,7 +509,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             registersymboluse(ex.args[1], ctx, false)
         end
 
-        en = length(ex.args)
+        num_args = length(ex.args)
 
         if isexpr(ex.args[1], :(.))
             lintexpr(ex.args[1], ctx)
@@ -519,8 +519,12 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
 
 
         if ex.args[1] in COMPARISON_OPS
-            #reuse lintcomparison by synthetically construct the expr
-            lintcomparison( Expr( :comparison, ex.args[2], ex.args[1], ex.args[3] ), ctx )
+            if num_args == 3
+                #reuse lintcomparison by synthetically construct the expr
+                lintcomparison(Expr(:comparison, ex.args[2], ex.args[1], ex.args[3]), ctx)
+            elseif !isexpr(ex.args[2], :(...))
+                msg(ctx, :E132, ex.args[2], "Lint does not understand argument")
+            end
         end
 
         if !inthrow && typeof(ex.args[1]) == Symbol
@@ -538,7 +542,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         if !inthrow && ex.args[1] == :throw && isexpr(ex.args[2], :call)
             lintfunctioncall(ex.args[2], ctx, inthrow=true)
         else
-            for i in st:en
+            for i in st:num_args
                 if in(i, skiplist)
                     continue
                 elseif isexpr(ex.args[i], :parameters)
