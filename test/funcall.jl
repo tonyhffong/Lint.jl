@@ -406,3 +406,22 @@ function foo end
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+
+s = """
+(==)(1, 1)
+"""
+msgs = lintstr(s)
+@test isempty(msgs)
+
+s="""
+(==)(1)
+"""
+msgs = lintstr(s)
+@test msgs[1].code == :E132
+@test contains(msgs[1].message, "Lint does not understand argument")
+
+s = """
+(==)((1, 1)...)
+"""
+msgs = lintstr(s)
+@test isempty(msgs)

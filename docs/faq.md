@@ -1,7 +1,8 @@
 # Frequently Asked Questions
 
 ## What can Lint.jl find?
-See [what can it find](features/#what-can-it-find).
+* [What can it find](features/#what-can-it-find).
+* [List of errors](messages/#errors-codes).
 
 
 ## Lint is giving me a false positive. What should I do?
@@ -25,8 +26,3 @@ See [@lintpragma](features/#lintpragma-steering-lint-time-behavior).
 
 ## Is there a way to disable a particular message when linting?
 See [ignoring messages](features/#ignoring-messages).
-
-
-## What can Lint.jl find?
-[What can it find](../#what-can-it-find).  
-[List of errors](messages/#errors-codes).

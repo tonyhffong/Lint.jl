@@ -206,7 +206,10 @@ julia> @test isempty(lintstr(s, ctx))
 ## Lintserver
 
 Make Julia start listening on a given port and return lint messages to requests on that connection.
-This feature is useful when you want to lint julia code in a non julia environment (e.g. an IDE like Sublime Text).
+This feature is useful when you want to lint julia code in a non julia environment.
+
+Existing plugins:
+ * Sublime Text: [SublimeLinter-contrib-julialintserver](https://github.com/invenia/SublimeLinter-contrib-julialintserver)
 
 The protocol for the server is:
 
