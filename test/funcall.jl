@@ -313,7 +313,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(args) == Tuple{Vararg{Float64}}")
+@test contains(msgs[1].message, "typeof(args) == Tuple{Vararg{Float64")
 
 s = """
 function f(args::Float64...)

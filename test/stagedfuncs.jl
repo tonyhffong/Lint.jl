@@ -34,6 +34,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(args) == Tuple{Vararg{DataType}}")
+@test contains(msgs[1].message, "typeof(args) == Tuple{Vararg{DataType")
 @test msgs[2].code == :I271
 @test contains(msgs[2].message, "typeof(x) == DataType")

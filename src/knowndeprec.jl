@@ -4,7 +4,7 @@
 type DeprecateInfo
     funcname::Any
     sig::Union{Void, Array{Any,1}}
-    message::UTF8String
+    message::Compat.UTF8String
     line::Int
 end
 deprecates = Dict{Symbol, Vector{DeprecateInfo}}()
@@ -98,7 +98,7 @@ function parseDeprecate(ex, lineabs)
             if !haskey(deprecates, funcname)
                 deprecates[funcname] =  DeprecateInfo[]
             end
-            msg = utf8(string(blockcontents[1].args[2]))
+            msg = string(blockcontents[1].args[2])
             push!(deprecates[funcname], DeprecateInfo(funcname, sig, msg, lineabs))
         end
     elseif Meta.isexpr(ex, :macrocall) && ex.args[1] == Symbol("@deprecate")
@@ -146,12 +146,14 @@ function getFuncNameAndSig(callex::Expr, strict::Bool=true)
                 typeHints[tconstr.args[1]] = tconstr.args[2]
             end
         end
+    elseif Meta.isexpr(callex.args[1], :(::))
+        # these kinds of call overloads are hard to understand
+        # so for now, just ignore them
+        return (nothing, nothing)
+    elseif strict
+        error("invalid function format $callex")
     else
-        if strict
-            error("invalid function format " * string(callex))
-        else
-            return (nothing, nothing)
-        end
+        return (nothing, nothing)
     end
     sig = Any[]
     for i in 2:length(callex.args)

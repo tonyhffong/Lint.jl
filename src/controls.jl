@@ -212,7 +212,7 @@ function lintcomparison(ex::Expr, ctx::LintContext)
                        !(lefttype <: righttype) && !(righttype <: lefttype)
                     problem = true
                 end
-                if problem && !pragmaexists(utf8("Ignore incompatible type comparison"), ctx)
+                if problem && !pragmaexists("Ignore incompatible type comparison", ctx)
                     msg(ctx, :W542, "comparing apparently incompatible types " *
                         "(#$(i>>1)) LHS:$(lefttype) RHS:$(righttype)")
                 end
@@ -261,17 +261,9 @@ function lintcomprehension(ex::Expr, ctx::LintContext; typed::Bool = false)
             if isexpr(ex.args[1], :(=>))
                 declktype = ex.args[1].args[1]
                 declvtype = ex.args[1].args[2]
-                if declktype == TopNode(:Any) && declvtype == TopNode(:Any) && VERSION < v"0.4-"
-                    msg(ctx, :I484, "untyped dictionary {a=>b for (a,b) in c}, may " *
-                        "be deprecated by Julia 0.4. Use (Any=>Any)[a=>b for (a,b) in c]")
-                end
             end
         else
             declvtype = ex.args[1]
-            if declvtype == TopNode(:Any) && VERSION < v"0.4-"
-                msg(ctx, :I485, "untyped dictionary {a for a in c}, may be " *
-                    "deprecated by Julia 0.4. Use (Any)[a for a in c]")
-            end
         end
     end
 

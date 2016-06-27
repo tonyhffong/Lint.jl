@@ -38,6 +38,7 @@ msgs = lintstr(s)
 
 s = """
 func(v) = v
+
 \"\"\"
 Documentation
 \"\"\"

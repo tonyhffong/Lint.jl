@@ -140,7 +140,7 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "typeof(x) == Any")
 
 s = """
-s = utf8("abcdef")
+s = "abcdef"
 s = s[chr2ind(s,2) :end]
 """
 msgs = lintstr(s)
@@ -148,7 +148,7 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "ambiguity of :end as a symbol vs as part of a range")
 
 s = """
-s = utf8("abcdef")
+s = "abcdef"
 sndlast = s[end -1]
 """
 msgs = lintstr(s)

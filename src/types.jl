@@ -87,7 +87,7 @@ function linttype(ex::Expr, ctx::LintContext)
             ctx.line = def.line-1
         elseif typeof(def) == Symbol
             # it means Any, probably not a very efficient choice
-            if !pragmaexists(utf8("Ignore untyped field $(def)"), ctx, deep=false)
+            if !pragmaexists("Ignore untyped field $(def)", ctx, deep=false)
                 msg(ctx, :I691, def, "a type is not given to the field which can be slow")
             end
             push!(fields, (def, Any))

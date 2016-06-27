@@ -136,7 +136,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     argsSeen = Set{Symbol}()
     optionalposition = 0
     typeRHShints = Dict{Symbol, Any}() # x = 1
-    typeassert = Dict{Symbol, Any}() # e.g. x::Int
+    assertions = Dict{Symbol, Any}() # e.g. x::Int
 
     resolveArguments = (sube, position) -> begin # zero position means it's not called at the top level
         if typeof(sube) == Symbol
@@ -149,7 +149,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             push!(argsSeen, sube)
             stacktop.localarguments[end][sube] = VarInfo(ctx.line)
             if isstaged
-                typeassert[sube] = DataType
+                assertions[sube] = DataType
             end
             return sube
         elseif sube.head == :parameters
@@ -162,10 +162,10 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     sym = resolveArguments(kw, 0)
                     if typeof(sym)== Symbol
                         if isstaged
-                            typeassert[sym] = DataType
+                            assertions[sym] = DataType
                         else
                             # This may change to Array{(Symbol,Any), 1} in the future
-                            typeassert[sym] = Array{Any,1}
+                            assertions[sym] = Array{Any,1}
                         end
                     end
                     return
@@ -196,7 +196,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                         dt = Any
                         try
                             dt = parsetype(sube.args[2])
-                            typeassert[sym] = dt
+                            assertions[sym] = dt
                         catch er
                             msg(ctx, :E139, sube.args[2], "Lint fails to parse type: $(er)")
                         end
@@ -215,19 +215,19 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             if typeof(sym) == Symbol
                 if VERSION < v"0.4.0-dev+4319"
                     if isstaged
-                        typeassert[sym] = (DataType...,)
-                    elseif haskey(typeassert, sym)
-                        typeassert[sym] = (typeassert[sym]...,)
+                        assertions[sym] = (DataType...,)
+                    elseif haskey(assertions, sym)
+                        assertions[sym] = (assertions[sym]...,)
                     else
-                        typeassert[sym] = (Any...,)
+                        assertions[sym] = (Any...,)
                     end
                 else
                     if isstaged
-                        typeassert[sym] = Tuple{Vararg{DataType}}
-                    elseif haskey(typeassert, sym)
-                        typeassert[sym] = Tuple{Vararg{typeassert[sym]}}
+                        assertions[sym] = Tuple{Vararg{DataType}}
+                    elseif haskey(assertions, sym)
+                        assertions[sym] = Tuple{Vararg{assertions[sym]}}
                     else
-                        typeassert[sym] = Tuple{Vararg{Any}}
+                        assertions[sym] = Tuple{Vararg{Any}}
                     end
                 end
             end
@@ -254,8 +254,8 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     for s in argsSeen
         try
             vi = stacktop.localarguments[end][s]
-            if haskey(typeassert, s)
-                dt = eval(typeassert[s])
+            if haskey(assertions, s)
+                dt = eval(assertions[s])
                 if typeof(dt) == DataType || typeof(dt) == (DataType,)
                     vi.typeactual = dt
                     if dt != Any && haskey(typeRHShints, s) && typeRHShints[s] != Any &&

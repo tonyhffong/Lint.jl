@@ -49,8 +49,13 @@ function lintmacro(ex::Expr, ctx::LintContext)
     pop!(ctx.callstack[end].localusedargs)
 end
 
+istopmacro(ex, mod, mac) = ex in (
+    mac,
+    GlobalRef(mod, mac),
+    Expr(:(.), Symbol(string(mod), mac)))
+
 function lintmacrocall(ex::Expr, ctx::LintContext)
-    if ex.args[1] == Symbol("@deprecate") || ex.args[1] == Expr(:(.), :Base, QuoteNode(Symbol("@deprecate")))
+    if istopmacro(ex.args[1], Base, Symbol("@deprecate"))
         return
     end
 
@@ -59,7 +64,7 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
         return
     end
 
-    if ex.args[1] == Symbol("@doc") && length(ex.args) >= 2 # see Docile.jl
+    if istopmacro(ex.args[1], Core, Symbol("@doc")) && length(ex.args) >= 2 # see Docile.jl
         if isexpr(ex.args[2], :(->))
             lintexpr(ex.args[2].args[2], ctx) # no need to lint the doc string
             return
@@ -135,4 +140,3 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
     end
     ctx.macrocallLvl = ctx.macrocallLvl - 1
 end
-
