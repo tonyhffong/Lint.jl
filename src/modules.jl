@@ -108,7 +108,11 @@ function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
             )
             eval(Main, ex)
             lastpart = ex.args[end]
-            m = eval(Main, parse(join(ex.args, ".")))
+            if length(ex.args) == 2
+                m = eval(Main, :($(ex.args[1]).$(ex.args[2])))
+            else
+                m = eval(Main, ex.args[1])
+            end
         end
     catch er
         problem = true
@@ -125,4 +129,3 @@ function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
         end
     end
 end
-

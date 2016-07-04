@@ -45,7 +45,7 @@ function lintlintpragma(ex::Expr, ctx::LintContext)
     end
 end
 
-function pragmaexists(s::UTF8String, ctx::LintContext; deep=true)
+function pragmaexists(s::Compat.UTF8String, ctx::LintContext; deep=true)
     iend = deep ? 1 : length(ctx.callstack)
     for i in length(ctx.callstack):-1:iend
         if haskey(ctx.callstack[i].pragmas, s)
@@ -56,4 +56,4 @@ function pragmaexists(s::UTF8String, ctx::LintContext; deep=true)
     return false
 end
 
-pragmaexists(s::ASCIIString, ctx::LintContext; deep = true) = pragmaexists(utf8(s), ctx; deep = deep)
+pragmaexists(s::AbstractString, ctx::LintContext; deep = true) = pragmaexists(Compat.UTF8String(s), ctx; deep = deep)

@@ -1,10 +1,10 @@
 type LintMessage
-    file    :: UTF8String
+    file    :: Compat.UTF8String
     code    :: Symbol #[E|W|I][1-9][1-9][1-9]
-    scope   :: UTF8String
+    scope   :: Compat.UTF8String
     line    :: Int
-    variable:: UTF8String
-    message :: UTF8String
+    variable:: Compat.UTF8String
+    message :: Compat.UTF8String
 end
 
 type VarInfo
@@ -31,7 +31,7 @@ type LintStack
     localusedvars :: Array{Set{Symbol}, 1}
     usedvars      :: Set{Symbol}
     oosvars       :: Set{Symbol}
-    pragmas       :: Dict{UTF8String, PragmaInfo} # the boolean denotes if the pragma has been used
+    pragmas       :: Dict{Compat.UTF8String, PragmaInfo} # the boolean denotes if the pragma has been used
     calledfuncs   :: Set{Symbol}
     inModule      :: Bool
     moduleName    :: Any
@@ -42,7 +42,7 @@ type LintStack
     functions     :: Set{Any}
     modules       :: Set{Any}
     macros        :: Set{Any}
-    linthelpers   :: Dict{UTF8String, Any}
+    linthelpers   :: Dict{Compat.UTF8String, Any}
     data          :: Dict{Symbol, Any}
     isTop         :: Bool
     LintStack() = begin
@@ -54,7 +54,7 @@ type LintStack
             [Set{Symbol}()],
             Set{Symbol}(),
             Set{Symbol}(),
-            Dict{UTF8String, Bool}(), #pragmas
+            Dict{Compat.UTF8String, Bool}(), #pragmas
             Set{Symbol}(),
             false,
             Symbol(""),
@@ -65,7 +65,7 @@ type LintStack
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),
-            Dict{UTF8String, Any}(),
+            Dict{Compat.UTF8String, Any}(),
             Dict{Symbol, Any}(),
             false,
            )
@@ -94,12 +94,12 @@ end
 const LINT_IGNORE_DEFAULT = LintIgnore[LintIgnore(:W651, "")]
 
 type LintContext
-    file         :: UTF8String
+    file         :: Compat.UTF8String
     line         :: Int
     lineabs      :: Int
-    scope        :: UTF8String # usually the function name
+    scope        :: Compat.UTF8String # usually the function name
     isstaged     :: Bool
-    path         :: UTF8String
+    path         :: Compat.UTF8String
     included     :: Array{AbstractString,1} # list of files included
     globals      :: Dict{Symbol,Any}
     types        :: Dict{Symbol,Any}

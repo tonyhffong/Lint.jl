@@ -57,7 +57,7 @@ function lintdict4(ex::Expr, ctx::LintContext)
         end
     else
         # if the expression is explicitly (Any=>Any)[:a => 1], then it'd be
-        #   :Any=>:Any, not TopNode(:Any)=>TopNode(:Any)
+        #   :Any=>:Any, not GlobalRef(Base, :Any)=> GlobalRef(Base, :Any)
         if !in(Any, ktypes) && length(ktypes) == 1 && !in(Any, vtypes) && length(vtypes) == 1
             msg(ctx, :I581, "there is only 1 key type && 1 value type. Use explicit " *
                 "Dict{K,V}() for better performances")

@@ -39,7 +39,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(b) == ASCIIString")
+@test contains(msgs[1].message, "typeof(b) == $(Compat.ASCIIString)")
 
 s = """
 function f()

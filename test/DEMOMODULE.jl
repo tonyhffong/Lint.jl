@@ -14,7 +14,7 @@ end
 
 function lint_helper(ex::Expr, ctx::LintContext)
     if ex.head == :macrocall
-        if ex.args[1] == symbol("@fancyfuncgen")
+        if ex.args[1] == Symbol("@fancyfuncgen")
             if typeof(ex.args[2]) != Symbol
                 Lint.msg(ctx, 2, "@fancyfuncgen must use a symbol argument")
             else

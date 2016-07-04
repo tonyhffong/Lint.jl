@@ -41,7 +41,7 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "apparent non-Bool type")
 
 s = """
-d = Dict{int, int}()
+d = Dict{float, float}()
 """
 msgs = lintstr(s)
 

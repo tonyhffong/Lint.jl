@@ -18,9 +18,7 @@ const COMPARISON_OPS = [:(==), :(<), :(>), :(<=), :(>=), :(!=) ]
 macro lintpragma(s)
 end
 
-import Base: ==, utf8
-
-utf8(s::Symbol) = utf8(string(s))
+import Base: ==
 
 include("linttypes.jl")
 include("messages.jl")
@@ -171,7 +169,10 @@ function lintexpr(ex::Any, ctx::LintContext)
         end
     end
 
-    if ex.head == :block
+    if ex.head == :line
+        # ignore line numer nodes
+        return
+    elseif ex.head == :block
         lintblock(ex, ctx)
     elseif ex.head == :quote
         ctx.quoteLvl += 1
@@ -297,7 +298,7 @@ end
 Include a file to your lintContext.
 Does nothing if file does not exist or has already been included.
 """
-function lintinclude{T<:AbstractString}(ctx::LintContext, file::T)
+function lintinclude(ctx::LintContext, file::AbstractString)
     if ispath(file) && !(file in ctx.included) && file != ctx.file
         if !(ctx.file in ctx.included) # We don't want to lint the file again
             push!(ctx.included, ctx.file)
@@ -350,7 +351,7 @@ function lintserver(port)
                 println("file: ", file)
                 code_len = parse(Int, strip(readline(conn)))
                 println("Code bytes: ", code_len)
-                code = utf8(readbytes(conn, code_len))
+                code = Compat.UTF8String(read(conn, code_len))
                 println("Code received")
                 # Do the linting
                 msgs = lintfile(file, code, returnMsgs=true)

@@ -4,7 +4,7 @@ function popVarScope(ctx::LintContext; checkargs::Bool=false)
     unused = setdiff(keys(stacktop.localvars[end]), stacktop.localusedvars[end])
     if ctx.quoteLvl == 0
         for v in unused
-            if !pragmaexists("Ignore unused " * utf8(v), ctx) && v != :_
+            if !pragmaexists("Ignore unused $v", ctx) && v != :_
                 ctx.line = stacktop.localvars[end][v].line
                 msg(ctx, :W341, v, "local variable declared but not used")
             end
@@ -12,7 +12,7 @@ function popVarScope(ctx::LintContext; checkargs::Bool=false)
         if checkargs
             unusedargs = setdiff(keys(stacktop.localarguments[end]), stacktop.localusedargs[end])
             for v in unusedargs
-                if !pragmaexists("Ignore unused " * utf8(v), ctx) && v != :_
+                if !pragmaexists("Ignore unused $v", ctx) && v != :_
                     ctx.line = stacktop.localarguments[end][v].line
                     msg(ctx, :I382, v, "argument declared but not used")
                 end
@@ -62,7 +62,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
         end
     end
 
-    str = utf8(sym)
+    str = string(sym)
     if isupper(str[1])
         @lintpragma("Ignore incompatible type comparison")
         t = nothing
@@ -137,7 +137,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
         return :Any
     end
 
-    if pragmaexists("Ignore use of undeclared variable " * utf8(sym), ctx)
+    if pragmaexists("Ignore use of undeclared variable $sym", ctx)
         return :Any
     end
     if ctx.quoteLvl == 0
@@ -197,18 +197,18 @@ function lintlocal(ex::Expr, ctx::LintContext)
     end
 end
 
-function resolveLHSsymbol(ex, syms::Array{Any,1}, ctx::LintContext, typeassert::Dict{Symbol,Any})
+function resolveLHSsymbol(ex, syms::Array{Any,1}, ctx::LintContext, assertions::Dict{Symbol,Any})
     if typeof(ex) == Symbol
         push!(syms, ex)
     elseif typeof(ex) == Expr
         if ex.head == :(::)
             if typeof(ex.args[1]) == Symbol
-                typeassert[ex.args[1]]=ex.args[2]
+                assertions[ex.args[1]]=ex.args[2]
             end
-            resolveLHSsymbol(ex.args[1], syms, ctx, typeassert)
+            resolveLHSsymbol(ex.args[1], syms, ctx, assertions)
         elseif ex.head == :tuple
             for s in ex.args
-                resolveLHSsymbol(s, syms, ctx, typeassert)
+                resolveLHSsymbol(s, syms, ctx, assertions)
             end
         elseif ex.head == :(.) ||   # a.b = something
             ex.head == :ref ||      # a[b] = something
@@ -228,8 +228,8 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
     lintexpr(ex.args[2], ctx)
 
     syms = Any[]
-    typeassert = Dict{Symbol, Any}()
-    resolveLHSsymbol(ex.args[1], syms, ctx, typeassert)
+    assertions = Dict{Symbol, Any}()
+    resolveLHSsymbol(ex.args[1], syms, ctx, assertions)
     tuplelen = length(syms)
     lhsIsTuple = Meta.isexpr(ex.args[1], :tuple)
     rhstype = guesstype(ex.args[2], ctx)
@@ -306,8 +306,8 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             rhst = Any
         end
         try
-            if haskey(typeassert, s)
-                dt = eval(Main, typeassert[s])
+            if haskey(assertions, s)
+                dt = eval(Main, assertions[s])
                 if typeof(dt) == DataType
                     vi.typeactual = dt
                     if !isAnyOrTupleAny(dt) && !isAnyOrTupleAny(rhstype) && !(rhstype <: dt)
@@ -315,15 +315,15 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
                             "$(rhstype)")
                     end
                 else
-                    vi.typeexpr = typeassert[s]
+                    vi.typeexpr = assertions[s]
                 end
             elseif rhst != Any && !isForLoop
                 vi.typeactual = rhst
             end
         catch er
             msg(ctx, :W251, ex, "$(er); Symbol=$(s); rhstype=$(rhst)")
-            if haskey(typeassert, s)
-                vi.typeexpr = typeassert[s]
+            if haskey(assertions, s)
+                vi.typeexpr = assertions[s]
             end
         end
 
@@ -387,4 +387,3 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         end
     end
 end
-
