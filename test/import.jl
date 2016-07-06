@@ -24,3 +24,4 @@ script = \"test.jl\"; include(script)
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I372
+@test isempty(filter(x -> !isinfo(x), msgs))

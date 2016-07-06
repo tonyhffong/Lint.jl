@@ -1,9 +1,11 @@
 # LintMessage
 
-When you lint some code Lint.jl will print the error messages in the [format described below](#format). By default nothing will be returned. If you want the messages to be returned then you have to set the `returnMsgs` keyword argument to `true` which will make Lint.jl return and array of `LintMessage`.
+When you lint some code, Lint.jl will print the error messages in the [format
+described below](#format). Lint will return a `LintResult` which behaves like an
+iterable of `LintMessage`s.
 
 ```julia
-lintpkg("MyPackage", returnMsgs=true)
+lintpkg("MyPackage")
 ```
 
 ## Format
@@ -21,7 +23,7 @@ filename.jl:Line CODE variable: message
 
 There are 3 levels of severity a LintMessage can be:
 
-* **Error:** The most sever level. Will probably lead to program failure.
+* **Error:** The most severe level. Will probably lead to program failure.
 * **Warning:** Code that will run but is probably wrong.
 * **Info:** Suggestions and best practices.
 
@@ -29,7 +31,7 @@ You can use `iserror`, `iswarning` and `isinfo` to check a particular messages e
 
 If you only want to test for error and warning level messages you could use:
 ```julia
-errors = filter(i -> !isinfo(i), lintpkg("MyPackage", returnMsgs=true))
+errors = filter(i -> !isinfo(i), lintpkg("MyPackage"))
 @test isempty(errors)
 ```
 
