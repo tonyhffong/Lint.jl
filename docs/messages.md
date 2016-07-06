@@ -106,7 +106,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E534   | introducing a new name for an implicit argument to the function, use {T<:X}
 | E535   | introducing a new name for an algebric data type, use {T<:X}
 | E536   | use {T<:...} instead of a known type
-| E537   | non-existent constructor, use string() for string conversion
+| E537   | String constructor does not exist in v0.4; use string() instead
 | E538   | known type in parametric data type, use {T<:...}
 |        |
 | **E6** | *Structure Error*

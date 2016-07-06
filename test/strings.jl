@@ -14,13 +14,15 @@ msgs = lintstr(s)
 @test msgs[1].code == :E422
 @test contains(msgs[1].message, "string uses * to concatenate")
 
-s = """
-s = String(1)
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E537
-@test contains(msgs[1].message, "non-existent constructor, use string() for string " *
-    "conversion")
+if VERSION < v"0.5-"
+    s = """
+    s = String(1)
+    """
+    msgs = lintstr(s)
+    @test msgs[1].code == :E537
+    @test contains(msgs[1].message,
+        "String constructor does not exist in v0.4; use string() instead")
+end
 
 s = """
 b = string(12)
