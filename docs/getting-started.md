@@ -21,7 +21,7 @@ lintpkg("MyPackage")
 
 If your package always lints clean, you may want to keep it that way in a test:
 ```julia
-@test isempty(lintpkg("MyPackage", returnMsgs=true))
+@test isempty(lintpkg("MyPackage"))
 ```
 
 

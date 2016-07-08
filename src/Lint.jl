@@ -38,16 +38,22 @@ include("ref.jl")
 include("curly.jl")
 include("misc.jl")
 include("init.jl")
+include("result.jl")
 
-function lintpkg{T<:AbstractString}(pkg::T; returnMsgs::Bool = false)
+function lintpkg{T<:AbstractString}(pkg::T; returnMsgs=nothing)
+    # FIXME: deprecated summer 2016, remove after reasonable amount of time
+    if returnMsgs ≢ nothing
+        Base.depwarn(
+            "returnMsgs keyword argument is deprecated; remove it",
+            :lintfile)
+    end
     p = joinpath(Pkg.dir(pkg), "src", basename(pkg) * ".jl")
     if !ispath(p)
         throw("cannot find path: " * p)
     end
-    msgs = lintpkgforfile(p)
-
-    returnMsgs ? msgs : nothing
+    LintResult(lintpkgforfile(p))
 end
+
 
 """
 Lint the package for a file.
@@ -81,15 +87,21 @@ function lintpkgforfile{T<:AbstractString}(path::T, ctx::LintContext=LintContext
     ctx.messages
 end
 
-function lintfile{T<:AbstractString}(file::T; returnMsgs::Bool = false)
+function lintfile{T<:AbstractString}(file::T; returnMsgs=nothing)
+    # FIXME: deprecated summer 2016, remove after reasonable amount of time
+    if returnMsgs ≢ nothing
+        Base.depwarn(
+            "returnMsgs keyword argument is deprecated; remove it",
+            :lintfile)
+    end
     if !ispath(file)
         throw("no such file exists")
     end
     str = open(readstring, file)
-    lintfile(file, str, returnMsgs=returnMsgs)
+    lintfile(file, str)
 end
 
-function lintfile(file::AbstractString, code::AbstractString; returnMsgs::Bool = false)
+function lintfile(file::AbstractString, code::AbstractString)
     ctx = LintContext(file)
 
     msgs = lintstr(code, ctx)
@@ -103,11 +115,9 @@ function lintfile(file::AbstractString, code::AbstractString; returnMsgs::Bool =
     end
 
     filter!(msg -> msg.file == file, msgs)
-
     clean_messages!(msgs)
-    display_messages(msgs)
 
-    returnMsgs ? msgs : nothing
+    LintResult(msgs)
 end
 
 function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), lineoffset = 0)
@@ -143,7 +153,7 @@ function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), li
             break
         end
     end
-    return ctx.messages
+    ctx.messages
 end
 
 function lintexpr(ex::Any, ctx::LintContext)
@@ -354,7 +364,7 @@ function lintserver(port)
                 code = Compat.UTF8String(read(conn, code_len))
                 println("Code received")
                 # Do the linting
-                msgs = lintfile(file, code, returnMsgs=true)
+                msgs = lintfile(file, code)
                 # Write response to socket
                 for i in msgs
                     write(conn, string(i))

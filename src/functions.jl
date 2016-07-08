@@ -442,9 +442,9 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
                 msg(ctx, :I481, row[1], "in 0.4+, replace $(row[1])() with $(repl)()$(suffix)")
             end
         end
-        if ex.args[1] == :String
-            msg(ctx, :E537, ex.args[1], "non-existent constructor, use string() for " *
-                "string conversion")
+        if VERSION < v"0.5-" && ex.args[1] == :String
+            msg(ctx, :E537, ex.args[1],
+                "String constructor does not exist in v0.4; use string() instead")
         elseif ex.args[1] == :Union
             msg(ctx, :E421, "use Union{...}, with curly, instead of parentheses")
         elseif ex.args[1] == :(+)

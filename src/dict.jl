@@ -55,12 +55,5 @@ function lintdict4(ex::Expr, ctx::LintContext)
         if length(vtypes) > 1 && ex.args[1].args[3] != :Any && !isexpr(ex.args[1].args[3], :call)
             msg(ctx, :E532, "multiple value types detected. Use Dict{K,Any}() for mixed type dict")
         end
-    else
-        # if the expression is explicitly (Any=>Any)[:a => 1], then it'd be
-        #   :Any=>:Any, not GlobalRef(Base, :Any)=> GlobalRef(Base, :Any)
-        if !in(Any, ktypes) && length(ktypes) == 1 && !in(Any, vtypes) && length(vtypes) == 1
-            msg(ctx, :I581, "there is only 1 key type && 1 value type. Use explicit " *
-                "Dict{K,V}() for better performances")
-        end
     end
 end

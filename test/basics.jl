@@ -5,6 +5,5 @@ p = "non_existing_1234_4321"
 @test_throws(AbstractString, lintpkg(p))
 
 # Lint package with full path
-msgs = lintpkg(joinpath(Pkg.dir("Lint"), "test", "FakePackage"); returnMsgs = true)
-Lint.display_messages(msgs)
+msgs = lintpkg(joinpath(Pkg.dir("Lint"), "test", "FakePackage"))
 @test isempty(msgs)

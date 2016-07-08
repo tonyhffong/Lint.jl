@@ -4,17 +4,6 @@ s = """
 msgs = lintstr(s)
 @test msgs[1].code == :E334
 @test contains(msgs[1].message, "duplicate key in Dict")
-@test msgs[2].code == :I581
-@test contains(msgs[2].message, "there is only 1 key type && 1 value type. Use explicit " *
-    "Dict{K,V}() for better performances")
-
-s = """
-@compat Dict(:a=>Date(2014, 1, 1), :b=>Date(2015, 1, 1))
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :I581
-@test contains(msgs[1].message, "there is only 1 key type && 1 value type. Use explicit " *
-    "Dict{K,V}() for better performances")
 
 s = """
 @compat Dict{Symbol,Int}(:a=>1, :b=>"")

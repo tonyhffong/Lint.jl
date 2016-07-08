@@ -83,11 +83,11 @@ msgs = lintstr(s)
 
 # Test gloabls defined in other files
 # File in package src
-msgs = lintfile("FakePackage/src/subfolder2/file2.jl"; returnMsgs = true)
+msgs = lintfile("FakePackage/src/subfolder2/file2.jl")
 @test isempty(msgs)
 # File in package test
-msgs = lintfile("FakePackage/test/file2.jl"; returnMsgs = true)
+msgs = lintfile("FakePackage/test/file2.jl")
 @test isempty(msgs)
 # File in base julia
-msgs = lintfile("FakeJulia/base/file2.jl"; returnMsgs = true)
+msgs = lintfile("FakeJulia/base/file2.jl")
 @test isempty(msgs)

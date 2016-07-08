@@ -74,10 +74,3 @@ function clean_messages!(msgs::Array{LintMessage})
     end
     deleteat!(msgs, delids)
 end
-
-function display_messages(msgs::Array{LintMessage})
-    colors = Dict{Symbol, Symbol}(:INFO => :bold, :WARN => :yellow, :ERROR => :magenta)
-    for m in msgs
-        Base.println_with_color(colors[level(m)], string(m))
-    end
-end

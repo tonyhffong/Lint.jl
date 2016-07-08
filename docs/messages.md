@@ -1,9 +1,11 @@
 # LintMessage
 
-When you lint some code Lint.jl will print the error messages in the [format described below](#format). By default nothing will be returned. If you want the messages to be returned then you have to set the `returnMsgs` keyword argument to `true` which will make Lint.jl return and array of `LintMessage`.
+When you lint some code, Lint.jl will print the error messages in the [format
+described below](#format). Lint will return a `LintResult` which behaves like an
+iterable of `LintMessage`s.
 
 ```julia
-lintpkg("MyPackage", returnMsgs=true)
+lintpkg("MyPackage")
 ```
 
 ## Format
@@ -21,7 +23,7 @@ filename.jl:Line CODE variable: message
 
 There are 3 levels of severity a LintMessage can be:
 
-* **Error:** The most sever level. Will probably lead to program failure.
+* **Error:** The most severe level. Will probably lead to program failure.
 * **Warning:** Code that will run but is probably wrong.
 * **Info:** Suggestions and best practices.
 
@@ -29,7 +31,7 @@ You can use `iserror`, `iswarning` and `isinfo` to check a particular messages e
 
 If you only want to test for error and warning level messages you could use:
 ```julia
-errors = filter(i -> !isinfo(i), lintpkg("MyPackage", returnMsgs=true))
+errors = filter(i -> !isinfo(i), lintpkg("MyPackage"))
 @test isempty(errors)
 ```
 
@@ -106,7 +108,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E534   | introducing a new name for an implicit argument to the function, use {T<:X}
 | E535   | introducing a new name for an algebric data type, use {T<:X}
 | E536   | use {T<:...} instead of a known type
-| E537   | non-existent constructor, use string() for string conversion
+| E537   | String constructor does not exist in v0.4; use string() instead
 | E538   | known type in parametric data type, use {T<:...}
 |        |
 | **E6** | *Structure Error*
@@ -178,7 +180,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | **I5** | *Type Info*
 | I571   | the 1st statement under the true-branch is a boolean expression
 | I572   | assert x type= X but assign a value of Y
-| I581   | there is only 1 key type && 1 value type. Use explicit Dict{K,V}() for better performances
+| I581   | (removed in Lint 0.3.0)
 |        |
 | **I6** | *Structure Info*
 | I671   | new is provided with fewer arguments than fields
