@@ -1,25 +1,14 @@
 
 import Base: eltype
 
-function keytype(::Type{Any})
-    Any
-end
-function valuetype(::Type{Any})
-    Any
-end
+keytype(::Type{Any}) = Any
+valuetype(::Type{Any}) = Any
 
-function keytype{K,V}(::Type{Associative{K,V}})
-    K
-end
-function valuetype{K,V}(::Type{Associative{K,V}})
-    V
-end
-function keytype{T<:Associative}(::Type{T})
-    keytype(super(T))
-end
-function valuetype{T<:Associative}(::Type{T})
-    valuetype(super(T))
-end
+keytype{K,V}(::Type{Associative{K,V}}) = K
+valuetype{K,V}(::Type{Associative{K,V}}) = V
+
+keytype{T<:Associative}(::Type{T}) = keytype(supertype(T))
+valuetype{T<:Associative}(::Type{T}) = valuetype(supertype(T))
 
 if VERSION < v"0.4-dev+3345"
 function eltype{T}(::Type{Enumerate{T}})
