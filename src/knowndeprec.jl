@@ -78,13 +78,14 @@ function parseDeprecate(ex, lineabs)
     if Meta.isexpr(ex, :function) || Meta.isexpr(ex, :(=)) && Meta.isexpr(ex.args[1], :call)
         callex = ex.args[1]
         (funcname, sig) = getFuncNameAndSig(callex)
+        if !isa(funcname, Symbol)
+            # can't deal with complex expressions like Broadcast.func yet
+            return
+        end
         if in(funcname, [:depwarn, :firstcaller]) || contains(lowercase(string(funcname)), "deprecate")
             # the first two are support functions.
             # Any function declaration that has "deprecate" in the name...
             # well, the user/developer should know what they are in for.
-            return
-        end
-        if sig == nothing
             return
         end
         if Meta.isexpr(ex.args[2], :block)
