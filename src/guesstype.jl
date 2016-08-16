@@ -10,16 +10,6 @@ valuetype{K,V}(::Type{Associative{K,V}}) = V
 keytype{T<:Associative}(::Type{T}) = keytype(supertype(T))
 valuetype{T<:Associative}(::Type{T}) = valuetype(supertype(T))
 
-if VERSION < v"0.4-dev+3345"
-function eltype{T}(::Type{Enumerate{T}})
-    (Int, T)
-end
-#else
-#function eltype{T}(::Type{Enumerate{T}})
-#    Tuple{Int, T}
-#end
-end
-
 function isAnyOrTupleAny(x)
     if x == Any
         return true
@@ -161,11 +151,7 @@ function guesstype(ex, ctx::LintContext)
         for a in ex.args
             push!(ts, guesstype(a, ctx))
         end
-        if VERSION < v"0.4.0-dev+4319"
-            return tuple(ts...)
-        else
-            return Tuple{ts...}
-        end
+        return Tuple{ts...}
     end
 
     if isexpr(ex, :(::)) && length(ex.args) == 2
@@ -278,26 +264,21 @@ function guesstype(ex, ctx::LintContext)
         try
             if length(ex.args) == 3
                 if isexpr(ex.args[3], :tuple)
-                    ret = Array{elt, length(ex.args[3].args)}
+                    return Array{elt, length(ex.args[3].args)}
                 else
                     lastargtype = guesstype(ex.args[3], ctx)
                     if lastargtype <: Integer
-                        ret = Array{elt, 1}
+                        return Array{elt, 1}
                     elseif lastargtype <: Tuple && all(x->x<:Integer, lastargtype)
-                        if VERSION < v"0.4.0-dev+4319"
-                            ret = Array{elt, length(lastargtype)}
-                        else
-                            ret = Array{elt, length(lastargtype.parameters)}
-                        end
+                        return Array{elt, length(lastargtype.parameters)}
                     else
-                        ret = Array{elt}
+                        return Array{elt}
                     end
                 end
             else
-                ret = Array{elt, length(ex.args)-2}
+                return Array{elt, length(ex.args)-2}
             end
         end
-        return ret
     end
 
     if isexpr(ex, :call) && in(ex.args[1], [:zeros, :ones])
@@ -309,17 +290,12 @@ function guesstype(ex, ctx::LintContext)
         elt = evaltype(ex.args[2])
         if length(sig) >= 1 && sig[1] == DataType
             if length(sig) == 2 && isexpr(ex.args[3], :tuple)
-                ret = Array{elt, length(ex.args[3].args)}
+                return Array{elt, length(ex.args[3].args)}
             elseif length(sig) == 2 && sig[2] <: Tuple && all(x->x <: Integer, sig[2])
-                if VERSION < v"0.4.0-dev+4319"
-                    ret = Array{elt, length(sig[2])}
-                else
-                    ret = Array{elt, length(sig[2].parameters)}
-                end
+                return Array{elt, length(sig[2].parameters)}
             else
-                ret = Array{elt, length(ex.args)-2}
+                return Array{elt, length(ex.args)-2}
             end
-            return ret
         elseif all(y->y <: Integer, sig)
             return Array{Float64, length(sig)}
         elseif length(sig) == 1 && sig[1] <: Array
@@ -346,22 +322,16 @@ function guesstype(ex, ctx::LintContext)
     if isexpr(ex, :call) && in(ex.args[1], [:size])
         fst = guesstype(ex.args[2], ctx)
         if fst <: Array
-            ret = Any
             try
                 nd = ndims(fst)
                 if nd == 1 || length(ex.args) == 3
-                    ret = Int
+                    return Int
                 else
                     # TODO this should be fixed not just ignored
-                    @lintpragma("Ignore unused i")
-                    if VERSION < v"0.4.0-dev+4319"
-                        ret = tuple(DataType[Int for i=1:nd]...)
-                    else
-                        ret = Tuple{DataType[Int for i=1:nd]...}
-                    end
+                    @lintpragma("Ignore unused _")
+                    return Tuple{ntuple(_ -> Int, nd)...}
                 end
             end
-            return ret
         end
         return Any
     end
@@ -380,11 +350,7 @@ function guesstype(ex, ctx::LintContext)
             if sig[2] <: Number
                 return Array{eletyp, 1}
             elseif sig[2] <: Tuple
-                if VERSION < v"0.4.0-dev+4319"
-                    return Array{eletyp, length(sig[2])}
-                else
-                    return Array{eletyp, length(sig[2].parameters)}
-                end
+                return Array{eletyp, length(sig[2].parameters)}
             else
                 return Array{eletyp}
             end
@@ -506,30 +472,17 @@ function guesstype(ex, ctx::LintContext)
                 return partyp
             end
         elseif partyp <: Tuple
-            if VERSION < v"0.4.0-dev+4139"
-                if isempty(partyp)
-                    return Any
+            if isempty(partyp.parameters)
+                return Any
+            end
+            if length(partyp.parameters) == 1 || partyp.parameters[1].name.name == :Vararg
+                if typeof(partyp.parameters[1].parameters[1]) <: DataType
+                    return evaltype(partyp.parameters[1].parameters[1].name.name)
                 end
-                if length(partyp) == 1 || partyp[1].name.name == :Vararg
-                    return evaltype(partyp[1].name.name)
-                end
-                elt = partyp[1]
-                if all(x->x == elt, partyp)
-                    return elt
-                end
-            else
-                if isempty(partyp.parameters)
-                    return Any
-                end
-                if length(partyp.parameters) == 1 || partyp.parameters[1].name.name == :Vararg
-                    if typeof(partyp.parameters[1].parameters[1]) <: DataType
-                        return evaltype(partyp.parameters[1].parameters[1].name.name)
-                    end
-                end
-                elt = partyp.parameters[1]
-                if all(x->x == elt, partyp.parameters)
-                    return elt
-                end
+            end
+            elt = partyp.parameters[1]
+            if all(x->x == elt, partyp.parameters)
+                return elt
             end
         #=
         elseif isdefined(Main, :AbstractDataFrame) && partyp <: AbstractDataFrame

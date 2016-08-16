@@ -213,22 +213,12 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             end
             sym = resolveArguments(sube.args[1], 0)
             if typeof(sym) == Symbol
-                if VERSION < v"0.4.0-dev+4319"
-                    if isstaged
-                        assertions[sym] = (DataType...,)
-                    elseif haskey(assertions, sym)
-                        assertions[sym] = (assertions[sym]...,)
-                    else
-                        assertions[sym] = (Any...,)
-                    end
+                if isstaged
+                    assertions[sym] = Tuple{Vararg{DataType}}
+                elseif haskey(assertions, sym)
+                    assertions[sym] = Tuple{Vararg{assertions[sym]}}
                 else
-                    if isstaged
-                        assertions[sym] = Tuple{Vararg{DataType}}
-                    elseif haskey(assertions, sym)
-                        assertions[sym] = Tuple{Vararg{assertions[sym]}}
-                    else
-                        assertions[sym] = Tuple{Vararg{Any}}
-                    end
+                    assertions[sym] = Tuple{Vararg{Any}}
                 end
             end
         elseif sube.head == :($)
