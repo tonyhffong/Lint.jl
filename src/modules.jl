@@ -24,6 +24,9 @@ function lintmodule(ex::Expr, ctx::LintContext)
 end
 
 function lintusing(ex::Expr, ctx::LintContext)
+    # Don't use modules protected by a guard (these can cause crashes!)
+    # see issue #149
+    ctx.ifdepth > 0 && return
     if ctx.functionLvl > 0
         msg(ctx, :E414, "using is not allowed inside function definitions")
     end

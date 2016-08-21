@@ -1,11 +1,17 @@
+function insideif(f, ctx::LintContext)
+    ctx.ifdepth += 1
+    f(ctx)
+    ctx.ifdepth -= 1
+end
+
 function lintifexpr(ex::Expr, ctx::LintContext)
     if ex.args[1] == false
         msg(ctx, :W642, "true branch is unreachable")
         if length(ex.args) > 2
-            lintexpr(ex.args[3], ctx)
+            insideif(x -> lintexpr(ex.args[3], x), ctx)
         end
     elseif ex.args[1] == true
-        lintexpr(ex.args[2], ctx)
+        insideif(x -> lintexpr(ex.args[2], x), ctx)
         if length(ex.args) > 2
             msg(ctx, :W643, "false branch is unreachable")
         else
@@ -29,7 +35,7 @@ function lintifexpr(ex::Expr, ctx::LintContext)
             tmpvtest = ctx.versionreachable
             ctx.versionreachable = _->(tmpvtest(_) && verconstraint1(_))
         end
-        lintexpr(ex.args[2], ctx)
+        insideif(x -> lintexpr(ex.args[2], x), ctx)
         if verconstraint1 != nothing
             ctx.versionreachable = tmpvtest
         end
@@ -38,7 +44,7 @@ function lintifexpr(ex::Expr, ctx::LintContext)
                 tmpvtest = ctx.versionreachable
                 ctx.versionreachable = _->(tmpvtest(_) && verconstraint2(_))
             end
-            lintexpr(ex.args[3], ctx)
+            insideif(x -> lintexpr(ex.args[3], x), ctx)
             if verconstraint2 != nothing
                 ctx.versionreachable = tmpvtest
             end

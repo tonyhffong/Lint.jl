@@ -163,3 +163,12 @@ true || 1==1 || 1==1
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+
+# issue #149: it's not always safe to include modules
+s = """
+if 1 == 0  # suppress if false warning
+    using FakeModule149
+end
+"""
+msgs = lintstr(s)
+@test isempty(msgs)
