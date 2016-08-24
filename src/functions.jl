@@ -457,7 +457,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
                 try
                     which(getfield(Main, s), tuple(typesig...))
                 catch er
-                    msg(ctx, :E231, s, "$(er); Signature: $(tuple(typesig...))")
+                    msg(ctx, :I281, s, "$(er); Signature: $(tuple(typesig...))")
                 end
             end
         end

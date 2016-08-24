@@ -64,7 +64,7 @@ const ERRORLEVELS = Dict{Char, Symbol}('E'=>:ERROR, 'W'=>:WARN, 'I'=>:INFO)
 level(m::LintMessage) = ERRORLEVELS[string(m.code)[1]]
 
 "Process messages. Sort and remove duplicates."
-function clean_messages!(msgs::Array{LintMessage})
+function clean_messages!(msgs::Array{LintMessage, 1})
     sort!(msgs)
     delids = Int[]
     for i in 2:length(msgs)

@@ -57,7 +57,6 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | **E2** | *Miscellaneous Error*
 | E211   | deprecated message
 | E221   | custum error
-| E231   | error; Signature: ...
 |        |
 | **E3** | *Existence Error*
 | E311   | cannot find include file
@@ -157,6 +156,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 |        |
 | **I2** | *Miscellaneous Info*
 | I271   | custum info
+| I281   | error; Signature: ...
 |        |
 | **I3** | *Existence Info*
 | I371   | use of undeclared symbol
