@@ -114,10 +114,10 @@ function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
                 m = eval(Main, ex.args[1])
             end
         end
-    catch er
+    catch # er
         problem = true
-        println(er)
-        println(ex)
+        # println(er)
+        # println(ex)
     end
     if !problem
         t = typeof(m)
