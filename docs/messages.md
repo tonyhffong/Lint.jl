@@ -61,7 +61,6 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | **E3** | *Existence Error*
 | E311   | cannot find include file
 | E321   | use of undeclared symbol
-| E322   | exporting undefined symbol
 | E331   | duplicate argument
 | E332   | should not be used as a variable name
 | E333   | duplicate exports of symbol
@@ -124,6 +123,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W353   | lambda argument conflicts with an argument
 | W354   | lambda argument conflicts with an declared global
 | W355   | conflicts with function name
+| W361   | exporting undefined symbol
 |        |
 | **W4** | *Usage Warning*
 | W441   | probably illegal use of inside curly
