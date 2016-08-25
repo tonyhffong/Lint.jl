@@ -127,7 +127,6 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 |        |
 | **W4** | *Usage Warning*
 | W441   | probably illegal use of inside curly
-| W442   | bit-wise in a boolean context. (&, |) do not have short-circuit behavior
 | W443   | did you forget an -> after @doc or make it inline?
 | W444   | nested vcat is treated as a 1-dimensional array
 | W445   | nested hcat is treated as a 1-row horizontal array of dim=2
@@ -169,6 +168,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I472   | assignment in the if-predicate clause
 | I473   | value at position #i is the referenced y. OK if it represents permutations
 | I474   | iteration generates tuples, n of m variables used
+| I475   | bit-wise in a boolean context. (&, |) do not have short-circuit behavior
 | I481   | in 0.4+, replace x() with y()
 | I482   | used in a local scope. Improve readability by using 'local' or another name
 | I483   | {} may be deprecated. Use Any[]
