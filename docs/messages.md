@@ -124,7 +124,6 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W353   | lambda argument conflicts with an argument
 | W354   | lambda argument conflicts with an declared global
 | W355   | conflicts with function name
-| W356   | local variable might cause confusion with a synonymous export from Base
 |        |
 | **W4** | *Usage Warning*
 | W441   | probably illegal use of inside curly
@@ -164,6 +163,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I381   | unused lintpragma
 | I382   | argument declared but not used
 | I391   | also a global from src
+| I392   | local variable might cause confusion with a synonymous export from Base
 |        |
 | **I4** | *Usage Info*
 | I472   | assignment in the if-predicate clause

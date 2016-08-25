@@ -283,7 +283,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
                     msg(ctx, :W351, s, "redefining mathematical constant")
                 end
             else
-                msg(ctx, :W356, s, "local variable might cause confusion with a " *
+                msg(ctx, :I392, s, "local variable might cause confusion with a " *
                     "synonymous export from Base")
             end
         end

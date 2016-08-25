@@ -16,7 +16,7 @@ function f()
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == :W356
+@test msgs[1].code == :I392
 @test msgs[1].variable == "var"
 @test contains(msgs[1].message, "local variable might cause confusion with a synonymous " *
     "export from Base")
