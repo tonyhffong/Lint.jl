@@ -47,6 +47,7 @@ end
 msgs = lintstr(s)
 @test isempty(msgs)
 
+#= (issues #140)
 s = """
 macro mymacro(expr::Int)
     expr
@@ -55,6 +56,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :E522
 @test contains(msgs[1].message, "macro arguments can only be Symbol/Expr")
+=#
 
 s = """
 # using PyCall # we don't want to uncomment this

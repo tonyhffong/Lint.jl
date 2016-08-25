@@ -96,7 +96,6 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E518   | key type expects X, provided Y
 | E519   | string[] expects Integer, provided X
 | E521   | apparent type T is not a container type
-| E522   | macro arguments can only be Symbol/Expr
 | E523   | constructor parameter collides with a type parameter
 | E524   | bitstype needs its 2nd argument to be a new type symbol
 | E525   | is of an immutable type
