@@ -112,9 +112,11 @@ type LintContext
     messages     :: Array{LintMessage, 1}
     versionreachable:: Function # VERSION -> true means this code is reachable by VERSION
     ignore       :: Array{LintIgnore, 1}
+    ifdepth      :: Int
     LintContext() = new("none", 0, 1, "", false, ".", AbstractString[],
-            Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0, 0,
-            Any[LintStack(true)], LintMessage[], _ -> true, deepcopy(LINT_IGNORE_DEFAULT))
+            Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0,
+            0, Any[LintStack(true)], LintMessage[], _ -> true,
+            deepcopy(LINT_IGNORE_DEFAULT), 0)
 end
 
 function LintContext(file::AbstractString; ignore::Array{LintIgnore, 1} = LintIgnore[])
