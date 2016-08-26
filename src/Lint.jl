@@ -121,7 +121,7 @@ function lintfile(file::AbstractString, code::AbstractString)
 end
 
 function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), lineoffset = 0)
-    linecharc = cumsum(map(x->length(x)+1, @compat(split(str, "\n", keep=true))))
+    linecharc = cumsum(map(x->endof(x)+1, @compat(split(str, "\n", keep=true))))
     numlines = length(linecharc)
     i = start(str)
     while !done(str,i)

@@ -53,3 +53,15 @@ msgs = lintstr(s)
 @test msgs[1].code == :E519
 @test msgs[1].variable == ":start"
 @test contains(msgs[1].message, "string[] expects Integer, provided Symbol")
+
+u = """
+안녕하세요 = "Hello World"
+
+Hello
+World
+"""
+msgs = lintstr(u)
+@test msgs[1].code == :E321
+@test msgs[1].variable == "Hello"
+@test msgs[2].code == :E321
+@test msgs[2].variable == "World"
