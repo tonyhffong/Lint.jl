@@ -382,4 +382,7 @@ function lintserver(port)
     end
 end
 
+# precompile hints
+include("precompile.jl")
+
 end
