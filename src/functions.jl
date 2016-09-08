@@ -418,18 +418,14 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         ]
         versionreachable = ctx.versionreachable(VERSION)
         for row in deprector
-            if VERSION < v"0.4.0-dev+1830" && versionreachable && ex.args[1] == row[2]
-                msg(ctx, :E432, row[2], "though valid in 0.4, use $(row[1])() instead of " *
-                    "$(row[2])()")
-            end
-            if VERSION >= v"0.4.0-dev+1830" && versionreachable && ex.args[1] == row[1]
+            if versionreachable && ex.args[1] == row[1]
                 repl = string(row[2])
                 suffix = ""
                 if contains(repl, "Int")
                     suffix = ", or some of the other explicit conversion functions. " *
                         "(round, trunc, etc...)"
                 end
-                msg(ctx, :I481, row[1], "in 0.4+, replace $(row[1])() with $(repl)()$(suffix)")
+                msg(ctx, :I481, row[1], "replace $(row[1])() with $(repl)()$(suffix)")
             end
         end
         if VERSION < v"0.5-" && ex.args[1] == :String

@@ -1,17 +1,7 @@
-function lintdict(ex::Expr, ctx::LintContext; typed::Bool = false)
-    @lintpragma("Ignore unused ex")
-
-    if !typed
-        if VERSION < v"0.4-" && ctx.versionreachable(VERSION)
-            msg(ctx, :I486, "dictionary [a=>b,...], may be deprecated by Julia 0.4. " *
-                "Use @compat Dict(a=>b,...)")
-        end
-    else
-        if VERSION < v"0.4-" && ctx.versionreachable(VERSION)
-            msg(ctx, :I487, "(K=>V)[a=>b,...] may be deprecated by Julia 0.4. Use " *
-                "@compat Dict{K,V}(a=>b,...)")
-        end
-    end
+function lintdict(::Expr, ::LintContext; typed::Bool = false)
+    @lintpragma "Ignore unused typed"
+    # TODO: Complain about v0.4-style [a => b for x in y] Dict comprehensions,
+    # deprecated in v0.5.
 end
 
 function lintdict4(ex::Expr, ctx::LintContext)
