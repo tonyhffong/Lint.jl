@@ -291,11 +291,7 @@ function lintexpr(ex::Expr, ctx::LintContext)
         msg(ctx, :E112, ex.args[1])
     else
         for sube in ex.args
-            if typeof(sube)== Expr
-                lintexpr(sube, ctx)
-            elseif typeof(sube)==Symbol
-                registersymboluse(sube, ctx)
-            end
+            lintexpr(sube, ctx)
         end
     end
 end
