@@ -55,9 +55,6 @@ function linttyped_hcat(ex::Expr, ctx::LintContext)
 end
 
 function lintcell1d(ex::Expr, ctx::LintContext)
-    if VERSION < v"0.4-"
-        msg(ctx, :I483, "{} may be deprecated in Julia 0.4. Use Any[]")
-    end
     for a in ex.args
         lintexpr(a, ctx)
     end

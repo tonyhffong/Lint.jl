@@ -168,13 +168,13 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I473   | value at position #i is the referenced y. OK if it represents permutations
 | I474   | iteration generates tuples, n of m variables used
 | I475   | bit-wise in a boolean context. (&, |) do not have short-circuit behavior
-| I481   | in 0.4+, replace x() with y()
+| I481   | replace x() with y()
 | I482   | used in a local scope. Improve readability by using 'local' or another name
-| I483   | {} may be deprecated. Use Any[]
-| I484   | untyped dictionary {a=>b for (a,b) in c}, may be deprecated. Use (Any=>Any)[a=>b for (a,b) in c]
-| I485   | untyped dictionary {a for a in c}, may be deprecated. Use (Any)[a for a in c]
-| I486   | dictionary [a=>b,...], may be deprecated. Use @compat Dict(a=>b,...)
-| I487   | (K=>V)[a=>b,...] may be deprecated. Use @compat Dict{K,V}(a=>b,...)
+| I483   | (removed in Lint 0.3.0)
+| I484   | (removed in Lint 0.3.0)
+| I485   | (removed in Lint 0.3.0)
+| I486   | (removed in Lint 0.3.0)
+| I487   | (removed in Lint 0.3.0)
 |        |
 | **I5** | *Type Info*
 | I571   | the 1st statement under the true-branch is a boolean expression
