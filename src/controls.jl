@@ -158,7 +158,7 @@ function lintboolean(ex, ctx::LintContext)
         if ex.head == :(=)
             msg(ctx, :I472, "assignment in the if-predicate clause")
         elseif ex.head == :call && ex.args[1] in [:(&), :(|), :($)]
-            msg(ctx, :W442, ex.args[1], "bit-wise in a boolean " *
+            msg(ctx, :I475, ex.args[1], "bit-wise in a boolean " *
                 "context. (&,|) do not have short-circuit behavior")
         elseif ex.head == :(&&) || ex.head == :(||)
             n = length(ex.args)

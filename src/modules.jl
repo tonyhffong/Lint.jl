@@ -18,7 +18,7 @@ function lintmodule(ex::Expr, ctx::LintContext)
     undefs = setdiff(undefs, stacktop.imports)
 
     for sym in undefs
-        msg(ctx, :E322, sym, "exporting undefined symbol")
+        msg(ctx, :W361, sym, "exporting undefined symbol")
     end
     popcallstack(ctx)
 end

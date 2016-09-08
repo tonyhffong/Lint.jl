@@ -61,7 +61,6 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | **E3** | *Existence Error*
 | E311   | cannot find include file
 | E321   | use of undeclared symbol
-| E322   | exporting undefined symbol
 | E331   | duplicate argument
 | E332   | should not be used as a variable name
 | E333   | duplicate exports of symbol
@@ -97,7 +96,6 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E518   | key type expects X, provided Y
 | E519   | string[] expects Integer, provided X
 | E521   | apparent type T is not a container type
-| E522   | macro arguments can only be Symbol/Expr
 | E523   | constructor parameter collides with a type parameter
 | E524   | bitstype needs its 2nd argument to be a new type symbol
 | E525   | is of an immutable type
@@ -124,11 +122,10 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W353   | lambda argument conflicts with an argument
 | W354   | lambda argument conflicts with an declared global
 | W355   | conflicts with function name
-| W356   | local variable might cause confusion with a synonymous export from Base
+| W361   | exporting undefined symbol
 |        |
 | **W4** | *Usage Warning*
 | W441   | probably illegal use of inside curly
-| W442   | bit-wise in a boolean context. (&, |) do not have short-circuit behavior
 | W443   | did you forget an -> after @doc or make it inline?
 | W444   | nested vcat is treated as a 1-dimensional array
 | W445   | nested hcat is treated as a 1-row horizontal array of dim=2
@@ -164,11 +161,13 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I381   | unused lintpragma
 | I382   | argument declared but not used
 | I391   | also a global from src
+| I392   | local variable might cause confusion with a synonymous export from Base
 |        |
 | **I4** | *Usage Info*
 | I472   | assignment in the if-predicate clause
 | I473   | value at position #i is the referenced y. OK if it represents permutations
 | I474   | iteration generates tuples, n of m variables used
+| I475   | bit-wise in a boolean context. (&, |) do not have short-circuit behavior
 | I481   | in 0.4+, replace x() with y()
 | I482   | used in a local scope. Improve readability by using 'local' or another name
 | I483   | {} may be deprecated. Use Any[]
