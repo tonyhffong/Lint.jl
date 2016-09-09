@@ -62,28 +62,11 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
         end
     end
 
-    str = string(sym)
-    if isupper(str[1])
-        @lintpragma("Ignore incompatible type comparison")
-        t = nothing
-        try
-            tmp = eval(Main, sym)
-            t = typeof(tmp)
-        catch
-            t = nothing
-        end
-        if t == DataType
-            return :DataType
-        elseif t != nothing
-            return :var
-        end
-    end
-
     # a bunch of whitelist to just grandfather-in
-    if in(sym, knowntypes)
+    if sym in knowntypes
         return :DataType
     end
-    if in(sym, knownsyms)
+    if sym in knownsyms
         return :var
     end
 
@@ -101,51 +84,26 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
         end
 
         if found
-            # if in looking up variables we found global, from then
-            # on we treat the variable as if we have had declared "global"
-            # within the scope block
+            # looking up variables we found global
+            # note: found global variables are not the same as declared globals
             if i != length(ctx.callstack) &&
                 haskey(ctx.callstack[i].declglobs, sym)
-                register_global(
-                    ctx,
-                    sym,
-                    ctx.callstack[i].declglobs[sym]
-               )
             end
             return ret
         end
     end
 
-    maybefunc = nothing
-    t = nothing
-    try
-        maybefunc = eval(Main, sym)
-        t = typeof(maybefunc)
-    catch
-        t = nothing
-    end
-    if t == Function
-        register_global(
-            ctx,
-            sym,
-            @compat(Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line))
-       )
-        return :var
-    end
+    result = dynamic_imported_binding_type(sym)
 
-    if !strict
-        return :Any
+    if strict && result === :Any &&
+       !pragmaexists("Ignore use of undeclared variable $sym", ctx)
+        if ctx.quoteLvl == 0
+            msg(ctx, :E321, sym, "use of undeclared symbol")
+        elseif ctx.isstaged
+            msg(ctx, :I371, sym, "use of undeclared symbol")
+        end
     end
-
-    if pragmaexists("Ignore use of undeclared variable $sym", ctx)
-        return :Any
-    end
-    if ctx.quoteLvl == 0
-        msg(ctx, :E321, sym, "use of undeclared symbol")
-    elseif ctx.isstaged
-        msg(ctx, :I371, sym, "use of undeclared symbol")
-    end
-    return :Any
+    return result
 end
 
 function lintglobal(ex::Expr, ctx::LintContext)
