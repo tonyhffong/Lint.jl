@@ -55,28 +55,9 @@ end
 # return a duplet of functions, the true branch version predicate and the false-branch version predicate
 # if none exists, return (nothing, nothing)
 function versionconstraint(ex)
-
     if isexpr(ex, :call) && ex.args[1] in COMPARISON_OPS
-        if ex.args[2] == :VERSION || ex.args[3] == :VERSION
-            if ex.args[2] == :VERSION && isexpr(ex.args[3], :macrocall) &&
-                ex.args[3].args[1] == Symbol( "@v_str" ) &&
-                typeof(ex.args[3].args[2]) <: AbstractString ||
-                isexpr(ex.args[2], :macrocall) &&
-                ex.args[2].args[1] == Symbol( "@v_str" ) &&
-                typeof(ex.args[2].args[2]) <: AbstractString
-
-                localex = deepcopy(ex)
-                for i in 1:length(localex.args)
-                    if localex.args[i] == :VERSION
-                        localex.args[i] = :_
-                    end
-                end
-                l = eval(Main, Expr(:(->), :_, localex))
-                return (l, _ -> !(l(_)))
-            else
-                return (nothing,nothing)
-            end
-        end
+        return versionconstraint(
+            Expr(:comparison, ex.args[2], ex.args[1], ex.args[3]))
     elseif isexpr(ex, :comparison)
         if in(:VERSION, ex.args)
             for i = 1:2:length(ex.args)
