@@ -1,5 +1,25 @@
-commoncollections = DataType[Array, AbstractArray, BitArray, Set, Associative]
-commoncollmethods = Dict{Symbol, Set{DataType}}()
+const commoncollections = DataType[
+    Array, AbstractArray, BitArray, Set, Associative]
+const commoncollmethods = Dict{Symbol, Set{DataType}}()
+
+# deprecation of specialized version of constructors
+const deprecated_constructors =
+    Dict(:symbol  => :Symbol,
+         :uint    => :UInt,
+         :uint8   => :UInt8,
+         :uint16  => :UInt16,
+         :uint32  => :UInt32,
+         :uint64  => :UInt64,
+         :uint128 => :UInt128,
+         :float16 => :Float16,
+         :float32 => :Float32,
+         :float64 => :Float64,
+         :int     => :Int,
+         :int8    => :Int8,
+         :int16   => :Int16,
+         :int32   => :Int32,
+         :int64   => :Int64,
+         :int128  => :Int128)
 
 function initcommoncollfuncs()
     global commoncollmethods
@@ -397,36 +417,15 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         end
         known=false
 
-        # deprecation of specialized version of constructors
-        deprector = Any[
-        (:symbol  , :Symbol)  ,
-        (:uint    , :UInt)    ,
-        (:uint8   , :UInt8)   ,
-        (:uint16  , :UInt16)  ,
-        (:uint32  , :UInt32)  ,
-        (:uint64  , :UInt64)  ,
-        (:uint128 , :UInt128) ,
-        (:float16 , :Float16) ,
-        (:float32 , :Float32) ,
-        (:float64 , :Float64) ,
-        (:int     , :Int)     ,
-        (:int8    , :Int8)    ,
-        (:int16   , :Int16)   ,
-        (:int32   , :Int32)   ,
-        (:int64   , :Int64)   ,
-        (:int128  , :Int128)
-        ]
         versionreachable = ctx.versionreachable(VERSION)
-        for row in deprector
-            if versionreachable && ex.args[1] == row[1]
-                repl = string(row[2])
-                suffix = ""
-                if contains(repl, "Int")
-                    suffix = ", or some of the other explicit conversion functions. " *
-                        "(round, trunc, etc...)"
-                end
-                msg(ctx, :I481, row[1], "replace $(row[1])() with $(repl)()$(suffix)")
+        if versionreachable && haskey(deprecated_constructors, ex.args[1])
+            repl = string(deprecated_constructors[ex.args[1]])
+            suffix = ""
+            if contains(repl, "Int")
+                suffix = ", or some of the other explicit conversion functions. " *
+                    "(round, trunc, etc...)"
             end
+            msg(ctx, :I481, ex.args[1], "replace $(ex.args[1])() with $(repl)()$(suffix)")
         end
         if VERSION < v"0.5-" && ex.args[1] == :String
             msg(ctx, :E537, ex.args[1],
