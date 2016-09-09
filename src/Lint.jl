@@ -156,23 +156,19 @@ function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), li
     ctx.messages
 end
 
-function lintexpr(ex::Any, ctx::LintContext)
-    if typeof(ex) == Symbol
-        registersymboluse(ex, ctx)
-        return
-    end
+function lintexpr(ex::Symbol, ctx::LintContext)
+    registersymboluse(ex, ctx)
+end
 
-    if typeof(ex) == QuoteNode && typeof(ex.value) == Expr
+function lintexpr(ex::QuoteNode, ctx::LintContext)
+    if typeof(ex.value) == Expr
         ctx.quoteLvl += 1
         lintexpr(ex.value, ctx)
         ctx.quoteLvl -= 1
-        return
     end
+end
 
-    if typeof(ex) != Expr
-        return
-    end
-
+function lintexpr(ex::Expr, ctx::LintContext)
     for h in values(ctx.callstack[end].linthelpers)
         if h(ex, ctx) == true
             return
@@ -295,14 +291,14 @@ function lintexpr(ex::Any, ctx::LintContext)
         msg(ctx, :E112, ex.args[1])
     else
         for sube in ex.args
-            if typeof(sube)== Expr
-                lintexpr(sube, ctx)
-            elseif typeof(sube)==Symbol
-                registersymboluse(sube, ctx)
-            end
+            lintexpr(sube, ctx)
         end
     end
 end
+
+# no-op fallback for other kinds of expressions (e.g. LineNumberNode) that we
+# don’t care to handle
+lintexpr(::Any, ::LintContext) = return
 
 """
 Include a file to your lintContext.
@@ -381,5 +377,8 @@ function lintserver(port)
         close(server)
     end
 end
+
+# precompile hints
+include("precompile.jl")
 
 end
