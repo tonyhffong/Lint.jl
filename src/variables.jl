@@ -70,29 +70,19 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
         return :var
     end
 
-    found = false
-    ret = :var
+    # Move up call stack, looking at global declarations
     for i in length(ctx.callstack):-1:1
         if in(sym, ctx.callstack[i].types)
-            found = true
-            ret = :DataType
+            return :DataType
         elseif haskey(ctx.callstack[i].declglobs, sym) ||
-            in(sym, ctx.callstack[i].functions) ||
-            in(sym, ctx.callstack[i].modules) ||
-            in(sym, ctx.callstack[i].imports)
-            found = true
-        end
-
-        if found
-            # looking up variables we found global
-            # note: found global variables are not the same as declared globals
-            if i != length(ctx.callstack) &&
-                haskey(ctx.callstack[i].declglobs, sym)
-            end
-            return ret
+               in(sym, ctx.callstack[i].functions) ||
+               in(sym, ctx.callstack[i].modules) ||
+               in(sym, ctx.callstack[i].imports)
+            return :var
         end
     end
 
+    # Fall back to dynamic evaluation in Main
     result = dynamic_imported_binding_type(sym)
 
     if strict && result === :Any &&
