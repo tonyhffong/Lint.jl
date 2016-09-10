@@ -70,13 +70,7 @@ function versionconstraint(ex)
                     return (nothing, nothing)
                 end
             end
-            localex = deepcopy(ex)
-            for i in 1:length(localex.args)
-                if localex.args[i] == :VERSION
-                    localex.args[i] = :_
-                end
-            end
-            l = eval(Main, Expr(:(->), :_, localex))
+            l = eval(Main, Expr(:(->), :VERSION, ex))
             return (l, _ -> !(l(_)))
         else
             return (nothing, nothing)
