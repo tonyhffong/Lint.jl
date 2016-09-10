@@ -313,12 +313,12 @@ function lintinclude(ctx::LintContext, file::AbstractString)
         #println("including: $file")
         push!(ctx.included, file)
 
-        oldpath = deepcopy(ctx.path)
-        oldfile = deepcopy(ctx.file)
+        oldpath = ctx.path
+        oldfile = ctx.file
         oldlineabs = ctx.lineabs
 
         str = open(readstring, file)
-        ctx.file = deepcopy(file)
+        ctx.file = file
         ctx.path = dirname(file)
         ctx.lineabs = 1
         lintstr(str, ctx)
