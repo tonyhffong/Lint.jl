@@ -39,6 +39,7 @@ include("curly.jl")
 include("misc.jl")
 include("init.jl")
 include("result.jl")
+include("dynamic.jl")
 
 function lintpkg{T<:AbstractString}(pkg::T; returnMsgs=nothing)
     # FIXME: deprecated summer 2016, remove after reasonable amount of time
