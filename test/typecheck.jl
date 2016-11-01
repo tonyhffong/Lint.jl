@@ -232,8 +232,7 @@ s = """
 s = Union(Int,Double)
 """
 msgs = lintstr(s)
-@test msgs[1].code == :E421
-@test contains(msgs[1].message, "use Union{...}, with curly, instead of parentheses")
+@test msgs[1].code == :W441
 
 s = """
 a = 1.0

@@ -21,6 +21,8 @@ const deprecated_constructors =
          :int64   => :Int64,
          :int128  => :Int128)
 
+const not_constructible = Set([:Union, :Tuple, :Type])
+
 function initcommoncollfuncs()
     global commoncollmethods
     for t in commoncollections
@@ -430,8 +432,8 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         if VERSION < v"0.5-" && ex.args[1] == :String
             msg(ctx, :E537, ex.args[1],
                 "String constructor does not exist in v0.4; use string() instead")
-        elseif ex.args[1] == :Union
-            msg(ctx, :E421, "use Union{...}, with curly, instead of parentheses")
+        elseif ex.args[1] in not_constructible
+            msg(ctx, :W441, "type $(ex.args[1]) is not constructible like this")
         elseif ex.args[1] == :(+)
             lintplus(ex, ctx)
             known = true

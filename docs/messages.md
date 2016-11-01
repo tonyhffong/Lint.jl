@@ -75,7 +75,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E416   | import is not allowed inside function definitions
 | E417   | anonymous function inside type definition
 | E418   | RHS is a tuple, n of m variables used
-| E421   | use Union{...}, with curly, instead of parentheses
+| E421   | (no longer used)
 | E422   | string uses * to concatenate
 | E423   | named keyword argument must have a default
 | E424   | nested vect is treated as a 1-dimensional array. Use [a;b] instead
@@ -132,6 +132,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W446   | too many type parameters
 | W447   | can't be #i type parameter for h; it should be of type t2
 | W448   | an exception is instantiated but it is not being thrown
+| W449   | this type is typically not constructible
 |        |
 | **W5** | *Type Warning*
 | W541   | doesn't eval into a Module
