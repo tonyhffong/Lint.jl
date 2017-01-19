@@ -98,7 +98,7 @@ end
 
 function lintglobal(ex::Expr, ctx::LintContext)
     for sym in ex.args
-        if typeof(sym) == Symbol
+        if isa(sym, Symbol)
             if !haskey(ctx.callstack[end].declglobs, sym)
                 register_global(
                     ctx,
@@ -117,17 +117,11 @@ end
 function lintlocal(ex::Expr, ctx::LintContext)
     n = length(ctx.callstack[end].localvars)
     for sube in ex.args
-        if typeof(sube)==Symbol
+        if isa(sube, Symbol)
             ctx.callstack[end].localvars[n][sube] = VarInfo(ctx.line)
-            continue
-        end
-        if typeof(sube) != Expr
-            msg(ctx, :E135, sube, "local declaration not understood by Lint")
-            continue
-        end
-        if sube.head == :(=)
+        elseif isexpr(sube, :(=))
             lintassignment(sube, :(=), ctx; islocal = true)
-        elseif sube.head == :(::)
+        elseif isexpr(sube, :(::))
             sym = sube.args[1]
             vi = VarInfo(ctx.line)
             try
@@ -141,16 +135,18 @@ function lintlocal(ex::Expr, ctx::LintContext)
                 vi.typeexpr = sube.args[2]
             end
             ctx.callstack[end].localvars[n][sym] = vi
+        else
+            msg(ctx, :E135, sube, "local declaration not understood by Lint")
         end
     end
 end
 
 function resolveLHSsymbol(ex, syms::Array{Any,1}, ctx::LintContext, assertions::Dict{Symbol,Any})
-    if typeof(ex) == Symbol
+    if isa(ex, Symbol)
         push!(syms, ex)
-    elseif typeof(ex) == Expr
+    elseif isa(ex, Expr)
         if ex.head == :(::)
-            if typeof(ex.args[1]) == Symbol
+            if isa(ex.args[1], Symbol)
                 assertions[ex.args[1]]=ex.args[2]
             end
             resolveLHSsymbol(ex.args[1], syms, ctx, assertions)
@@ -202,7 +198,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         end
     end
 
-    if typeof(rhstype) != Symbol && rhstype <: Tuple && length(rhstype.parameters) != tuplelen && !isForLoop
+    if !isa(rhstype, Symbol) && rhstype <: Tuple && length(rhstype.parameters) != tuplelen && !isForLoop
         if tuplelen > 1
             msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
                 "$(length(rhstype.parameters)) variables used")
@@ -210,7 +206,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
     end
 
     for (symidx, s) in enumerate(syms)
-        if typeof(s) != Symbol # a.b or a[b]
+        if !isa(s, Symbol) # a.b or a[b]
             if isexpr(s, [:(.), :ref])
                 containertype = guesstype(s.args[1], ctx)
                 if containertype != Any && isa(containertype, Type) && !containertype.mutable
@@ -258,7 +254,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
                 dt = eval(Main, assertions[s])
                 if isa(dt, Type)
                     vi.typeactual = dt
-                    if !isAnyOrTupleAny(dt) && !isAnyOrTupleAny(rhstype) && !(rhstype <: dt)
+                    if typeintersect(dt, rhstype) == Union{}
                         msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *
                             "$(rhstype)")
                     end
@@ -293,7 +289,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
                         vi.typeactual <: Number && prevvi.typeactual <: Array && assign_ops != :(=)
 
                         continue
-                    elseif !isAnyOrTupleAny(vi.typeactual) && typeof(vi.typeactual) != Symbol && !(vi.typeactual <: prevvi.typeactual) &&
+                    elseif vi.typeactual ≠ Any && !isa(vi.typeactual, Symbol) && !(vi.typeactual <: prevvi.typeactual) &&
                         !(vi.typeactual <: AbstractString && prevvi.typeactual <: vi.typeactual) &&
                         !pragmaexists("Ignore unstable type variable $(s)", ctx)
                         msg(ctx, :W545, s, "previously used variable has apparent type " *

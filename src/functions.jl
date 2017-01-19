@@ -55,7 +55,7 @@ function initcommoncollfuncs()
 end
 
 function lintfuncargtype(ex, ctx::LintContext)
-    if typeof(ex) <: Expr && ex.head == :curly
+    if isexpr(ex, :curly)
         st = 2
         en = 1
         if ex.args[1] == :Array
@@ -75,7 +75,7 @@ end
 # a constructor for a type. We would check
 # * if the function name matches the type name
 function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstaged=false)
-    if length(ex.args) == 1 && typeof(ex.args[1]) == Symbol
+    if length(ex.args) == 1 && isa(ex.args[1], Symbol)
         # generic function without methods
         return
     end
@@ -97,7 +97,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     elseif isexpr(ex.args[1].args[1], :(.))
         fname = ex.args[1].args[1]
         push!(ctx.callstack[end].functions, fname.args[end])
-    elseif typeof(ex.args[1].args[1]) == Symbol
+    elseif isa(ex.args[1].args[1], Symbol)
         fname = ex.args[1].args[1]
         push!(ctx.callstack[end].functions, fname)
     elseif !isa(ex.args[1].args[1], Expr)
@@ -108,7 +108,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         push!(ctx.callstack[end].functions, fname)
         for i in 2:length(ex.args[1].args[1].args)
             adt = ex.args[1].args[1].args[i]
-            if typeof(adt) == Symbol
+            if isa(adt, Symbol)
                 if in(adt, knowntypes)
                     msg(ctx, :E534, adt, "introducing a new name for an implicit " *
                         "argument to the function, use {T<:$(adt)}")
@@ -161,7 +161,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     assertions = Dict{Symbol, Any}() # e.g. x::Int
 
     resolveArguments = (sube, position) -> begin # zero position means it's not called at the top level
-        if typeof(sube) == Symbol
+        if isa(sube, Symbol)
             if in(sube, argsSeen)
                 msg(ctx, :E331, sube, "duplicate argument")
             end
@@ -176,13 +176,13 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             return sube
         elseif sube.head == :parameters
             for (j,kw) in enumerate(sube.args)
-                if typeof(kw)==Expr && kw.head == :(...)
+                if isexpr(kw, :(...))
                     if j != length(sube.args)
                         msg(ctx, :E412, kw, "named ellipsis ... can only be the last argument")
                         return
                     end
                     sym = resolveArguments(kw, 0)
-                    if typeof(sym)== Symbol
+                    if isa(sym, Symbol)
                         if isstaged
                             assertions[sym] = Type
                         else
@@ -191,7 +191,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                         end
                     end
                     return
-                elseif typeof(kw) != Expr || (kw.head != :(=) && kw.head != :kw)
+                elseif !isexpr(kw, [:(=), :kw])
                     msg(ctx, :E423, kw, "named keyword argument must have a default")
                     return
                 else
@@ -206,7 +206,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             sym = resolveArguments(sube.args[1], 0)
             if !isstaged
                 rhstype = guesstype(sube.args[2], ctx)
-                if typeof(sym) == Symbol
+                if isa(sym, Symbol)
                     typeRHShints[sym] = rhstype
                 end
             end
@@ -214,7 +214,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             if length(sube.args) > 1
                 sym = resolveArguments(sube.args[1], 0)
                 if !isstaged
-                    if typeof(sym) == Symbol
+                    if isa(sym, Symbol)
                         dt = Any
                         try
                             dt = parsetype(sube.args[2])
@@ -234,7 +234,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                 msg(ctx, :E413, sube, "positional ellipsis ... can only be the last argument")
             end
             sym = resolveArguments(sube.args[1], 0)
-            if typeof(sym) == Symbol
+            if isa(sym, Symbol)
                 if isstaged
                     assertions[sym] = Tuple{Vararg{Type}}
                 elseif haskey(assertions, sym)
@@ -343,7 +343,7 @@ function lintlambda(ex::Expr, ctx::LintContext)
     end
 
     resolveArguments = (sube) -> begin
-        if typeof(sube) == Symbol
+        if isa(sube, Symbol)
             checklambdaarg(sube)
             stacktop.localarguments[end][sube] = VarInfo(ctx.line)
         #= # until lambda supports named args, keep this commented
@@ -367,7 +367,7 @@ function lintlambda(ex::Expr, ctx::LintContext)
         end
     end
 
-    if typeof(ex.args[1]) == Symbol
+    if isa(ex.args[1], Symbol)
         resolveArguments(ex.args[1])
     elseif isexpr(ex.args[1], :tuple)
         for i = 1:length(ex.args[1].args)
@@ -385,7 +385,7 @@ end
 
 function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
     if ex.args[1] == :include
-        if typeof(ex.args[2]) <: AbstractString
+        if isa(ex.args[2], AbstractString)
             inclfile = string(ex.args[2])
         else
             inclfile = ""
@@ -441,7 +441,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
 
         skiplist = Int[]
 
-        if typeof(ex.args[1]) == Symbol && haskey(commoncollmethods, ex.args[1])
+        if isa(ex.args[1], Symbol) && haskey(commoncollmethods, ex.args[1])
             known=true
             s = ex.args[1]
             typesig = Any[]
@@ -462,8 +462,8 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         #splice! allows empty range such as 3:2, it means inserting an array
         # between position 2 and 3, without taking out any value.
         if ex.args[1] == Symbol("splice!") && Meta.isexpr(ex.args[3], :(:)) &&
-            length(ex.args[3].args) == 2 && typeof(ex.args[3].args[1]) <: Real &&
-            typeof(ex.args[3].args[2]) <: Real && ex.args[3].args[2] < ex.args[3].args[1]
+            length(ex.args[3].args) == 2 && isa(ex.args[3].args[1], Real) &&
+            isa(ex.args[3].args[2], Real) && ex.args[3].args[2] < ex.args[3].args[1]
             push!(skiplist, 3)
         end
 
@@ -486,7 +486,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         end
 
         st = 2
-        if ex.args[1] == :ifelse && typeof(ex.args[2]) == Expr
+        if ex.args[1] == :ifelse
             lintboolean(ex.args[2], ctx)
             st = 3
             known = true
@@ -500,7 +500,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
 
         if isexpr(ex.args[1], :(.))
             lintexpr(ex.args[1], ctx)
-        elseif typeof(ex.args[1]) == Symbol
+        elseif isa(ex.args[1], Symbol)
             push!(ctx.callstack[end].calledfuncs, ex.args[1])
         end
 
@@ -514,7 +514,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             end
         end
 
-        if !inthrow && typeof(ex.args[1]) == Symbol
+        if !inthrow && isa(ex.args[1], Symbol)
             s = lowercase(string(ex.args[1]))
             if contains(s,"error") || contains(s,"exception") || contains(s,"mismatch") || contains(s,"fault")
                 try

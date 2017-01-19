@@ -10,27 +10,19 @@ valuetype{K,V}(::Type{Associative{K,V}}) = V
 keytype{T<:Associative}(::Type{T}) = keytype(supertype(T))
 valuetype{T<:Associative}(::Type{T}) = valuetype(supertype(T))
 
-function isAnyOrTupleAny(x)
-    if x == Any
-        return true
-    elseif typeof(x) <: Tuple
-        return all(y->y == Any, x)
-    end
-    return false
-end
-
-function evaltype(ex)
+function evaltype(ex::Symbol)
     ret = Any
     try
-        ret = eval(Main, ex)
+        ret = getfield(Base, ex)
     end
     return isa(ret, Type) ? ret : Any
 end
+evaltype(ex) = Any
 
 # ex should be a type. figure out what it is
 function parsetype(ex)
     ret = Any
-    if typeof(ex) <: Symbol
+    if isa(ex, Symbol)
         return evaltype(ex)
     elseif typeof(ex) <: Expr
         if isexpr(ex, :curly)
@@ -288,7 +280,7 @@ function guesstype(ex, ctx::LintContext)
         end
 
         elt = evaltype(ex.args[2])
-        if length(sig) >= 1 && sig[1] == Type
+        if length(sig) >= 1 && sig[1] <: Type
             if length(sig) == 2 && isexpr(ex.args[3], :tuple)
                 return Array{elt, length(ex.args[3].args)}
             elseif length(sig) == 2 && sig[2] <: Tuple && all(x->x <: Integer, sig[2])

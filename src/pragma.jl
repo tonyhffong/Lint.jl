@@ -1,5 +1,5 @@
 function lintlintpragma(ex::Expr, ctx::LintContext)
-    if length(ex.args) >= 2 && typeof(ex.args[2]) <: AbstractString
+    if length(ex.args) >= 2 && isa(ex.args[2], AbstractString)
         m = match(r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)|(version)) +(.+)"s, ex.args[2])
         if m != nothing
             action = m.captures[1]
@@ -11,7 +11,7 @@ function lintlintpragma(ex::Expr, ctx::LintContext)
                     msg(ctx, :E138, rest_str, "incomplete pragma expression")
                     str = ""
                 else
-                    str = "typeof(" * rest_str * ") == " * string(guesstype(v, ctx))
+                    str = "typeof($rest_str) == $(guesstype(v, ctx))"
                 end
             elseif infotype == "me"
                 str = rest_str
