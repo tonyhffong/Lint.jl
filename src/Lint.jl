@@ -20,6 +20,9 @@ end
 
 import Base: ==
 
+include("exprutils.jl")
+using .ExpressionUtils
+
 include("linttypes.jl")
 include("messages.jl")
 include("knownsyms.jl")
