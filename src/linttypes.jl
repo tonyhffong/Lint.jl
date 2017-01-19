@@ -116,7 +116,7 @@ type LintContext
     LintContext() = new("none", 0, 1, "", false, ".", AbstractString[],
             Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0,
             0, Any[LintStack(true)], LintMessage[], _ -> true,
-            deepcopy(LINT_IGNORE_DEFAULT), 0)
+            copy(LINT_IGNORE_DEFAULT), 0)
 end
 
 function LintContext(file::AbstractString; ignore::Array{LintIgnore, 1} = LintIgnore[])

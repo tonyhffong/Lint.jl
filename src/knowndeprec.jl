@@ -7,7 +7,7 @@ type DeprecateInfo
     message::Compat.UTF8String
     line::Int
 end
-deprecates = Dict{Symbol, Vector{DeprecateInfo}}()
+const deprecates = Dict{Symbol, Vector{DeprecateInfo}}()
 
 function initDeprecateInfo()
     str = open(readstring, Base.find_source_file("deprecated.jl"))
