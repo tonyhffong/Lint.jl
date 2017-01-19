@@ -24,7 +24,7 @@ function evaltype(ex)
     try
         ret = eval(Main, ex)
     end
-    return isa(ret, DataType) ? ret : Any
+    return isa(ret, Type) ? ret : Any
 end
 
 # ex should be a type. figure out what it is
@@ -93,14 +93,14 @@ function guesstype(ex, ctx::LintContext)
         end
         # TODO: this should be a module function
         checkret = x -> begin
-            if typeof(x) == DataType || typeof(x) == (DataType,)
+            if isa(x, Type)
                 return x
             else
                 tmp = x
                 try
                     tmp = eval(x)
                 end
-                if typeof(tmp) == DataType || typeof(tmp) == (DataType,)
+                if isa(tmp, Type)
                     return tmp
                 else
                     return x
@@ -123,7 +123,7 @@ function guesstype(ex, ctx::LintContext)
         end
         for i in length(ctx.callstack):-1:1
             if in(sym, ctx.callstack[i].types)
-                return DataType
+                return Type
             end
             if in(sym, ctx.callstack[i].functions)
                 return Function
@@ -166,7 +166,7 @@ function guesstype(ex, ctx::LintContext)
         return evaltype(ex.args[2])
     end
 
-    # this is hackish because the return type is a Symbol, not a DataType
+    # this is hackish because the return type is a Symbol, not a Type
     if isexpr(ex, :call) && ex.args[1] == :new
         return Symbol(ctx.scope)
     end
@@ -242,7 +242,7 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :curly)
-        return DataType
+        return Type
     end
 
     if isexpr(ex, :call) && isexpr(ex.args[1], :curly)
@@ -288,7 +288,7 @@ function guesstype(ex, ctx::LintContext)
         end
 
         elt = evaltype(ex.args[2])
-        if length(sig) >= 1 && sig[1] == DataType
+        if length(sig) >= 1 && sig[1] == Type
             if length(sig) == 2 && isexpr(ex.args[3], :tuple)
                 return Array{elt, length(ex.args[3].args)}
             elseif length(sig) == 2 && sig[2] <: Tuple && all(x->x <: Integer, sig[2])
@@ -378,11 +378,11 @@ function guesstype(ex, ctx::LintContext)
 
         if typeof(ex.args[1]) == Symbol
             what = registersymboluse(ex.args[1], ctx, false)
-            if what == :DataType
+            if what == :Type
                 elt = parsetype(ex.args[1])
                 return Array{elt, 1}
             elseif what == :Any
-                msg(ctx, :W543, ex.args[1], "Lint cannot determine if DataType or not")
+                msg(ctx, :W543, ex.args[1], "Lint cannot determine if Type or not")
                 return Any
             end
         end
@@ -432,17 +432,6 @@ function guesstype(ex, ctx::LintContext)
                 end
             end
             return Any
-        elseif typeof(partyp) == (DataType,) # e.g. (Int,), (Int...,), (DataType,...)
-            fst = partyp[1]
-            try
-                if fst.name.name == :Vararg
-                    return fst.parameters[1]
-                else
-                    return fst
-                end
-            catch
-                return Any
-            end
         elseif partyp <: Associative
             ktypeexpect = keytype(partyp)
             vtypeexpect = valuetype(partyp)
@@ -476,7 +465,7 @@ function guesstype(ex, ctx::LintContext)
                 return Any
             end
             if length(partyp.parameters) == 1 || partyp.parameters[1].name.name == :Vararg
-                if typeof(partyp.parameters[1].parameters[1]) <: DataType
+                if typeof(partyp.parameters[1].parameters[1]) <: Type
                     return evaltype(partyp.parameters[1].parameters[1].name.name)
                 end
             end

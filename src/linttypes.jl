@@ -9,11 +9,11 @@ end
 
 type VarInfo
     line::Int
-    typeactual::Any # most of the time it's DataType, but could be Tuple of types, too
+    typeactual::Type
     typeexpr::Union{Expr, Symbol} # We may know that it is Array{T, 1}, though we do not know T, for example
     VarInfo() = new(-1, Any, :())
     VarInfo(l::Int) = new(l, Any, :())
-    VarInfo(l::Int, t::DataType) = new(l, t, :())
+    VarInfo(l::Int, t::Type) = new(l, t, :())
     VarInfo(l::Int, ex::Expr) = new(l, Any, ex)
     VarInfo(ex::Expr) = new(-1, Any, ex)
 end

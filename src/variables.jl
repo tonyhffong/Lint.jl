@@ -32,8 +32,8 @@ function pushVarScope(ctx::LintContext)
 end
 
 # returns
-# :var - a non-DataType value
-# :DataType
+# :var - a non-Type value
+# :Type
 # :Any - don't know, could be either (with lint warnings, if strict)
 
 # if strict == false, it won't generate lint warnings, just return :Any
@@ -47,7 +47,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
         if haskey(stacktop.localvars[i], sym)
             push!(stacktop.localusedvars[i], sym)
             # TODO: This is not quite right. We need to check type
-            # on the sym. If it's DataType, return :DataType
+            # on the sym. If it's Type, return :Type
             # if Any, return :Any
             # otherwise, :var
             return :var
@@ -64,7 +64,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
 
     # a bunch of whitelist to just grandfather-in
     if sym in knowntypes
-        return :DataType
+        return :Type
     end
     if sym in knownsyms
         return :var
@@ -73,7 +73,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
     # Move up call stack, looking at global declarations
     for i in length(ctx.callstack):-1:1
         if in(sym, ctx.callstack[i].types)
-            return :DataType
+            return :Type
         elseif haskey(ctx.callstack[i].declglobs, sym) ||
                in(sym, ctx.callstack[i].functions) ||
                in(sym, ctx.callstack[i].modules) ||
@@ -132,7 +132,7 @@ function lintlocal(ex::Expr, ctx::LintContext)
             vi = VarInfo(ctx.line)
             try
                 dt = eval(Main, sube.args[2])
-                if typeof(dt) == DataType
+                if isa(dt, Type)
                     vi.typeactual = dt
                 else
                     vi.typeexpr = sube.args[2]
@@ -213,7 +213,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         if typeof(s) != Symbol # a.b or a[b]
             if isexpr(s, [:(.), :ref])
                 containertype = guesstype(s.args[1], ctx)
-                if containertype != Any && typeof(containertype) == DataType && !containertype.mutable
+                if containertype != Any && isa(containertype, Type) && !containertype.mutable
                     msg(ctx, :E525, s.args[1], "is of an immutable type $(containertype)")
                 end
             end
@@ -256,7 +256,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         try
             if haskey(assertions, s)
                 dt = eval(Main, assertions[s])
-                if typeof(dt) == DataType
+                if isa(dt, Type)
                     vi.typeactual = dt
                     if !isAnyOrTupleAny(dt) && !isAnyOrTupleAny(rhstype) && !(rhstype <: dt)
                         msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *
@@ -283,13 +283,13 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
                 if haskey(ctx.callstack[end].localvars[i], s)
                     found = true
                     prevvi = ctx.callstack[end].localvars[i][s]
-                    if typeof(vi.typeactual) <: DataType && typeof(prevvi.typeactual) <: DataType &&
+                    if isa(vi.typeactual, Type) && isa(prevvi.typeactual, Type) &&
                         vi.typeactual <: Number && prevvi.typeactual <: Number && assign_ops != :(=)
                         if length(prevvi.typeactual.parameters) == 0
                         else
                         end
                         continue
-                    elseif typeof(vi.typeactual) <: DataType && typeof(prevvi.typeactual) <: DataType &&
+                    elseif isa(vi.typeactual, Type) && isa(prevvi.typeactual, Type) &&
                         vi.typeactual <: Number && prevvi.typeactual <: Array && assign_ops != :(=)
 
                         continue

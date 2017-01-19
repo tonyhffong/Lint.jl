@@ -1,6 +1,6 @@
-const commoncollections = DataType[
+const commoncollections = [
     Array, AbstractArray, BitArray, Set, Associative]
-const commoncollmethods = Dict{Symbol, Set{DataType}}()
+const commoncollmethods = Dict{Symbol, Set{Type}}()
 
 # deprecation of specialized version of constructors
 const deprecated_constructors =
@@ -39,7 +39,7 @@ function initcommoncollfuncs()
                 end
                 s = Symbol(mtch.match)
                 if !haskey(commoncollmethods, s)
-                    commoncollmethods[s] = Set{DataType}()
+                    commoncollmethods[s] = Set{Type}()
                 end
                 push!(commoncollmethods[s], t)
             end
@@ -51,7 +51,7 @@ function initcommoncollfuncs()
         end
     end
     # ADD COMMON FUNCTIONS WITH EASILY-MISTAKEN SIGNATURES HERE
-    commoncollmethods[:(append!)] = Set{DataType}()
+    commoncollmethods[:(append!)] = Set{Type}()
 end
 
 function lintfuncargtype(ex, ctx::LintContext)
@@ -123,7 +123,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                 end
                 if in(typeconstraint, knowntypes)
                     dt = eval(typeconstraint)
-                    if typeof(dt) == DataType && isleaftype(dt)
+                    if isa(dt, Type) && isleaftype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
                 end
@@ -171,7 +171,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             push!(argsSeen, sube)
             stacktop.localarguments[end][sube] = VarInfo(ctx.line)
             if isstaged
-                assertions[sube] = DataType
+                assertions[sube] = Type
             end
             return sube
         elseif sube.head == :parameters
@@ -184,7 +184,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     sym = resolveArguments(kw, 0)
                     if typeof(sym)== Symbol
                         if isstaged
-                            assertions[sym] = DataType
+                            assertions[sym] = Type
                         else
                             # This may change to Array{(Symbol,Any), 1} in the future
                             assertions[sym] = Array{Any,1}
@@ -236,7 +236,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             sym = resolveArguments(sube.args[1], 0)
             if typeof(sym) == Symbol
                 if isstaged
-                    assertions[sym] = Tuple{Vararg{DataType}}
+                    assertions[sym] = Tuple{Vararg{Type}}
                 elseif haskey(assertions, sym)
                     assertions[sym] = Tuple{Vararg{assertions[sym]}}
                 else
@@ -268,7 +268,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             vi = stacktop.localarguments[end][s]
             if haskey(assertions, s)
                 dt = eval(assertions[s])
-                if typeof(dt) == DataType || typeof(dt) == (DataType,)
+                if isa(dt, Type)
                     vi.typeactual = dt
                     if dt != Any && haskey(typeRHShints, s) && typeRHShints[s] != Any &&
                         !(typeRHShints[s] <: dt)
@@ -292,7 +292,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     end
     if ctorType != Symbol("") && fname == ctorType
         t = guesstype(ex.args[2], ctx)
-        if typeof(t) == DataType
+        if isa(t, Type)
             if t.name.name != ctorType
                 msg(ctx, :E611, "constructor doesn't seem to return the constructed object")
             end
@@ -519,7 +519,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             if contains(s,"error") || contains(s,"exception") || contains(s,"mismatch") || contains(s,"fault")
                 try
                     dt = eval(ex.args[1])
-                    if typeof(dt) == DataType && dt <: Exception && !pragmaexists( "Ignore unthrown " * string(ex.args[1]), ctx)
+                    if isa(dt, Type) && dt <: Exception && !pragmaexists( "Ignore unthrown " * string(ex.args[1]), ctx)
                         msg(ctx, :W448, string(ex.args[1]) * " is an Exception but it is not enclosed in a throw()")
                     end
                 end
