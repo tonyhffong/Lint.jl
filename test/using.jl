@@ -1,13 +1,3 @@
-s = """
-module Test
-using TmpTestBase
-end
-"""
-msgs = lintstr(s)
-
-@test msgs[1].code == :W541
-@test contains(msgs[1].message, "doesn't eval into a Module")
-
 module TmpTestBase
 export foobar
 foobar(x) = x
