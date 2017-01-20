@@ -12,7 +12,7 @@ write(conn, "empty\n")
 write(conn, "1\n")
 write(conn, "\n")
 
-@test readline(conn) == "\n"
+@test chomp(readline(conn)) == ""
 
 
 conn = connect(port)
@@ -21,7 +21,7 @@ write(conn, "4\n")
 write(conn, "bad\n")
 
 @test contains(readline(conn), "use of undeclared symbol")
-@test readline(conn) == "\n"
+@test chomp(readline(conn)) == ""
 
 # This isn't working on the nightly build. Ideally we explicitly stop the server process (as
 # it loops forever). It seems to get stopped when the tests end, so it's not necessary.

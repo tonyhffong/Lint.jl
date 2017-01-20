@@ -178,28 +178,32 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
     lhsIsTuple = Meta.isexpr(ex.args[1], :tuple)
     rhstype = guesstype(ex.args[2], ctx)
 
-    if isForLoop
+    if isForLoop && isa(rhstype, Type)
         if rhstype <: Number
             msg(ctx, :I672, "iteration works for a number but it may be a typo")
         end
 
-        if rhstype <: Tuple
-            rhstype = Any
-        elseif rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
+        if rhstype == Union{}
+            rhstype = Union{}
+        elseif rhstype <: Tuple || rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
             rhstype = eltype(rhstype)
         elseif rhstype <: Associative
             # @lintpragma("Ignore unstable type variable rhstype")
             rhstype = Tuple{keytype(rhstype), valuetype(rhstype)}
         end
 
-        if rhstype <: Tuple && length(rhstype.parameters) != tuplelen
-            msg(ctx, :I474, rhstype, "iteration generates tuples, " *
-                "$tuplelen of $(length(rhstype.parameters)) variables used")
+        if rhstype <: Tuple
+            computedlength = StaticTypeAnalysis.length(rhstype)
+            if !isnull(computedlength) && get(computedlength) ≠ tuplelen
+                msg(ctx, :I474, rhstype, "iteration generates tuples, " *
+                    "$tuplelen of $(length(rhstype.parameters)) variables used")
+            end
         end
     end
 
-    if !isa(rhstype, Symbol) && rhstype <: Tuple && length(rhstype.parameters) != tuplelen && !isForLoop
-        if tuplelen > 1
+    if !isa(rhstype, Symbol) && rhstype <: Tuple
+        computedlength = StaticTypeAnalysis.length(rhstype)
+        if !isnull(computedlength) && get(computedlength) ≠ tuplelen > 1
             msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
                 "$(length(rhstype.parameters)) variables used")
         end
@@ -209,7 +213,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         if !isa(s, Symbol) # a.b or a[b]
             if isexpr(s, [:(.), :ref])
                 containertype = guesstype(s.args[1], ctx)
-                if containertype != Any && isa(containertype, Type) && !containertype.mutable
+                if isa(containertype, DataType) && isleaftype(containertype) && !containertype.mutable
                     msg(ctx, :E525, s.args[1], "is of an immutable type $(containertype)")
                 end
             end
@@ -238,9 +242,9 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         end
         vi = VarInfo(ctx.line)
         # @lintpragma("Ignore incompatible type comparison")
-        if rhstype == Any || !lhsIsTuple
+        if isa(rhstype, Type) && !lhsIsTuple
             rhst = rhstype
-        elseif rhstype <: Tuple && lhsIsTuple
+        elseif isa(rhstype, Type) && rhstype <: Tuple && lhsIsTuple
             if length(rhstype.parameters) <= symidx
                 rhst = Any
             else
@@ -251,15 +255,11 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         end
         try
             if haskey(assertions, s)
-                dt = eval(Main, assertions[s])
-                if isa(dt, Type)
-                    vi.typeactual = dt
-                    if typeintersect(dt, rhstype) == Union{}
-                        msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *
-                            "$(rhstype)")
-                    end
-                else
-                    vi.typeexpr = assertions[s]
+                dt = parsetype(assertions[s])
+                vi.typeactual = dt
+                if typeintersect(dt, rhst) == Union{}
+                    msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *
+                        "$(rhst)")
                 end
             elseif rhst != Any && !isForLoop
                 vi.typeactual = rhst

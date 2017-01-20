@@ -50,7 +50,7 @@ if VERSION < v"0.5.0-dev+2959"
 @test msgs[2].code == :W441
 else
 @test msgs[1].code == :W447
-@test contains(msgs[1].message, "it should be of type DataType")
+@test contains(msgs[1].message, "it should be of type Type")
 @test msgs[2].code == :W447
-@test contains(msgs[2].message, "it should be of type DataType")
+@test contains(msgs[2].message, "it should be of type Type")
 end

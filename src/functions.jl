@@ -293,7 +293,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     if ctorType != Symbol("") && fname == ctorType
         t = guesstype(ex.args[2], ctx)
         if isa(t, Type)
-            if t.name.name != ctorType
+            if t ≠ Any && t.name.name != ctorType
                 msg(ctx, :E611, "constructor doesn't seem to return the constructed object")
             end
         elseif t != ctorType
