@@ -125,9 +125,9 @@ function lintlocal(ex::Expr, ctx::LintContext)
             sym = sube.args[1]
             vi = VarInfo(ctx.line)
             try
-                dt = eval(Main, sube.args[2])
-                if isa(dt, Type)
-                    vi.typeactual = dt
+                dt = stdlibobject(sube.args[2])
+                if !isnull(dt) && isa(get(dt), Type)
+                    vi.typeactual = get(dt)
                 else
                     vi.typeexpr = sube.args[2]
                 end

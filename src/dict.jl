@@ -1,10 +1,4 @@
-function lintdict(::Expr, ::LintContext; typed::Bool = false)
-    @lintpragma "Ignore unused typed"
-    # TODO: Complain about v0.4-style [a => b for x in y] Dict comprehensions,
-    # deprecated in v0.5.
-end
-
-function lintdict4(ex::Expr, ctx::LintContext)
+function lintdict(ex::Expr, ctx::LintContext)
     typed = isexpr(ex.args[1], :curly)
     st = 2
     ks = Set{Any}()

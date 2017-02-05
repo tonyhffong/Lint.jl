@@ -45,7 +45,7 @@ function linttype(ex::Expr, ctx::LintContext)
                     end
                 end
                 if in(typeconstraint, knowntypes)
-                    dt = eval(typeconstraint)
+                    dt = parsetype(typeconstraint)
                     if isa(dt, Type) && isleaftype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
