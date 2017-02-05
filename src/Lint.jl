@@ -4,6 +4,13 @@ module Lint
 
 using Base.Meta
 using Compat
+using Compat.TypeUtils
+
+if isdefined(Base, :unwrap_unionall)
+    using Base: unwrap_unionall
+else
+    unwrap_unionall(x) = x
+end
 
 export LintMessage, LintContext, LintStack
 export lintfile, lintstr, lintpkg, lintserver, @lintpragma

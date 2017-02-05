@@ -56,27 +56,27 @@ function linttype(ex::Expr, ctx::LintContext)
         end
     end
 
-    typename = Symbol("")
+    tname = Symbol("")
     if isa(ex.args[2], Symbol)
-        typename = ex.args[2]
+        tname = ex.args[2]
     elseif isexpr(ex.args[2], :($)) && isa(ex.args[2].args[1], Symbol)
         registersymboluse(ex.args[2].args[1], ctx)
     elseif isexpr(ex.args[2], :curly)
-        typename = ex.args[2].args[1]
+        tname = ex.args[2].args[1]
         processCurly(ex.args[2])
     elseif isexpr(ex.args[2], :(<:))
         if isa(ex.args[2].args[1], Symbol)
-            typename = ex.args[2].args[1]
+            tname = ex.args[2].args[1]
         elseif isexpr(ex.args[2].args[1], :curly)
-            typename = ex.args[2].args[1].args[1]
+            tname = ex.args[2].args[1].args[1]
             processCurly(ex.args[2].args[1])
         end
     end
-    if typename != Symbol("")
-        if islower(string(typename)[1])
-            msg(ctx, :I771, typename, "type names should start with an upper case")
+    if tname != Symbol("")
+        if islower(string(tname)[1])
+            msg(ctx, :I771, tname, "type names should start with an upper case")
         end
-        push!(ctx.callstack[end-1].types, typename)
+        push!(ctx.callstack[end-1].types, tname)
     end
 
     fields = Any[]
@@ -123,13 +123,13 @@ function linttype(ex::Expr, ctx::LintContext)
         end
     end
 
-    if typename != Symbol("")
-        ctx.callstack[end-1].typefields[typename] = fields
+    if tname != Symbol("")
+        ctx.callstack[end-1].typefields[tname] = fields
     end
 
     for f in funcs
         ctx.line = f[2]
-        lintfunction(f[1], ctx; ctorType = typename)
+        lintfunction(f[1], ctx; ctorType = tname)
     end
 
     if ctx.macroLvl ==0 && ctx.functionLvl == 0

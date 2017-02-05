@@ -210,7 +210,9 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         if !isa(s, Symbol) # a.b or a[b]
             if isexpr(s, [:(.), :ref])
                 containertype = guesstype(s.args[1], ctx)
-                if isa(containertype, DataType) && isleaftype(containertype) && !containertype.mutable
+                if isa(unwrap_unionall(containertype), DataType) &&
+                   !isabstract(containertype) &&
+                   !unwrap_unionall(containertype).mutable
                     msg(ctx, :E525, s.args[1], "is of an immutable type $(containertype)")
                 end
             end
