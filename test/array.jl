@@ -10,9 +10,7 @@ s = """
 r = [[1,2],[3,4]]
 """
 msgs = lintstr(s)
-@test msgs[1].code == :E424
-@test contains(msgs[1].message, "nested vect is treated as a 1-dimensional array. Use " *
-    "[a;b] instead")
+@test isempty(msgs)
 
 @assert [[1 2] [3 4]] == [1 2 3 4]
 s = """

@@ -78,7 +78,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E421   | (no longer used)
 | E422   | string uses * to concatenate
 | E423   | named keyword argument must have a default
-| E424   | nested vect is treated as a 1-dimensional array. Use [a;b] instead
+| E424   | (no longer used)
 | E425   | use lintpragma macro inside type declaration
 | E431   | use of length() in a Boolean context, use isempty()
 | E432   | though valid in 0.4, use x() instead of y()
