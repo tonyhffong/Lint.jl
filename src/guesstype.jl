@@ -1,5 +1,4 @@
-
-import Base: eltype
+using Base: isexported
 
 keytype(::Type{Any}) = Any
 valuetype(::Type{Any}) = Any
@@ -19,62 +18,74 @@ function arraytype_dims(elt, dimst)
     end
 end
 
-function evaltype(ex::Symbol)
-    ret = Any
-    if isdefined(Base, ex)
-        ret = getfield(Base, ex)
-    end
-    return isa(ret, Type) ? ret : Any
-end
-evaltype(::Any) = Any
+"""
+    stdlibobject(name::Symbol)
 
-# ex should be a type. figure out what it is
-function parsetype(ex)
-    ret = Any
-    if isa(ex, Symbol)
-        return evaltype(ex)
-    elseif typeof(ex) <: Expr
-        if isexpr(ex, :curly)
-            if ex.args[1] == :Array
-                elt = Any
-                if length(ex.args) == 1
-                    return Array
-                elseif length(ex.args) >= 2
-                    elt = evaltype(ex.args[2])
-                    if length(ex.args) == 2
-                        return Array{elt}
-                    elseif typeof(ex.args[3]) <: Integer
-                        return Array{elt, ex.args[3]}
-                    else
-                        return Array{elt}
-                    end
-                end
-            elseif ex.args[1] == :Dict
-                if length(ex.args) == 1
-                    return Dict
-                elseif length(ex.args) == 3
-                    kt = parsetype(ex.args[2])
-                    vt = parsetype(ex.args[3])
-                    return Dict{kt, vt}
-                end
-            elseif ex.args[1] == :Vector
-                if length(ex.args) != 2
-                    return Vector
-                else
-                    vt = parsetype(ex.args[2])
-                    return Vector{vt}
-                end
-            elseif ex.args[1] == :Complex
-                if length(ex.args) != 2
-                    return Complex
-                else
-                    vt = parsetype(ex.args[2])
-                    return Complex{vt}
-                end
-            end
-        end
+If `name` is an export of Base or Core, return `Nullable{Any}(x)` where `x` is
+the object itself. Otherwise, return `Nullable{Any}()`.
+"""
+function stdlibobject(ex::Symbol)
+    if isexported(Base, ex) && isdefined(Base, ex)
+        Nullable{Any}(getfield(Base, ex))
+    elseif isexported(Core, ex) && isdefined(Core, ex)
+        Nullable{Any}(getfield(Core, ex))
+    else
+        Nullable{Any}()
     end
-    return ret
+end
+
+"""
+    stdlibobject(ex::Expr)
+
+If the given expression is curly, and each component of the curly is a standard
+library object, construct the object `x` as would have been done in the program
+itself, and return `Nullable{Any}(x)`.
+
+Otherwise, return `Nullable{Any}()`.
+"""
+function stdlibobject(ex::Expr)
+    if isexpr(ex, :curly)
+        objs = stdlibobject.(ex.args)
+        if all(!isnull, objs)
+            try
+                Nullable{Any}(Core.apply_type(get.(objs)...))
+            catch
+                Nullable{Any}()
+            end
+        else
+            Nullable{Any}()
+        end
+    else
+        Nullable{Any}()
+    end
+end
+
+"""
+    stdlibobject(ex)
+
+Return the literal embedded within a `Nullable{Any}`.
+"""
+stdlibobject(ex) = Nullable{Any}(ex)
+
+"""
+    parsetype(ex::Expr)
+
+Obtain a supertype of the type represented by `ex`.
+"""
+function parsetype(ex)
+    obj = stdlibobject(ex)
+    if !isnull(obj) && isa(get(obj), Type)
+        get(obj)
+    elseif isexpr(ex, :curly)
+        obj = stdlibobject(ex.args[1])
+        if !isnull(obj) && isa(get(obj), Type) && get(obj) !== Union
+            get(obj)
+        else
+            Any
+        end
+    else
+        Any
+    end
 end
 
 function guesstype(ex, ctx::LintContext)
@@ -86,40 +97,18 @@ function guesstype(ex, ctx::LintContext)
         return t
     end
     if t == Symbol # check if we have seen it
-        if ex == :nothing
-            return Void
-        end
-        if ex == :(:)
-            return Colon
-        end
-        # TODO: this should be a module function
-        checkret = x -> begin
-            if isa(x, Type)
-                return x
-            else
-                tmp = x
-                try
-                    tmp = eval(x)
-                end
-                if isa(tmp, Type)
-                    return tmp
-                else
-                    return x
-                end
-            end
-        end
         stacktop = ctx.callstack[end]
         sym = ex
         for i in length(stacktop.localvars):-1:1
             if haskey(stacktop.localvars[i], sym)
                 ret = stacktop.localvars[i][sym].typeactual
-                return checkret(ret)
+                return ret
             end
         end
         for i in length(stacktop.localarguments):-1:1
             if haskey(stacktop.localarguments[i], sym)
                 ret = stacktop.localarguments[i][sym].typeactual
-                return checkret(ret)
+                return ret
             end
         end
         for i in length(ctx.callstack):-1:1
@@ -133,14 +122,12 @@ function guesstype(ex, ctx::LintContext)
                 return Module
             end
         end
-        try
-            if isdefined(Base, ex)
-                val = getfield(Base, ex)
-                if isa(val, Type)
-                    return Type{val}
-                else
-                    return typeof(val)
-                end
+        val = stdlibobject(ex)
+        if !isnull(val)
+            if isa(get(val), Type)
+                return Type{get(val)}
+            else
+                return typeof(get(val))
             end
         end
         return Any
@@ -163,7 +150,7 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :(::)) && length(ex.args) == 2
-        return evaltype(ex.args[2])
+        return parsetype(ex.args[2])
     end
 
     if isexpr(ex, :block)
@@ -211,15 +198,16 @@ function guesstype(ex, ctx::LintContext)
         end
 
         # infer return types of Base functions
-        if isa(fn, Symbol) && isdefined(Base, fn)
+        obj = stdlibobject(fn)
+        if !isnull(obj)
             inferred = try
                 typejoin(Base.return_types(
-                    getfield(Base, fn),
+                    get(obj),
                     Tuple{(isa(t, Type) ? t : Any for t in argtypes)...})...)
             catch  # error might be thrown if generic function, try using inference
                 if all(typ -> isa(typ, Type) && isleaftype(typ), argtypes)
                     Core.Inference.return_type(
-                        getfield(Base, fn),
+                        get(obj),
                         Tuple{argtypes...})
                 else
                     Any
@@ -228,11 +216,6 @@ function guesstype(ex, ctx::LintContext)
             if inferred ≠ Any
                 return inferred
             end
-        end
-
-        # try special cases when Base.return_types can't give good answer
-        if isexpr(fn, :curly)
-            return parsetype(ex.args[1])
         end
     end
 
@@ -264,15 +247,23 @@ function guesstype(ex, ctx::LintContext)
 
     if isexpr(ex, :ref) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
         if isexpr(ex.args[1], :curly) # must be a datatype, right?
-            elt = parsetype(ex.args[1])
-            return Array{elt, 1}
+            elt = stdlibobject(ex.args[1])
+            if !isnull(elt) && isa(get(elt), Type)
+                return Vector{get(elt)}
+            else
+                return Vector
+            end
         end
 
-        if typeof(ex.args[1]) == Symbol
+        if isa(ex.args[1], Symbol)
             what = registersymboluse(ex.args[1], ctx, false)
             if what == :Type
-                elt = parsetype(ex.args[1])
-                return Array{elt, 1}
+                elt = stdlibobject(ex.args[1])
+                if !isnull(elt) && isa(get(elt), Type)
+                    return Vector{get(elt)}
+                else
+                    return Vector
+                end
             elseif what == :Any
                 msg(ctx, :W543, ex.args[1], "Lint cannot determine if Type or not")
                 return Any

@@ -205,7 +205,7 @@ msgs = lintstr(s)
 @test isempty(msgs)
 
 s = """
-function f{T}(a::Array{T,1})
+function f{T}(a::Vector{T})
     n = size(a)
     tmp  = Array(T, n)
     tmp2 = zeros(T, 1)
