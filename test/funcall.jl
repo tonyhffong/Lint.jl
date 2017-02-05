@@ -221,15 +221,15 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(a) == Array{Any,1}")
+@test contains(msgs[1].message, "typeof(a) == Array")
 @test msgs[2].code == :I271
 @test contains(msgs[2].message, "typeof(n) == Tuple{Int64}")
 @test msgs[3].code == :I271
-@test contains(msgs[3].message, "typeof(tmp) == Array{Any,1}")
+@test contains(msgs[3].message, "typeof(tmp) == Array")
 @test msgs[4].code == :I271
 @test contains(msgs[4].message, "typeof(T) == Type")
 @test msgs[5].code == :I271
-@test contains(msgs[5].message, "typeof(tmp2) == Array{Any,1}")
+@test contains(msgs[5].message, "typeof(tmp2) == Array")
 @test msgs[6].code == :I271
 @test contains(msgs[6].message, "typeof(tmp3) == Array{Float64,3}")
 

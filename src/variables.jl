@@ -183,12 +183,9 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             msg(ctx, :I672, "iteration works for a number but it may be a typo")
         end
 
-        if rhstype == Union{}
-            rhstype = Union{}
-        elseif rhstype <: Tuple || rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
-            rhstype = eltype(rhstype)
+        if rhstype <: Union{Tuple,Set,Array,Range,Enumerate}
+            rhstype = StaticTypeAnalysis.eltype(rhstype)
         elseif rhstype <: Associative
-            # @lintpragma("Ignore unstable type variable rhstype")
             rhstype = Tuple{keytype(rhstype), valuetype(rhstype)}
         end
 
