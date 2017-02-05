@@ -9,7 +9,7 @@ function linttype(ex::Expr, ctx::LintContext)
     processCurly = (sube)->begin
         for i in 2:length(sube.args)
             adt= sube.args[i]
-            if typeof(adt)== Symbol
+            if isa(adt, Symbol)
                 typefound = in(adt, knowntypes)
                 if !typefound
                     for j in 1:length(ctx.callstack)
@@ -57,15 +57,15 @@ function linttype(ex::Expr, ctx::LintContext)
     end
 
     typename = Symbol("")
-    if typeof(ex.args[2]) == Symbol
+    if isa(ex.args[2], Symbol)
         typename = ex.args[2]
-    elseif isexpr(ex.args[2], :($)) && typeof(ex.args[2].args[1]) == Symbol
+    elseif isexpr(ex.args[2], :($)) && isa(ex.args[2].args[1], Symbol)
         registersymboluse(ex.args[2].args[1], ctx)
     elseif isexpr(ex.args[2], :curly)
         typename = ex.args[2].args[1]
         processCurly(ex.args[2])
     elseif isexpr(ex.args[2], :(<:))
-        if typeof(ex.args[2].args[1]) == Symbol
+        if isa(ex.args[2].args[1], Symbol)
             typename = ex.args[2].args[1]
         elseif isexpr(ex.args[2].args[1], :curly)
             typename = ex.args[2].args[1].args[1]
@@ -83,9 +83,9 @@ function linttype(ex::Expr, ctx::LintContext)
     funcs = Any[]
 
     for def in ex.args[3].args
-        if typeof(def) == LineNumberNode
+        if isa(def, LineNumberNode)
             ctx.line = def.line-1
-        elseif typeof(def) == Symbol
+        elseif isa(def, Symbol)
             # it means Any, probably not a very efficient choice
             if !pragmaexists("Ignore untyped field $(def)", ctx, deep=false)
                 msg(ctx, :I691, def, "a type is not given to the field which can be slow")
@@ -96,13 +96,13 @@ function linttype(ex::Expr, ctx::LintContext)
         elseif isexpr(def, :call) && def.args[1] == Symbol("lintpragma")
             lintlintpragma(def, ctx)
             msg(ctx, :E425, "use lintpragma macro inside type declaration")
-        elseif def.head == :(::)
+        elseif isexpr(def, :(::))
             if isexpr(def.args[2], :curly) && def.args[2].args[1] == :Array && length(def.args[2].args) <= 2 &&
                 !pragmaexists("Ignore dimensionless array field $(def.args[1])", ctx, deep=false)
                 msg(ctx, :I692, def.args[1], "array field has no dimension which can be slow")
             end
             push!(fields, (def.args[1], def.args[2]))
-        elseif def.head == :(=) && isexpr(def.args[1], :call) || def.head == :function
+        elseif isexpr(def, :(=)) && isexpr(def.args[1], :call) || isexpr(def, :function)
             # curly bracket doesn't belong here. catch it first before linting the rest of the function body
             if def.args[1].head == :tuple
                 # if julia supports anonymous constructor syntactic sugar, remove this, and make sure ctx.scope is type name
@@ -110,7 +110,7 @@ function linttype(ex::Expr, ctx::LintContext)
             elseif isexpr(def.args[1].args[1], :curly)
                 for i in 2:length(def.args[1].args[1].args)
                     fp = def.args[1].args[1].args[i]
-                    if typeof(fp) == Symbol && in(fp, typeparams)
+                    if isa(fp, Symbol) && in(fp, typeparams)
                         msg(ctx, :E523, fp, "constructor parameter collides with a type parameter")
                     end
                     if isexpr(fp, :(<:)) && in(fp.args[1], typeparams)
@@ -138,7 +138,7 @@ function linttype(ex::Expr, ctx::LintContext)
 end
 
 function linttypealias(ex::Expr, ctx::LintContext)
-    if typeof(ex.args[1])== Symbol
+    if isa(ex.args[1], Symbol)
         push!(ctx.callstack[end].types, ex.args[1])
     elseif isexpr(ex.args[1], :curly)
         push!(ctx.callstack[end].types, ex.args[1].args[1])
@@ -146,12 +146,12 @@ function linttypealias(ex::Expr, ctx::LintContext)
 end
 
 function lintabstract(ex::Expr, ctx::LintContext)
-    if typeof(ex.args[1]) == Symbol
+    if isa(ex.args[1], Symbol)
         push!(ctx.callstack[end].types, ex.args[1])
     elseif isexpr(ex.args[1], :curly)
         push!(ctx.callstack[end].types, ex.args[1].args[1])
     elseif isexpr(ex.args[1], :(<:))
-        if typeof(ex.args[1].args[1]) == Symbol
+        if isa(ex.args[1].args[1], Symbol)
             push!(ctx.callstack[end].types, ex.args[1].args[1])
         elseif isexpr(ex.args[1].args[1], :curly)
             push!(ctx.callstack[end].types, ex.args[1].args[1].args[1])
@@ -160,7 +160,7 @@ function lintabstract(ex::Expr, ctx::LintContext)
 end
 
 function lintbitstype(ex::Expr, ctx::LintContext)
-    if typeof(ex.args[2]) != Symbol
+    if !isa(ex.args[2], Symbol)
         msg(ctx, :E524, "bitstype needs its 2nd argument to be a new type symbol")
     else
         push!(ctx.callstack[end].types, ex.args[2])

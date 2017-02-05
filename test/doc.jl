@@ -46,3 +46,13 @@ func(v)
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+
+# TODO: should we warn this documentation?
+"""
+type TestType
+    "doc"
+    a
+end
+"""
+msgs = lintstr(s)
+@test isempty(msgs)
