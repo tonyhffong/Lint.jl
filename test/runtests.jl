@@ -1,6 +1,8 @@
 using Lint
 using Base.Test
 
+messageset(msgs) = Set(x.code for x in msgs)
+
 println("Test basic printing and sorting of lint messages")
 
 if basename(pwd()) == "Lint"
@@ -58,6 +60,7 @@ include("server.jl")
 include("stagedfuncs.jl")
 include("incomplete.jl")
 include("misuse.jl")
+include("bugs.jl")
 
 println("...OK\n")
 include("lintself.jl")
