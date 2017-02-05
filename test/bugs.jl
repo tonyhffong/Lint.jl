@@ -51,4 +51,9 @@ A = [[1, 2], [3, 4]]
 println(A[1][1])
 """))
 
+# bug 180
+@test messageset(lintstr("""
+x, y = error()
+""")) == Set([:E539])
+
 end

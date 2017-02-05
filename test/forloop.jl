@@ -1,6 +1,6 @@
 s = """
 function f(x)
-    d = @compat Dict{Symbol,Int}(:a=>1, :b=>2)
+    d = Dict{Symbol,Int}(:a=>1, :b=>2)
     for i in d
     end
     return x

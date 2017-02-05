@@ -3,7 +3,9 @@ using Base.Test
 
 messageset(msgs) = Set(x.code for x in msgs)
 
-println("Test basic printing and sorting of lint messages")
+include("statictype.jl")
+
+info("Test basic printing and sorting of lint messages")
 
 if basename(pwd()) == "Lint"
     path =  "test/DEMOFILE.jl"
@@ -17,7 +19,7 @@ end
 
 lintfile(path)
 
-println("...OK\n\nTest core lint functionalities...")
+info("Test core lint functionalities...")
 include("messages.jl")
 include("basics.jl")
 include("array.jl")
@@ -61,7 +63,4 @@ include("stagedfuncs.jl")
 include("incomplete.jl")
 include("misuse.jl")
 include("bugs.jl")
-
-println("...OK\n")
 include("lintself.jl")
-println("...OK")

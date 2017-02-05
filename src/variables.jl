@@ -178,7 +178,9 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
     lhsIsTuple = Meta.isexpr(ex.args[1], :tuple)
     rhstype = guesstype(ex.args[2], ctx)
 
-    if isForLoop && isa(rhstype, Type)
+    if rhstype == Union{}
+        msg(ctx, :E539, rhstype, "assigning an error to a variable")
+    elseif isForLoop && isa(rhstype, Type)
         if rhstype <: Number
             msg(ctx, :I672, "iteration works for a number but it may be a typo")
         end
@@ -189,20 +191,25 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             rhstype = Tuple{keytype(rhstype), valuetype(rhstype)}
         end
 
+        # TODO: only when LHS is tuple
         if rhstype <: Tuple
             computedlength = StaticTypeAnalysis.length(rhstype)
             if !isnull(computedlength) && get(computedlength) ≠ tuplelen
                 msg(ctx, :I474, rhstype, "iteration generates tuples, " *
-                    "$tuplelen of $(length(rhstype.parameters)) variables used")
+                    "$tuplelen of $(get(computedlength)) variables used")
             end
         end
-    end
-
-    if !isa(rhstype, Symbol) && rhstype <: Tuple
+    elseif isa(rhstype, Type) && lhsIsTuple
         computedlength = StaticTypeAnalysis.length(rhstype)
-        if !isnull(computedlength) && get(computedlength) ≠ tuplelen > 1
-            msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
-                "$(length(rhstype.parameters)) variables used")
+        if !isnull(computedlength)
+            if get(computedlength) < tuplelen
+                msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
+                    "$(get(computedlength)) variables used")
+            elseif get(computedlength) > tuplelen
+                msg(ctx, :W546, rhstype, string(
+                    "implicitly discarding values, $tuplelen of ",
+                    get(computedlength), " used"))
+            end
         end
     end
 
@@ -243,12 +250,8 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         # @lintpragma("Ignore incompatible type comparison")
         if isa(rhstype, Type) && !lhsIsTuple
             rhst = rhstype
-        elseif isa(rhstype, Type) && rhstype <: Tuple && lhsIsTuple
-            if length(rhstype.parameters) <= symidx
-                rhst = Any
-            else
-                rhst = rhstype.parameters[ symidx ]
-            end
+        elseif isa(rhstype, Type)
+            rhst = StaticTypeAnalysis.typeof_nth(rhstype, symidx)
         else
             rhst = Any
         end
