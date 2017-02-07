@@ -6,13 +6,13 @@
 # contracts for common collections / type parametrized types
 # TODO: Can we be more specific here? What about detecting contract?
 const CURLY_CONTRACTS = Dict{Symbol, Any}(
-    :Array  => (DataType, Integer),
-    :Dict   => (DataType, DataType),
-    :Matrix => (DataType,),
-    :Set    => (DataType,),
-    :Type   => (DataType,),
+    :Array  => (Type, Integer),
+    :Dict   => (Type, Type),
+    :Matrix => (Type,),
+    :Set    => (Type,),
+    :Type   => (Type,),
     :Val    => (Any,),
-    :Vector => (DataType,))
+    :Vector => (Type,))
 
 function lintcurly(ex::Expr, ctx::LintContext)
     head = ex.args[1]
@@ -28,7 +28,7 @@ function lintcurly(ex::Expr, ctx::LintContext)
             continue # grandfathered
         else
             t = guesstype(a, ctx)
-            if !(t == DataType || t == Symbol || isbits(t) || t == Any)
+            if !(t <: Type || t == Symbol || isbits(t) || t == Any)
                 msg(ctx, :W441, a, "probably illegal use inside curly")
             elseif contract != nothing
                 if i - 1 > length(contract)

@@ -32,8 +32,8 @@ function pushVarScope(ctx::LintContext)
 end
 
 # returns
-# :var - a non-DataType value
-# :DataType
+# :var - a non-Type value
+# :Type
 # :Any - don't know, could be either (with lint warnings, if strict)
 
 # if strict == false, it won't generate lint warnings, just return :Any
@@ -47,7 +47,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
         if haskey(stacktop.localvars[i], sym)
             push!(stacktop.localusedvars[i], sym)
             # TODO: This is not quite right. We need to check type
-            # on the sym. If it's DataType, return :DataType
+            # on the sym. If it's Type, return :Type
             # if Any, return :Any
             # otherwise, :var
             return :var
@@ -64,7 +64,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
 
     # a bunch of whitelist to just grandfather-in
     if sym in knowntypes
-        return :DataType
+        return :Type
     end
     if sym in knownsyms
         return :var
@@ -73,7 +73,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
     # Move up call stack, looking at global declarations
     for i in length(ctx.callstack):-1:1
         if in(sym, ctx.callstack[i].types)
-            return :DataType
+            return :Type
         elseif haskey(ctx.callstack[i].declglobs, sym) ||
                in(sym, ctx.callstack[i].functions) ||
                in(sym, ctx.callstack[i].modules) ||
@@ -98,7 +98,7 @@ end
 
 function lintglobal(ex::Expr, ctx::LintContext)
     for sym in ex.args
-        if typeof(sym) == Symbol
+        if isa(sym, Symbol)
             if !haskey(ctx.callstack[end].declglobs, sym)
                 register_global(
                     ctx,
@@ -117,22 +117,16 @@ end
 function lintlocal(ex::Expr, ctx::LintContext)
     n = length(ctx.callstack[end].localvars)
     for sube in ex.args
-        if typeof(sube)==Symbol
+        if isa(sube, Symbol)
             ctx.callstack[end].localvars[n][sube] = VarInfo(ctx.line)
-            continue
-        end
-        if typeof(sube) != Expr
-            msg(ctx, :E135, sube, "local declaration not understood by Lint")
-            continue
-        end
-        if sube.head == :(=)
+        elseif isexpr(sube, :(=))
             lintassignment(sube, :(=), ctx; islocal = true)
-        elseif sube.head == :(::)
+        elseif isexpr(sube, :(::))
             sym = sube.args[1]
             vi = VarInfo(ctx.line)
             try
                 dt = eval(Main, sube.args[2])
-                if typeof(dt) == DataType
+                if isa(dt, Type)
                     vi.typeactual = dt
                 else
                     vi.typeexpr = sube.args[2]
@@ -141,16 +135,18 @@ function lintlocal(ex::Expr, ctx::LintContext)
                 vi.typeexpr = sube.args[2]
             end
             ctx.callstack[end].localvars[n][sym] = vi
+        else
+            msg(ctx, :E135, sube, "local declaration not understood by Lint")
         end
     end
 end
 
 function resolveLHSsymbol(ex, syms::Array{Any,1}, ctx::LintContext, assertions::Dict{Symbol,Any})
-    if typeof(ex) == Symbol
+    if isa(ex, Symbol)
         push!(syms, ex)
-    elseif typeof(ex) == Expr
+    elseif isa(ex, Expr)
         if ex.head == :(::)
-            if typeof(ex.args[1]) == Symbol
+            if isa(ex.args[1], Symbol)
                 assertions[ex.args[1]]=ex.args[2]
             end
             resolveLHSsymbol(ex.args[1], syms, ctx, assertions)
@@ -182,38 +178,42 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
     lhsIsTuple = Meta.isexpr(ex.args[1], :tuple)
     rhstype = guesstype(ex.args[2], ctx)
 
-    if isForLoop
+    if isForLoop && isa(rhstype, Type)
         if rhstype <: Number
             msg(ctx, :I672, "iteration works for a number but it may be a typo")
         end
 
-        if rhstype <: Tuple
-            rhstype = Any
-        elseif rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
+        if rhstype == Union{}
+            rhstype = Union{}
+        elseif rhstype <: Tuple || rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
             rhstype = eltype(rhstype)
         elseif rhstype <: Associative
             # @lintpragma("Ignore unstable type variable rhstype")
             rhstype = Tuple{keytype(rhstype), valuetype(rhstype)}
         end
 
-        if rhstype <: Tuple && length(rhstype.parameters) != tuplelen
-            msg(ctx, :I474, rhstype, "iteration generates tuples, " *
-                "$tuplelen of $(length(rhstype.parameters)) variables used")
+        if rhstype <: Tuple
+            computedlength = StaticTypeAnalysis.length(rhstype)
+            if !isnull(computedlength) && get(computedlength) ≠ tuplelen
+                msg(ctx, :I474, rhstype, "iteration generates tuples, " *
+                    "$tuplelen of $(length(rhstype.parameters)) variables used")
+            end
         end
     end
 
-    if typeof(rhstype) != Symbol && rhstype <: Tuple && length(rhstype.parameters) != tuplelen && !isForLoop
-        if tuplelen > 1
+    if !isa(rhstype, Symbol) && rhstype <: Tuple
+        computedlength = StaticTypeAnalysis.length(rhstype)
+        if !isnull(computedlength) && get(computedlength) ≠ tuplelen > 1
             msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
                 "$(length(rhstype.parameters)) variables used")
         end
     end
 
     for (symidx, s) in enumerate(syms)
-        if typeof(s) != Symbol # a.b or a[b]
+        if !isa(s, Symbol) # a.b or a[b]
             if isexpr(s, [:(.), :ref])
                 containertype = guesstype(s.args[1], ctx)
-                if containertype != Any && typeof(containertype) == DataType && !containertype.mutable
+                if isa(containertype, DataType) && isleaftype(containertype) && !containertype.mutable
                     msg(ctx, :E525, s.args[1], "is of an immutable type $(containertype)")
                 end
             end
@@ -242,9 +242,9 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         end
         vi = VarInfo(ctx.line)
         # @lintpragma("Ignore incompatible type comparison")
-        if rhstype == Any || !lhsIsTuple
+        if isa(rhstype, Type) && !lhsIsTuple
             rhst = rhstype
-        elseif rhstype <: Tuple && lhsIsTuple
+        elseif isa(rhstype, Type) && rhstype <: Tuple && lhsIsTuple
             if length(rhstype.parameters) <= symidx
                 rhst = Any
             else
@@ -255,15 +255,11 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         end
         try
             if haskey(assertions, s)
-                dt = eval(Main, assertions[s])
-                if typeof(dt) == DataType
-                    vi.typeactual = dt
-                    if !isAnyOrTupleAny(dt) && !isAnyOrTupleAny(rhstype) && !(rhstype <: dt)
-                        msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *
-                            "$(rhstype)")
-                    end
-                else
-                    vi.typeexpr = assertions[s]
+                dt = parsetype(assertions[s])
+                vi.typeactual = dt
+                if typeintersect(dt, rhst) == Union{}
+                    msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *
+                        "$(rhst)")
                 end
             elseif rhst != Any && !isForLoop
                 vi.typeactual = rhst
@@ -283,17 +279,17 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
                 if haskey(ctx.callstack[end].localvars[i], s)
                     found = true
                     prevvi = ctx.callstack[end].localvars[i][s]
-                    if typeof(vi.typeactual) <: DataType && typeof(prevvi.typeactual) <: DataType &&
+                    if isa(vi.typeactual, Type) && isa(prevvi.typeactual, Type) &&
                         vi.typeactual <: Number && prevvi.typeactual <: Number && assign_ops != :(=)
                         if length(prevvi.typeactual.parameters) == 0
                         else
                         end
                         continue
-                    elseif typeof(vi.typeactual) <: DataType && typeof(prevvi.typeactual) <: DataType &&
+                    elseif isa(vi.typeactual, Type) && isa(prevvi.typeactual, Type) &&
                         vi.typeactual <: Number && prevvi.typeactual <: Array && assign_ops != :(=)
 
                         continue
-                    elseif !isAnyOrTupleAny(vi.typeactual) && typeof(vi.typeactual) != Symbol && !(vi.typeactual <: prevvi.typeactual) &&
+                    elseif vi.typeactual ≠ Any && !isa(vi.typeactual, Symbol) && !(vi.typeactual <: prevvi.typeactual) &&
                         !(vi.typeactual <: AbstractString && prevvi.typeactual <: vi.typeactual) &&
                         !pragmaexists("Ignore unstable type variable $(s)", ctx)
                         msg(ctx, :W545, s, "previously used variable has apparent type " *

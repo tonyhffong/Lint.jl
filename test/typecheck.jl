@@ -148,7 +148,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :E521
 @test msgs[1].variable == "a"
-@test contains(msgs[1].message, "apparent type DataType is not a container type")
+@test contains(msgs[1].message, "apparent type Type")
 
 s = """
 function f()

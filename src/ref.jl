@@ -3,11 +3,11 @@ function lintref(ex::Expr, ctx::LintContext)
     guesstype(ex, ctx) # tickle the type checks on the expression
     if typeof(sub1)== Symbol
         # check to see if it's a type
-        what = registersymboluse(sub1, ctx, false) # :var, :DataType, or :Any
+        what = registersymboluse(sub1, ctx, false) # :var, :Type, or :Any
         if what == :Any
             str = string(sub1)
             #if !isupper(str[1]) || length(str) <= 2
-            msg(ctx, :W544, str, "Lint cannot determine if DataType or not")
+            msg(ctx, :W544, str, "Lint cannot determine if Type or not")
             #end
         end
     else
