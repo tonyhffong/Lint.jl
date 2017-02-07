@@ -112,7 +112,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E611   | constructor doesn't seem to return the constructed object
 |        |
 | **W2** | *Miscellaneous Warning*
-| W241   | custum warning
+| W241   | custom warning
 | W251   | error; Symbol= X; rhstype= ...
 |        |
 | **W3** | *Existence Warning*
@@ -135,10 +135,10 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W449   | this type is typically not constructible
 |        |
 | **W5** | *Type Warning*
-| W541   | doesn't eval into a Module
+| W541   | (removed in Lint 0.3.0)
 | W542   | comparing apparently incompatible types
-| W543   | cannot determine if DataType or not
-| W544   | cannot determine if DataType or not
+| W543   | cannot determine if Type or not
+| W544   | cannot determine if Type or not
 | W545   | previously used variable has apparent type X, but now assigned Y
 |        |
 | **W6** | *Structure Warning*
@@ -153,7 +153,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I171   | LHS in assignment not understood by Lint
 |        |
 | **I2** | *Miscellaneous Info*
-| I271   | custum info
+| I271   | custom info
 | I281   | error; Signature: ...
 |        |
 | **I3** | *Existence Info*
