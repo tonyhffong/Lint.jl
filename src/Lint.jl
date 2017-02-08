@@ -350,6 +350,26 @@ function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
     ctx.messages
 end
 
+function readandwritethestream(conn)
+    # println("Connection accepted")
+    # Get file, code length and code
+    file = strip(readline(conn))
+    # println("file: ", file)
+    code_len = parse(Int, strip(readline(conn)))
+    # println("Code bytes: ", code_len)
+    code = Compat.UTF8String(read(conn, code_len))
+    # println("Code received")
+    # Do the linting
+    msgs = lintfile(file, code)
+    # Write response to socket
+    for i in msgs
+        write(conn, string(i))
+        write(conn, "\n")
+    end
+    # Blank line to indicate end of messages
+    write(conn, "\n")
+end
+
 function lintserver(port)
     server = listen(port)
     try
@@ -357,30 +377,17 @@ function lintserver(port)
         while true
             conn = accept(server)
             @async try
-                println("Connection accepted")
-                # Get file, code length and code
-                file = strip(readline(conn))
-                println("file: ", file)
-                code_len = parse(Int, strip(readline(conn)))
-                println("Code bytes: ", code_len)
-                code = Compat.UTF8String(read(conn, code_len))
-                println("Code received")
-                # Do the linting
-                msgs = lintfile(file, code)
-                # Write response to socket
-                for i in msgs
-                    write(conn, string(i))
-                    write(conn, "\n")
-                end
-                # Blank line to indicate end of messages
-                write(conn, "\n")
-                println("Connection closed")
+                readandwritethestream(conn)
             catch err
-              println("connection ended with error $err")
+                println(STDERR, "connection ended with error $err")
+            finally
+                close(conn)
+                # println("Connection closed")
             end
         end
     finally
         close(server)
+        println("Server closed")
     end
 end
 

@@ -74,10 +74,10 @@ Lint message suppression (do not include the square brackets)
 * `@lintpragma("Ignore unused [variable name]")`. Works for unused arguments also.
 * `@lintpragma("Ignore unstable type variable [variable name]")`. Ignore type instability warnings.
 * `@lintpragma("Ignore deprecated [function name]")`
-* `@lintpragma("Ignore undefined module [module name]")`. Useful to support Julia packages across 
+* `@lintpragma("Ignore undefined module [module name]")`. Useful to support Julia packages across
     different Julia releases.
 * `@lintpragma("Ignore untyped field [field name]")`.
-* `@lintpragma("Ignore dimensionless array field [field name]")`. Useful if we really want to store 
+* `@lintpragma("Ignore dimensionless array field [field name]")`. Useful if we really want to store
     arrays with uncertain/runtime-calculated dimension
 * `@lintpragma("Ignore use of undeclared variable [variable name]")`. Useful when using macros to
   generate symbols on the fly.
@@ -210,6 +210,7 @@ This feature is useful when you want to lint julia code in a non julia environme
 
 Existing plugins:
  * Sublime Text: [SublimeLinter-contrib-julialintserver](https://github.com/invenia/SublimeLinter-contrib-julialintserver)
+ * linter-julia for Atom: [linter-julia](https://github.com/TeroFrondelius/linter-julia)
 
 The protocol for the server is:
 
@@ -240,12 +241,12 @@ println(socket, str) # code
 
 response = ""
 line = ""
-while line != "\n"
+while isopen(socket)
     response *= line
     line = readline(socket)
 end
 
-@assert response == "none:1 E422 : string uses * to concatenate\n"
+@assert response == "none:1 E422 : string uses * to concatenate\n\n"
 ```
 
 Note that the first request might take some time because the linting functions are being imported and compiled.
