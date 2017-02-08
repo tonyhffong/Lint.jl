@@ -1,4 +1,4 @@
-__precompile__(true)
+  __precompile__(true)
 
 module Lint
 
@@ -330,7 +330,7 @@ function lintinclude(ctx::LintContext, file::AbstractString)
 end
 
 """
-Lint all \*.jl files at a given directory.
+Lint all *.jl files at a given directory.
 Will ignore LintContext file and already included files.
 """
 function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
@@ -346,14 +346,14 @@ function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
 end
 
 function readandwritethestream(conn)
-    println("Connection accepted")
+    # println("Connection accepted")
     # Get file, code length and code
     file = strip(readline(conn))
-    println("file: ", file)
+    # println("file: ", file)
     code_len = parse(Int, strip(readline(conn)))
-    println("Code bytes: ", code_len)
+    # println("Code bytes: ", code_len)
     code = Compat.UTF8String(read(conn, code_len))
-    println("Code received")
+    # println("Code received")
     # Do the linting
     msgs = lintfile(file, code)
     # Write response to socket
@@ -363,8 +363,6 @@ function readandwritethestream(conn)
     end
     # Blank line to indicate end of messages
     write(conn, "\n")
-    println("Connection closed")
-    close(conn)
 end
 
 function lintserver(port)
@@ -374,13 +372,17 @@ function lintserver(port)
         while true
             conn = accept(server)
             @async try
-              readandwritethestream(conn)
+                readandwritethestream(conn)
             catch err
-              println("connection ended with error $err")
+                println(STDERR, "connection ended with error $err")
+            finally
+                close(conn)
+                # println("Connection closed")
             end
         end
     finally
         close(server)
+        println("Server closed")
     end
 end
 

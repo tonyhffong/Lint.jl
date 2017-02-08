@@ -6,23 +6,23 @@ port = conn[1]
 server = @async lintserver(port)
 sleep(1) #let server start
 
+@testset "lintserver() tests" begin
+  conn = connect(port)
+  write(conn, "empty\n")
+  write(conn, "1\n")
+  write(conn, "\n")
 
-conn = connect(port)
-write(conn, "empty\n")
-write(conn, "1\n")
-write(conn, "\n")
-
-@test readline(conn) == "\n"
+  @test readline(conn) == "\n"
 
 
-conn = connect(port)
-write(conn, "undeclared_symbol\n")
-write(conn, "4\n")
-write(conn, "bad\n")
+  conn = connect(port)
+  write(conn, "undeclared_symbol\n")
+  write(conn, "4\n")
+  write(conn, "bad\n")
 
-@test contains(readline(conn), "use of undeclared symbol")
-@test readline(conn) == "\n"
-
+  @test contains(readline(conn), "use of undeclared symbol")
+  @test readline(conn) == "\n"
+end
 
 @testset "Testing the lintserver addition" begin
     function lintbyserver(socket)
