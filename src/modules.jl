@@ -64,10 +64,6 @@ function lintusing(ex::Expr, ctx::LintContext)
                 end
                 ctx.callstack[end].linthelpers[path] = m.lint_helper
             end
-        else
-            if !pragmaexists("Ignore undefined module $(path)", ctx)
-                msg(ctx, :W541, path, "doesn't eval into a Module")
-            end
         end
     end
 end

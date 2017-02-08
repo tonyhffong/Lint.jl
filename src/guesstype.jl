@@ -10,27 +10,28 @@ valuetype{K,V}(::Type{Associative{K,V}}) = V
 keytype{T<:Associative}(::Type{T}) = keytype(supertype(T))
 valuetype{T<:Associative}(::Type{T}) = valuetype(supertype(T))
 
-function isAnyOrTupleAny(x)
-    if x == Any
-        return true
-    elseif typeof(x) <: Tuple
-        return all(y->y == Any, x)
+function arraytype_dims(elt, dimst)
+    tuplen = StaticTypeAnalysis.length(dimst)
+    if isnull(tuplen)
+        return Array{elt}
+    else
+        return Array{elt, get(tuplen)}
     end
-    return false
 end
 
-function evaltype(ex)
+function evaltype(ex::Symbol)
     ret = Any
     try
-        ret = eval(Main, ex)
+        ret = getfield(Base, ex)
     end
-    return isa(ret, DataType) ? ret : Any
+    return isa(ret, Type) ? ret : Any
 end
+evaltype(::Any) = Any
 
 # ex should be a type. figure out what it is
 function parsetype(ex)
     ret = Any
-    if typeof(ex) <: Symbol
+    if isa(ex, Symbol)
         return evaltype(ex)
     elseif typeof(ex) <: Expr
         if isexpr(ex, :curly)
@@ -93,14 +94,14 @@ function guesstype(ex, ctx::LintContext)
         end
         # TODO: this should be a module function
         checkret = x -> begin
-            if typeof(x) == DataType || typeof(x) == (DataType,)
+            if isa(x, Type)
                 return x
             else
                 tmp = x
                 try
                     tmp = eval(x)
                 end
-                if typeof(tmp) == DataType || typeof(tmp) == (DataType,)
+                if isa(tmp, Type)
                     return tmp
                 else
                     return x
@@ -123,7 +124,7 @@ function guesstype(ex, ctx::LintContext)
         end
         for i in length(ctx.callstack):-1:1
             if in(sym, ctx.callstack[i].types)
-                return DataType
+                return Type
             end
             if in(sym, ctx.callstack[i].functions)
                 return Function
@@ -133,7 +134,14 @@ function guesstype(ex, ctx::LintContext)
             end
         end
         try
-            return typeof(eval(ex))
+            if isdefined(Base, ex)
+                val = getfield(Base, ex)
+                if isa(val, Type)
+                    return Type{val}
+                else
+                    return typeof(val)
+                end
+            end
         end
         return Any
     end
@@ -166,7 +174,7 @@ function guesstype(ex, ctx::LintContext)
         return evaltype(ex.args[2])
     end
 
-    # this is hackish because the return type is a Symbol, not a DataType
+    # this is hackish because the return type is a Symbol, not a Type
     if isexpr(ex, :call) && ex.args[1] == :new
         return Symbol(ctx.scope)
     end
@@ -199,23 +207,35 @@ function guesstype(ex, ctx::LintContext)
         return tmp
     end
 
-    if isexpr(ex, :call) && ex.args[1] == :enumerate
-        return Enumerate{guesstype(ex.args[2], ctx)}
-    end
-
     if isexpr(ex, :call)
         fn = ex.args[1]
-        if fn == :int
+        argtypes = map(x -> guesstype(x, ctx), ex.args[2:end])
+        if isdefined(Core.Inference, :return_type)
+            if isa(fn, Symbol) && isdefined(Base, fn) &&
+               all(x -> isa(x, Type) && isleaftype(x), argtypes)
+                inferred = Core.Inference.return_type(
+                    getfield(Base, fn),
+                    Tuple{argtypes...})
+                if inferred ≠ Any
+                    return inferred
+                end
+            end
+        end
+        if fn == :enumerate
+            return Enumerate{guesstype(ex.args[2], ctx)}
+        elseif fn == :finalizer
+            return Void
+        elseif fn == :Int
             return Int
-        elseif fn == :int8
+        elseif fn == :Int8
             return Int8
-        elseif fn == :int16
+        elseif fn == :Int16
             return Int16
-        elseif fn == :int32
+        elseif fn == :Int32
             return Int32
-        elseif fn == :int64
+        elseif fn == :Int64
             return Int64
-        elseif fn == :float
+        elseif fn == :Float64
             return Float64
         elseif fn == :Complex
             return Complex
@@ -242,7 +262,7 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :curly)
-        return DataType
+        return Type
     end
 
     if isexpr(ex, :call) && isexpr(ex.args[1], :curly)
@@ -269,8 +289,8 @@ function guesstype(ex, ctx::LintContext)
                     lastargtype = guesstype(ex.args[3], ctx)
                     if lastargtype <: Integer
                         return Array{elt, 1}
-                    elseif lastargtype <: Tuple && all(x->x<:Integer, lastargtype)
-                        return Array{elt, length(lastargtype.parameters)}
+                    elseif lastargtype <: Tuple{Vararg{Integer}}
+                        return arraytype_dims(elt, lastargtype)
                     else
                         return Array{elt}
                     end
@@ -282,17 +302,14 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :call) && in(ex.args[1], [:zeros, :ones])
-        sig = Any[]
-        for i = 2:length(ex.args)
-            push!(sig, guesstype(ex.args[i], ctx))
-        end
+        sig = map(x -> guesstype(x, ctx), ex.args[2:end])
 
-        elt = evaltype(ex.args[2])
-        if length(sig) >= 1 && sig[1] == DataType
+        if length(sig) >= 1 && sig[1] <: Type
+            elt = evaltype(ex.args[2])
             if length(sig) == 2 && isexpr(ex.args[3], :tuple)
                 return Array{elt, length(ex.args[3].args)}
-            elseif length(sig) == 2 && sig[2] <: Tuple && all(x->x <: Integer, sig[2])
-                return Array{elt, length(sig[2].parameters)}
+            elseif length(sig) == 2 && sig[2] <: Tuple{Vararg{Integer}}
+                return arraytype_dims(elt, sig[2])
             else
                 return Array{elt, length(ex.args)-2}
             end
@@ -305,7 +322,7 @@ function guesstype(ex, ctx::LintContext)
         end
     end
 
-    if isexpr(ex, :call) && in(ex.args[1], [:slicedim, :transpose])
+    if isexpr(ex, :call) && ex.args[1] == :transpose
         fst = guesstype(ex.args[2], ctx)
         return fst
     end
@@ -344,13 +361,13 @@ function guesstype(ex, ctx::LintContext)
         if !(sig[1] <: AbstractArray)
             return Any
         end
-        eletyp = eltype(sig[1])
+        eletyp = sig[1] == Union{} ? Union{} : eltype(sig[1])
         # dump(eletyp)
         if length(sig)==2
             if sig[2] <: Number
                 return Array{eletyp, 1}
-            elseif sig[2] <: Tuple
-                return Array{eletyp, length(sig[2].parameters)}
+            elseif sig[2] <: Tuple{Vararg{Integer}}
+                return arraytype_dims(eletyp, sig[2])
             else
                 return Array{eletyp}
             end
@@ -378,11 +395,11 @@ function guesstype(ex, ctx::LintContext)
 
         if typeof(ex.args[1]) == Symbol
             what = registersymboluse(ex.args[1], ctx, false)
-            if what == :DataType
+            if what == :Type
                 elt = parsetype(ex.args[1])
                 return Array{elt, 1}
             elseif what == :Any
-                msg(ctx, :W543, ex.args[1], "Lint cannot determine if DataType or not")
+                msg(ctx, :W543, ex.args[1], "Lint cannot determine if Type or not")
                 return Any
             end
         end
@@ -397,7 +414,7 @@ function guesstype(ex, ctx::LintContext)
             end
             ktypeactual = guesstype(ex.args[2], ctx)
             if ktypeactual <: Integer
-                return eltype(partyp)
+                return partyp == Union{} ? Union{} : eltype(partyp)
             elseif isexpr(ex.args[2], :(:)) # range too
                 return partyp
             elseif isexpr(ex.args[2], :call) && ex.args[2].args[1] == :Colon
@@ -406,7 +423,7 @@ function guesstype(ex, ctx::LintContext)
                 return Any
             end
         elseif partyp <: AbstractArray
-            eletyp = eltype(partyp)
+            eletyp = partyp == Union{} ? Union{} : eltype(partyp)
             try
                 nd = ndims(partyp) # This may throw if we couldn't infer the dimension
                 tmpdim = nd - (length(ex.args)-1)
@@ -432,17 +449,6 @@ function guesstype(ex, ctx::LintContext)
                 end
             end
             return Any
-        elseif typeof(partyp) == (DataType,) # e.g. (Int,), (Int...,), (DataType,...)
-            fst = partyp[1]
-            try
-                if fst.name.name == :Vararg
-                    return fst.parameters[1]
-                else
-                    return fst
-                end
-            catch
-                return Any
-            end
         elseif partyp <: Associative
             ktypeexpect = keytype(partyp)
             vtypeexpect = valuetype(partyp)
@@ -472,18 +478,7 @@ function guesstype(ex, ctx::LintContext)
                 return partyp
             end
         elseif partyp <: Tuple
-            if isempty(partyp.parameters)
-                return Any
-            end
-            if length(partyp.parameters) == 1 || partyp.parameters[1].name.name == :Vararg
-                if typeof(partyp.parameters[1].parameters[1]) <: DataType
-                    return evaltype(partyp.parameters[1].parameters[1].name.name)
-                end
-            end
-            elt = partyp.parameters[1]
-            if all(x->x == elt, partyp.parameters)
-                return elt
-            end
+            return partyp == Union{} ? Union{} : eltype(partyp)
         #=
         elseif isdefined(Main, :AbstractDataFrame) && partyp <: AbstractDataFrame
             ktypeactual = guesstype(ex.args[2], ctx)

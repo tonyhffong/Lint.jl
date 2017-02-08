@@ -20,14 +20,14 @@ function cacheknownsyms()
     union!(knowntypes, filter(names(Base)) do x
         ok = false
         try
-            ok = isa(eval(Base, x), DataType)
+            ok = isa(eval(Base, x), Type)
         end
         ok
     end)
     union!(knowntypes, filter(names(Core)) do x
         ok = false
         try
-            ok = isa(eval(Core, x), DataType)
+            ok = isa(eval(Core, x), Type)
         end
         ok
     end)

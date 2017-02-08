@@ -56,25 +56,20 @@ end
 # if none exists, return (nothing, nothing)
 function versionconstraint(ex)
     if isexpr(ex, :call) && ex.args[1] in COMPARISON_OPS
-        return versionconstraint(
-            Expr(:comparison, ex.args[2], ex.args[1], ex.args[3]))
-    elseif isexpr(ex, :comparison)
-        if in(:VERSION, ex.args)
-            for i = 1:2:length(ex.args)
-                a = ex.args[i]
-                if a == :VERSION
-                    continue
-                end
-                if !isexpr(a, :macrocall) || a.args[1] != Symbol("@v_str") ||
-                        !(typeof(a.args[2]) <: AbstractString)
-                    return (nothing, nothing)
-                end
+        if length(ex.args) == 3
+            isversionfirst = :VERSION == ex.args[2]
+            constraint = simplify_literal(
+                isversionfirst ? ex.args[3] : ex.args[2])
+            if isa(constraint, VersionNumber)
+                pred = ver -> getfield(Base, ex.args[1])(
+                    isversionfirst ? ver : constraint,
+                    isversionfirst ? constraint : ver)
+                return (pred, !pred)
             end
-            l = eval(Main, Expr(:(->), :VERSION, ex))
-            return (l, _ -> !(l(_)))
-        else
-            return (nothing, nothing)
         end
+        return (nothing, nothing)
+    elseif isexpr(ex, :comparison)
+        return versionconstraint(split_comparison(ex))
     elseif isexpr(ex, :(&&))
         vc1 = versionconstraint(ex.args[1])
         vc2 = versionconstraint(ex.args[2])

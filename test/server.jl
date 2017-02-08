@@ -12,8 +12,7 @@ sleep(1) #let server start
   write(conn, "1\n")
   write(conn, "\n")
 
-  @test readline(conn) == "\n"
-
+  @test chomp(readline(conn)) == ""
 
   conn = connect(port)
   write(conn, "undeclared_symbol\n")
@@ -21,7 +20,7 @@ sleep(1) #let server start
   write(conn, "bad\n")
 
   @test contains(readline(conn), "use of undeclared symbol")
-  @test readline(conn) == "\n"
+  @test chomp(readline(conn)) == ""
 end
 
 @testset "Testing the lintserver addition" begin
