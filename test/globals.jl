@@ -91,3 +91,6 @@ msgs = lintfile("FakePackage/test/file2.jl")
 # File in base julia
 msgs = lintfile("FakeJulia/base/file2.jl")
 @test isempty(msgs)
+
+msgs = lintfile("filename","something")
+@test msgs[1].code == :E321
