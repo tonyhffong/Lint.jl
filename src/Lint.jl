@@ -71,9 +71,9 @@ function lintpkgforfile{T<:AbstractString}(path::T, ctx::LintContext=LintContext
     path = abspath(path)
     if ispath(ctx.path)
         if is_windows()
-            len = length(matchall(r"\\", path))+1
+            len = count(x -> x == '\\', path)
         else
-            len = length(matchall(r"/", path))
+            len = count(x -> x == '/', path) - 1
         end
         for i = 1:len
             path, folder = splitdir(path)
