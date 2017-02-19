@@ -387,11 +387,19 @@ function convertmsgtojson(msg, style)
                               "code" => code,
                               "source" => "Lint.jl"))
     elseif style == "standard-linter-v2"
-        loc = JSON.json(Dict("file" => file,"position" => errorrange))
         return JSON.json(Dict("severity" => etypenumber,
-                              "location" => loc,
+                              "location" => Dict("file" => file,
+                                                 "position" => errorrange),
                               "excerpt" => code,
                               "description" => "$evar $txt"))
+    elseif style == "LintMessage"
+        return JSON.json(Dict("file" => msg.file,
+                              "code" => msg.code,
+                              "scope" => msg.scope,
+                              "line" => msg.line,
+                              "variable" => msg.variable,
+                              "message" => msg.message))
+
     else # Backward compability
         return string(msg)
 
