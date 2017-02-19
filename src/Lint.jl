@@ -4,6 +4,7 @@ module Lint
 
 using Base.Meta
 using Compat
+using JSON
 
 export LintMessage, LintContext, LintStack
 export lintfile, lintstr, lintpkg, lintserver, @lintpragma
@@ -340,7 +341,7 @@ function lintinclude(ctx::LintContext, file::AbstractString)
 end
 
 """
-Lint all *.jl files at a given directory.
+Lint all \*.jl files at a given directory.
 Will ignore LintContext file and already included files.
 """
 function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
@@ -355,7 +356,49 @@ function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
     ctx.messages
 end
 
-function readandwritethestream(conn)
+function convertmsgtojson(msg, style)
+    evar = msg.variable
+    txt = msg.message
+    file = msg.file
+    linenumber = msg.line
+    errorrange = "[[$linenumber, 0],[$linenumber, 80]]"
+    code = string(msg.code)
+    if code[1] == "I"
+        etype = "Info"
+        etypenumber = 3
+    elseif code[1] == "W"
+        etype = "Warning"
+        etypenumber = 2
+    else
+        etype = "Error"
+        etypenumber = 1
+    end
+
+    if style == "standard-linter-v1"
+        return JSON.json(Dict("type" => etype,
+                              "text" => "$code $evar $txt",
+                              "range" => errorrange,
+                              "filePath" => file))
+    elseif style == "vscode"
+        return JSON.json(Dict("severity" => etypenumber,
+                              "message" => "$evar $txt",
+                              "range" => errorrange,
+                              "filePath" => file,
+                              "code" => code,
+                              "source" => "Lint.jl"))
+    elseif style == "standard-linter-v2"
+        loc = JSON.json(Dict("file" => file,"position" => errorrange))
+        return JSON.json(Dict("severity" => etypenumber,
+                              "location" => loc,
+                              "excerpt" => code,
+                              "description" => "$evar $txt"))
+    else # Backward compability
+        return string(msg)
+
+    end
+end
+
+function readandwritethestream(conn,style)
     # println("Connection accepted")
     # Get file, code length and code
     file = strip(readline(conn))
@@ -368,21 +411,21 @@ function readandwritethestream(conn)
     msgs = lintfile(file, code)
     # Write response to socket
     for i in msgs
-        write(conn, string(i))
+        write(conn, convertmsgtojson(i,style))
         write(conn, "\n")
     end
     # Blank line to indicate end of messages
     write(conn, "\n")
 end
 
-function lintserver(port)
+function lintserver(port,style)
     server = listen(port)
     try
         println("Server running on port $port ...")
         while true
             conn = accept(server)
             @async try
-                readandwritethestream(conn)
+                readandwritethestream(conn,style)
             catch err
                 println(STDERR, "connection ended with error $err")
             finally
@@ -394,6 +437,10 @@ function lintserver(port)
         close(server)
         println("Server closed")
     end
+end
+
+function lintserver(port)
+    lintserver(port,"original_behaviour")
 end
 
 # precompile hints
