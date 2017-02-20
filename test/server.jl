@@ -81,51 +81,51 @@ end
     sleep(1)
     socket = connect(pipe)
     lintbyserver(socket,"something")
-    json_output = readfromserver_new(socket)
+    json_output = readline(socket)
     result_dict = JSON.parse(strip(json_output))
-    @test result_dict["line"] == 1
-    @test result_dict["message"] == "use of undeclared symbol"
-    @test result_dict["file"] == "none"
-    @test result_dict["code"] == "E321"
+    @test result_dict[1]["line"] == 1
+    @test result_dict[1]["message"] == "use of undeclared symbol"
+    @test result_dict[1]["file"] == "none"
+    @test result_dict[1]["code"] == "E321"
 
 
     server_slv1 = @async lintserver(pipe2,"standard-linter-v1")
     sleep(1)
     socket = connect(pipe2)
     lintbyserver(socket,"something")
-    json_output = readfromserver_new(socket)
+    json_output = readline(socket)
     result_dict = JSON.parse(strip(json_output))
-    @test result_dict["text"] == "E321 something use of undeclared symbol"
-    @test result_dict["filePath"] == "none"
-    @test result_dict["range"] == Array[[1, 0], [1, 80]]
-    @test result_dict["type"] == "error"
+    @test result_dict[1]["text"] == "E321 something use of undeclared symbol"
+    @test result_dict[1]["filePath"] == "none"
+    @test result_dict[1]["range"] == Array[[1, 0], [1, 80]]
+    @test result_dict[1]["type"] == "error"
 
 
     server_vscode = @async lintserver(pipe3,"vscode")
     sleep(1)
     socket = connect(pipe3)
     lintbyserver(socket,"something")
-    json_output = readfromserver_new(socket)
+    json_output = readline(socket)
     result_dict = JSON.parse(strip(json_output))
-    @test result_dict["message"] == "something use of undeclared symbol"
-    @test result_dict["filePath"] == "none"
-    @test result_dict["range"] == Array[[1, 0], [1, 80]]
-    @test result_dict["code"] == "E321"
-    @test result_dict["severity"] == 1
-    @test result_dict["source"] == "Lint.jl"
+    @test result_dict[1]["message"] == "something use of undeclared symbol"
+    @test result_dict[1]["filePath"] == "none"
+    @test result_dict[1]["range"] == Array[[1, 0], [1, 80]]
+    @test result_dict[1]["code"] == "E321"
+    @test result_dict[1]["severity"] == 1
+    @test result_dict[1]["source"] == "Lint.jl"
 
 
     server_slv2 = @async lintserver(pipe4,"standard-linter-v2")
     sleep(1)
     socket = connect(pipe4)
     lintbyserver(socket,"something")
-    json_output = readfromserver_new(socket)
+    json_output = readline(socket)
     result_dict = JSON.parse(strip(json_output))
-    @test result_dict["description"] == "something use of undeclared symbol"
-    @test result_dict["location"]["file"] == "none"
-    @test result_dict["location"]["position"] == Array[[1, 0], [1, 80]]
-    @test result_dict["severity"] == "error"
-    @test result_dict["excerpt"] == "E321"
+    @test result_dict[1]["description"] == "something use of undeclared symbol"
+    @test result_dict[1]["location"]["file"] == "none"
+    @test result_dict[1]["location"]["position"] == Array[[1, 0], [1, 80]]
+    @test result_dict[1]["severity"] == "error"
+    @test result_dict[1]["excerpt"] == "E321"
 end
 
 # This isn't working on the nightly build. Ideally we explicitly stop the server process (as

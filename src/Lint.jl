@@ -356,49 +356,51 @@ function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
     ctx.messages
 end
 
-function convertmsgtojson(msg, style)
-    evar = msg.variable
-    txt = msg.message
-    file = msg.file
-    linenumber = msg.line
-    errorrange = Array[[linenumber, 0], [linenumber, 80]]
-    code = string(msg.code)
-    if code[1] == "I"
-        etype = "info"
-        etypenumber = 3
-    elseif code[1] == "W"
-        etype = "warning"
-        etypenumber = 2
-    else
-        etype = "error"
-        etypenumber = 1
+function convertmsgtojson(msgs, style)
+    if style == "LintMessage"
+        return JSON.json(msgs)
     end
+    output = []
+    for msg in msgs
+        evar = msg.variable
+        txt = msg.message
+        file = msg.file
+        linenumber = msg.line
+        errorrange = Array[[linenumber, 0], [linenumber, 80]]
+        code = string(msg.code)
+        if code[1] == "I"
+            etype = "info"
+            etypenumber = 3
+        elseif code[1] == "W"
+            etype = "warning"
+            etypenumber = 2
+        else
+            etype = "error"
+            etypenumber = 1
+        end
 
-    if style == "standard-linter-v1"
-        return JSON.json(Dict("type" => etype,
-                              "text" => "$code $evar $txt",
-                              "range" => errorrange,
-                              "filePath" => file))
-    elseif style == "vscode"
-        return JSON.json(Dict("severity" => etypenumber,
-                              "message" => "$evar $txt",
-                              "range" => errorrange,
-                              "filePath" => file,
-                              "code" => code,
-                              "source" => "Lint.jl"))
-    elseif style == "standard-linter-v2"
-        return JSON.json(Dict("severity" => etype,
-                              "location" => Dict("file" => file,
-                                                 "position" => errorrange),
-                              "excerpt" => code,
-                              "description" => "$evar $txt"))
-    elseif style == "LintMessage"
-        return JSON.json(msg)
+        if style == "standard-linter-v1"
+            push!(output, Dict("type" => etype,
+                                "text" => "$code $evar $txt",
+                                "range" => errorrange,
+                                "filePath" => file))
+        elseif style == "vscode"
+            push!(output, Dict("severity" => etypenumber,
+                                "message" => "$evar $txt",
+                                "range" => errorrange,
+                                "filePath" => file,
+                                "code" => code,
+                                "source" => "Lint.jl"))
+        elseif style == "standard-linter-v2"
+            push!(output, Dict("severity" => etype,
+                                "location" => Dict("file" => file,
+                                                   "position" => errorrange),
+                                "excerpt" => code,
+                                "description" => "$evar $txt"))
 
-    else # Backward compability
-        return string(msg)
-
+        end
     end
+    return JSON.json(output)
 end
 
 function readandwritethestream(conn,style)
@@ -413,12 +415,17 @@ function readandwritethestream(conn,style)
     # Do the linting
     msgs = lintfile(file, code)
     # Write response to socket
-    for i in msgs
-        write(conn, convertmsgtojson(i,style))
+    if style == "original_behaviour"
+        for i in msgs
+            write(conn, string(i))
+            write(conn, "\n")
+        end
+        # Blank line to indicate end of messages
+        write(conn, "\n")
+    else
+        write(conn,convertmsgtojson(msgs,style))
         write(conn, "\n")
     end
-    # Blank line to indicate end of messages
-    write(conn, "\n")
 end
 
 function lintserver(port,style)
