@@ -361,16 +361,16 @@ function convertmsgtojson(msg, style)
     txt = msg.message
     file = msg.file
     linenumber = msg.line
-    errorrange = "[[$linenumber, 0],[$linenumber, 80]]"
+    errorrange = Array[[linenumber, 0], [linenumber, 80]]
     code = string(msg.code)
     if code[1] == "I"
-        etype = "Info"
+        etype = "info"
         etypenumber = 3
     elseif code[1] == "W"
-        etype = "Warning"
+        etype = "warning"
         etypenumber = 2
     else
-        etype = "Error"
+        etype = "error"
         etypenumber = 1
     end
 
@@ -387,18 +387,13 @@ function convertmsgtojson(msg, style)
                               "code" => code,
                               "source" => "Lint.jl"))
     elseif style == "standard-linter-v2"
-        return JSON.json(Dict("severity" => etypenumber,
+        return JSON.json(Dict("severity" => etype,
                               "location" => Dict("file" => file,
                                                  "position" => errorrange),
                               "excerpt" => code,
                               "description" => "$evar $txt"))
     elseif style == "LintMessage"
-        return JSON.json(Dict("file" => msg.file,
-                              "code" => msg.code,
-                              "scope" => msg.scope,
-                              "line" => msg.line,
-                              "variable" => msg.variable,
-                              "message" => msg.message))
+        return JSON.json(msg)
 
     else # Backward compability
         return string(msg)

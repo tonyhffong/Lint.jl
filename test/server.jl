@@ -6,6 +6,33 @@ port = conn[1]
 server = @async lintserver(port)
 sleep(1) #let server start
 
+function lintbyserver(socket,str)
+    println(socket, "none")
+    println(socket, sizeof(str)) # bytes of code
+    println(socket, str) # code
+end
+
+function readfromserver_old(socket)
+    response = ""
+    line = ""
+    while line != "\n"
+        response *= line
+        line = readline(socket)
+    end
+    return response
+end
+
+function readfromserver_new(socket)
+    response = ""
+    line = ""
+    while isopen(socket)
+        response *= line
+        line = readline(socket)
+    end
+    return response
+end
+
+
 @testset "lintserver() tests" begin
     conn = connect(port)
     write(conn, "empty\n")
@@ -24,36 +51,81 @@ sleep(1) #let server start
 end
 
 @testset "Testing the lintserver addition" begin
-    function lintbyserver(socket)
-        str = """
-        test = "Hello" + "World"
-        """
-        println(socket, "none")
-        println(socket, sizeof(str)) # bytes of code
-        println(socket, str) # code
-    end
-
+    str = """
+          test = "Hello" + "World"
+          """
     socket = connect(port)
-    lintbyserver(socket)
-    response = ""
-    line = ""
-    while line != "\n"
-        response *= line
-        line = readline(socket)
-    end
-
+    lintbyserver(socket,str)
+    response = readfromserver_old(socket)
     @test response == "none:1 E422 : string uses * to concatenate\n"
 
     socket = connect(port)
-    lintbyserver(socket)
-    res = ""
-    line = ""
-    while isopen(socket)
-        res *= line
-        line = readline(socket)
-    end
-
+    lintbyserver(socket,str)
+    res = readfromserver_new(socket)
     @test res == "none:1 E422 : string uses * to concatenate\n\n"
+end
+
+@testset "Testing lintserver() with named pipe and JSON format" begin
+    if is_windows()
+        pipe = "\\\\.\\pipe\\testsocket"
+        pipe2 = "\\\\.\\pipe\\testsocket2"
+        pipe3 = "\\\\.\\pipe\\testsocket3"
+        pipe4 = "\\\\.\\pipe\\testsocket4"
+    else
+        pipe = tempname()
+        pipe2 = tempname()
+        pipe3 = tempname()
+        pipe4 = tempname()
+    end
+    server_LintMessage = @async lintserver(pipe,"LintMessage")
+    sleep(1)
+    socket = connect(pipe)
+    lintbyserver(socket,"something")
+    json_output = readfromserver_new(socket)
+    result_dict = JSON.parse(strip(json_output))
+    @test result_dict["line"] == 1
+    @test result_dict["message"] == "use of undeclared symbol"
+    @test result_dict["file"] == "none"
+    @test result_dict["code"] == "E321"
+
+
+    server_slv1 = @async lintserver(pipe2,"standard-linter-v1")
+    sleep(1)
+    socket = connect(pipe2)
+    lintbyserver(socket,"something")
+    json_output = readfromserver_new(socket)
+    result_dict = JSON.parse(strip(json_output))
+    @test result_dict["text"] == "E321 something use of undeclared symbol"
+    @test result_dict["filePath"] == "none"
+    @test result_dict["range"] == Array[[1, 0], [1, 80]]
+    @test result_dict["type"] == "error"
+
+
+    server_vscode = @async lintserver(pipe3,"vscode")
+    sleep(1)
+    socket = connect(pipe3)
+    lintbyserver(socket,"something")
+    json_output = readfromserver_new(socket)
+    result_dict = JSON.parse(strip(json_output))
+    @test result_dict["message"] == "something use of undeclared symbol"
+    @test result_dict["filePath"] == "none"
+    @test result_dict["range"] == Array[[1, 0], [1, 80]]
+    @test result_dict["code"] == "E321"
+    @test result_dict["severity"] == 1
+    @test result_dict["source"] == "Lint.jl"
+
+
+    server_slv2 = @async lintserver(pipe4,"standard-linter-v2")
+    sleep(1)
+    socket = connect(pipe4)
+    lintbyserver(socket,"something")
+    json_output = readfromserver_new(socket)
+    result_dict = JSON.parse(strip(json_output))
+    @test result_dict["description"] == "something use of undeclared symbol"
+    @test result_dict["location"]["file"] == "none"
+    @test result_dict["location"]["position"] == Array[[1, 0], [1, 80]]
+    @test result_dict["severity"] == "error"
+    @test result_dict["excerpt"] == "E321"
 end
 
 # This isn't working on the nightly build. Ideally we explicitly stop the server process (as
