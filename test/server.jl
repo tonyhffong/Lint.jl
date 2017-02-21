@@ -80,57 +80,78 @@ end
     server_LintMessage = @async lintserver(pipe,"lint-message")
     sleep(1)
     socket = connect(pipe)
-    lintbyserver(socket,"something")
+    json_input = JSON.json(Dict("file" => "none", "code_str" => "something"))
+    write(socket, json_input * "\n")
     json_output = readline(socket)
-    result_dict = JSON.parse(strip(json_output))
-    @test result_dict[1]["line"] == 1
-    @test result_dict[1]["message"] == "use of undeclared symbol"
-    @test result_dict[1]["file"] == "none"
-    @test result_dict[1]["code"] == "E321"
-
+    results_array = JSON.parse(strip(json_output))
+    @test results_array[1]["line"] == 1
+    @test results_array[1]["message"] == "use of undeclared symbol"
+    @test results_array[1]["file"] == "none"
+    @test results_array[1]["code"] == "E321"
 
     server_slv1 = @async lintserver(pipe2,"standard-linter-v1")
     sleep(1)
     socket = connect(pipe2)
-    lintbyserver(socket,"something")
+    write(socket, json_input * "\n")
     json_output = readline(socket)
-    result_dict = JSON.parse(strip(json_output))
-    @test result_dict[1]["text"] == "E321 something use of undeclared symbol"
-    @test result_dict[1]["filePath"] == "none"
-    @test result_dict[1]["range"] == Array[[1, 0], [1, 80]]
-    @test result_dict[1]["type"] == "error"
+    results_array = JSON.parse(strip(json_output))
+    @test results_array[1]["text"] == "E321 something use of undeclared symbol"
+    @test results_array[1]["filePath"] == "none"
+    @test results_array[1]["range"] == Array[[1, 0], [1, 80]]
+    @test results_array[1]["type"] == "error"
 
 
     server_vscode = @async lintserver(pipe3,"vscode")
     sleep(1)
     socket = connect(pipe3)
-    lintbyserver(socket,"something")
+    write(socket, json_input * "\n")
     json_output = readline(socket)
-    result_dict = JSON.parse(strip(json_output))
-    @test result_dict[1]["message"] == "something use of undeclared symbol"
-    @test result_dict[1]["filePath"] == "none"
-    @test result_dict[1]["range"] == Array[[1, 0], [1, 80]]
-    @test result_dict[1]["code"] == "E321"
-    @test result_dict[1]["severity"] == 1
-    @test result_dict[1]["source"] == "Lint.jl"
+    results_array = JSON.parse(strip(json_output))
+    @test results_array[1]["message"] == "something use of undeclared symbol"
+    @test results_array[1]["filePath"] == "none"
+    @test results_array[1]["range"] == Array[[1, 0], [1, 80]]
+    @test results_array[1]["code"] == "E321"
+    @test results_array[1]["severity"] == 1
+    @test results_array[1]["source"] == "Lint.jl"
 
 
     server_slv2 = @async lintserver(pipe4,"standard-linter-v2")
     sleep(1)
     socket = connect(pipe4)
-    lintbyserver(socket,"something")
+    write(socket, json_input * "\n")
     json_output = readline(socket)
-    result_dict = JSON.parse(strip(json_output))
-    @test result_dict[1]["description"] == "something use of undeclared symbol"
-    @test result_dict[1]["location"]["file"] == "none"
-    @test result_dict[1]["location"]["position"] == Array[[1, 0], [1, 80]]
-    @test result_dict[1]["severity"] == "error"
-    @test result_dict[1]["excerpt"] == "E321"
-end
+    results_array = JSON.parse(strip(json_output))
+    @test results_array[1]["description"] == "something use of undeclared symbol"
+    @test results_array[1]["location"]["file"] == "none"
+    @test results_array[1]["location"]["position"] == Array[[1, 0], [1, 80]]
+    @test results_array[1]["severity"] == "error"
+    @test results_array[1]["excerpt"] == "E321"
 
-# This isn't working on the nightly build. Ideally we explicitly stop the server process (as
-# it loops forever). It seems to get stopped when the tests end, so it's not necessary.
-#
-#try # close the server
-#    Base.throwto(server, InterruptException())
-#end
+
+    json_input = JSON.json(Dict("file" => "none",
+                                "code_str" => "function a(b)\nend",
+                                "ignore_info" => true))
+    socket = connect(pipe)
+    write(socket, json_input * "\n")
+    json_output = readline(socket)
+    results_array = JSON.parse(strip(json_output))
+    @test isempty(results_array)
+
+    json_input = JSON.json(Dict("file" => "none",
+                                "code_str" => "pi = 1",
+                                "ignore_warnings" => true))
+    socket = connect(pipe)
+    write(socket, json_input * "\n")
+    json_output = readline(socket)
+    results_array = JSON.parse(strip(json_output))
+    @test isempty(results_array)
+
+    json_input = JSON.json(Dict("file" => "none",
+                                "code_str" => "pi = 1\nfunction a(b)\nend",
+                                "ignore_codes" => ["I382","W351"]))
+    socket = connect(pipe)
+    write(socket, json_input * "\n")
+    json_output = readline(socket)
+    results_array = JSON.parse(strip(json_output))
+    @test isempty(results_array)
+end

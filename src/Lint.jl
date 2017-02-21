@@ -381,41 +381,60 @@ function convertmsgtojson(msgs, style)
 
         if style == "standard-linter-v1"
             push!(output, Dict("type" => etype,
-                                "text" => "$code $evar $txt",
-                                "range" => errorrange,
-                                "filePath" => file))
+                               "text" => "$code $evar $txt",
+                               "range" => errorrange,
+                               "filePath" => file))
         elseif style == "vscode"
             push!(output, Dict("severity" => etypenumber,
-                                "message" => "$evar $txt",
-                                "range" => errorrange,
-                                "filePath" => file,
-                                "code" => code,
-                                "source" => "Lint.jl"))
+                               "message" => "$evar $txt",
+                               "range" => errorrange,
+                               "filePath" => file,
+                               "code" => code,
+                               "source" => "Lint.jl"))
         elseif style == "standard-linter-v2"
             push!(output, Dict("severity" => etype,
-                                "location" => Dict("file" => file,
+                               "location" => Dict("file" => file,
                                                    "position" => errorrange),
-                                "excerpt" => code,
-                                "description" => "$evar $txt"))
+                               "excerpt" => code,
+                               "description" => "$evar $txt"))
 
         end
     end
     return JSON.json(output)
 end
 
+
+function filtermsgs(msgs,dict_data)
+    if haskey(dict_data,"ignore_warnings")
+        if dict_data["ignore_warnings"]
+            msgs = filter(i -> !iswarning(i), msgs)
+        end
+    end
+    if haskey(dict_data,"ignore_info")
+        if dict_data["ignore_info"]
+            msgs = filter(i -> !isinfo(i), msgs)
+        end
+    end
+    if haskey(dict_data,"ignore_codes")
+        msgs = filter(i -> !(string(i.code) in dict_data["ignore_codes"]), msgs)
+    end
+    return msgs
+end
+
+
 function readandwritethestream(conn,style)
-    # println("Connection accepted")
-    # Get file, code length and code
-    file = strip(readline(conn))
-    # println("file: ", file)
-    code_len = parse(Int, strip(readline(conn)))
-    # println("Code bytes: ", code_len)
-    code = Compat.UTF8String(read(conn, code_len))
-    # println("Code received")
-    # Do the linting
-    msgs = lintfile(file, code)
-    # Write response to socket
     if style == "original_behaviour"
+        # println("Connection accepted")
+        # Get file, code length and code
+        file = strip(readline(conn))
+        # println("file: ", file)
+        code_len = parse(Int, strip(readline(conn)))
+        # println("Code bytes: ", code_len)
+        code = Compat.UTF8String(read(conn, code_len))
+        # println("Code received")
+        # Do the linting
+        msgs = lintfile(file, code)
+        # Write response to socket
         for i in msgs
             write(conn, string(i))
             write(conn, "\n")
@@ -423,6 +442,10 @@ function readandwritethestream(conn,style)
         # Blank line to indicate end of messages
         write(conn, "\n")
     else
+        json_data = readline(conn)
+        dict_data = JSON.parse(json_data)
+        msgs = lintfile(dict_data["file"], dict_data["code_str"])
+        msgs = filtermsgs(msgs,dict_data)
         write(conn,convertmsgtojson(msgs,style))
         write(conn, "\n")
     end
