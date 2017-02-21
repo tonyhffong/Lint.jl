@@ -366,12 +366,13 @@ function convertmsgtojson(msgs, style)
         txt = msg.message
         file = msg.file
         linenumber = msg.line
-        errorrange = Array[[linenumber, 0], [linenumber, 80]]
+        # Atom index starts from zero thus minus one
+        errorrange = Array[[linenumber-1, 0], [linenumber-1, 80]]
         code = string(msg.code)
-        if code[1] == "I"
+        if code[1] == 'I'
             etype = "info"
             etypenumber = 3
-        elseif code[1] == "W"
+        elseif code[1] == 'W'
             etype = "warning"
             etypenumber = 2
         else
@@ -446,8 +447,8 @@ function readandwritethestream(conn,style)
         dict_data = JSON.parse(json_data)
         msgs = lintfile(dict_data["file"], dict_data["code_str"])
         msgs = filtermsgs(msgs,dict_data)
-        write(conn,convertmsgtojson(msgs,style))
-        write(conn, "\n")
+        out = convertmsgtojson(msgs,style)
+        write(conn,out)
     end
 end
 

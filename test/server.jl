@@ -97,8 +97,31 @@ end
     results_array = JSON.parse(strip(json_output))
     @test results_array[1]["text"] == "E321 something use of undeclared symbol"
     @test results_array[1]["filePath"] == "none"
-    @test results_array[1]["range"] == Array[[1, 0], [1, 80]]
+    @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["type"] == "error"
+
+
+    socket = connect(pipe2)
+    json_input2 = JSON.json(Dict("file" => "none",
+                                 "code_str" => "pi=3"))
+    write(socket, json_input2 * "\n")
+    json_output = readline(socket)
+    results_array = JSON.parse(strip(json_output))
+    @test results_array[1]["text"] == "W351 pi redefining mathematical constant"
+    @test results_array[1]["filePath"] == "none"
+    @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
+    @test results_array[1]["type"] == "warning"
+
+    socket = connect(pipe2)
+    json_input3 = JSON.json(Dict("file" => "none",
+                                 "code_str" => "function a(b)\nend"))
+    write(socket, json_input3 * "\n")
+    json_output = readline(socket)
+    results_array = JSON.parse(strip(json_output))
+    @test results_array[1]["text"] == "I382 b argument declared but not used"
+    @test results_array[1]["filePath"] == "none"
+    @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
+    @test results_array[1]["type"] == "info"
 
 
     server_vscode = @async lintserver(pipe3,"vscode")
@@ -109,7 +132,7 @@ end
     results_array = JSON.parse(strip(json_output))
     @test results_array[1]["message"] == "something use of undeclared symbol"
     @test results_array[1]["filePath"] == "none"
-    @test results_array[1]["range"] == Array[[1, 0], [1, 80]]
+    @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["code"] == "E321"
     @test results_array[1]["severity"] == 1
     @test results_array[1]["source"] == "Lint.jl"
@@ -123,7 +146,7 @@ end
     results_array = JSON.parse(strip(json_output))
     @test results_array[1]["description"] == "something use of undeclared symbol"
     @test results_array[1]["location"]["file"] == "none"
-    @test results_array[1]["location"]["position"] == Array[[1, 0], [1, 80]]
+    @test results_array[1]["location"]["position"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["severity"] == "error"
     @test results_array[1]["excerpt"] == "E321"
 
