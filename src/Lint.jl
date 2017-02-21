@@ -70,7 +70,12 @@ If file is in base lint all files in base dir.
 function lintpkgforfile{T<:AbstractString}(path::T, ctx::LintContext=LintContext())
     path = abspath(path)
     if ispath(ctx.path)
-        while path != "/"
+        if is_windows()
+            len = count(x -> x == '\\', path)
+        else
+            len = count(x -> x == '/', path) - 1
+        end
+        for i = 1:len
             path, folder = splitdir(path)
             if folder == "src"
                 file = joinpath(path, folder, basename(path) * ".jl")
