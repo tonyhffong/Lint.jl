@@ -357,7 +357,7 @@ function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
 end
 
 function convertmsgtojson(msgs, style)
-    if style == "LintMessage"
+    if style == "lint-message"
         return JSON.json(msgs)
     end
     output = []
@@ -428,10 +428,10 @@ function readandwritethestream(conn,style)
     end
 end
 
-function lintserver(port,style)
+function lintserver(port,style="original_behaviour")
     server = listen(port)
     try
-        println("Server running on port $port ...")
+        println("Server running on port/pipe $port ...")
         while true
             conn = accept(server)
             @async try
@@ -449,9 +449,6 @@ function lintserver(port,style)
     end
 end
 
-function lintserver(port)
-    lintserver(port,"original_behaviour")
-end
 
 # precompile hints
 include("precompile.jl")

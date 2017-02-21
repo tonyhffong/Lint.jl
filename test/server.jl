@@ -77,7 +77,7 @@ end
         pipe3 = tempname()
         pipe4 = tempname()
     end
-    server_LintMessage = @async lintserver(pipe,"LintMessage")
+    server_LintMessage = @async lintserver(pipe,"lint-message")
     sleep(1)
     socket = connect(pipe)
     lintbyserver(socket,"something")
