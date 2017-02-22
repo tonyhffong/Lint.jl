@@ -356,7 +356,7 @@ function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
     ctx.messages
 end
 
-function convertmsgtojson(msgs, style)
+function convertmsgtojson(msgs, style, dict_data)
     if style == "lint-message"
         return JSON.json(msgs)
     end
@@ -381,13 +381,22 @@ function convertmsgtojson(msgs, style)
         end
 
         if style == "standard-linter-v1"
+            if haskey(dict_data,"show_code")
+                if dict_data["show_code"]
+                    msgtext = "$code $evar: $txt"
+                else
+                    msgtext = "$evar: $txt"
+                end
+            else
+                msgtext = "$code $evar: $txt"
+            end
             push!(output, Dict("type" => etype,
-                               "text" => "$code $evar $txt",
+                               "text" => msgtext,
                                "range" => errorrange,
                                "filePath" => file))
         elseif style == "vscode"
             push!(output, Dict("severity" => etypenumber,
-                               "message" => "$evar $txt",
+                               "message" => "$evar: $txt",
                                "range" => errorrange,
                                "filePath" => file,
                                "code" => code,
@@ -397,7 +406,7 @@ function convertmsgtojson(msgs, style)
                                "location" => Dict("file" => file,
                                                    "position" => errorrange),
                                "excerpt" => code,
-                               "description" => "$evar $txt"))
+                               "description" => "$evar: $txt"))
 
         end
     end
@@ -445,8 +454,8 @@ function readandwritethestream(conn,style)
     else
         dict_data = JSON.parse(conn)
         msgs = lintfile(dict_data["file"], dict_data["code_str"])
-        msgs = filtermsgs(msgs,dict_data)
-        out = convertmsgtojson(msgs,style)
+        msgs = filtermsgs(msgs, dict_data)
+        out = convertmsgtojson(msgs, style, dict_data)
         write(conn,out)
     end
 end

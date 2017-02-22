@@ -103,25 +103,25 @@ end
     @test results_array[1]["code"] == "E321"
 
     results_array = writeandreadserver(pipe_slv1, json_input1)
-    @test results_array[1]["text"] == "E321 something use of undeclared symbol"
+    @test results_array[1]["text"] == "E321 something: use of undeclared symbol"
     @test results_array[1]["filePath"] == "none"
     @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["type"] == "error"
 
     results_array = writeandreadserver(pipe_slv1, json_input2)
-    @test results_array[1]["text"] == "W351 pi redefining mathematical constant"
+    @test results_array[1]["text"] == "W351 pi: redefining mathematical constant"
     @test results_array[1]["filePath"] == "none"
     @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["type"] == "warning"
 
     results_array = writeandreadserver(pipe_slv1, json_input3)
-    @test results_array[1]["text"] == "I382 b argument declared but not used"
+    @test results_array[1]["text"] == "I382 b: argument declared but not used"
     @test results_array[1]["filePath"] == "none"
     @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["type"] == "info"
 
     results_array = writeandreadserver(pipe_vscode, json_input1)
-    @test results_array[1]["message"] == "something use of undeclared symbol"
+    @test results_array[1]["message"] == "something: use of undeclared symbol"
     @test results_array[1]["filePath"] == "none"
     @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["code"] == "E321"
@@ -129,7 +129,7 @@ end
     @test results_array[1]["source"] == "Lint.jl"
 
     results_array = writeandreadserver(pipe_slv2, json_input1)
-    @test results_array[1]["description"] == "something use of undeclared symbol"
+    @test results_array[1]["description"] == "something: use of undeclared symbol"
     @test results_array[1]["location"]["file"] == "none"
     @test results_array[1]["location"]["position"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["severity"] == "error"
