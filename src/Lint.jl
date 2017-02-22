@@ -443,8 +443,7 @@ function readandwritethestream(conn,style)
         # Blank line to indicate end of messages
         write(conn, "\n")
     else
-        json_data = readline(conn)
-        dict_data = JSON.parse(json_data)
+        dict_data = JSON.parse(conn)
         msgs = lintfile(dict_data["file"], dict_data["code_str"])
         msgs = filtermsgs(msgs,dict_data)
         out = convertmsgtojson(msgs,style)
