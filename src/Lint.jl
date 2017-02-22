@@ -382,9 +382,7 @@ function convertmsgtojson(msgs, style, dict_data)
 
         if style == "standard-linter-v1"
             if haskey(dict_data,"show_code")
-                if dict_data["show_code"]
-                    msgtext = "$code $evar: $txt"
-                else
+                if !dict_data["show_code"]
                     msgtext = "$evar: $txt"
                 end
             else

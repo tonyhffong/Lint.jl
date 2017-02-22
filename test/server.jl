@@ -143,14 +143,23 @@ end
     @test isempty(results_array)
 
     json_input5 = JSON.json(Dict("file" => "none",
-                                "code_str" => "pi = 1",
-                                "ignore_warnings" => true))
+                                 "code_str" => "pi = 1",
+                                 "ignore_warnings" => true))
     results_array = writeandreadserver(pipe_lm, json_input5)
     @test isempty(results_array)
 
     json_input6 = JSON.json(Dict("file" => "none",
-                                "code_str" => "pi = 1\nfunction a(b)\nend",
-                                "ignore_codes" => ["I382","W351"]))
+                                 "code_str" => "pi = 1\nfunction a(b)\nend",
+                                 "ignore_codes" => ["I382","W351"]))
     results_array = writeandreadserver(pipe_lm, json_input6)
     @test isempty(results_array)
+
+    json_input7 = JSON.json(Dict("file" => "none",
+                                 "code_str" => "pi = 1\nfunction a(b)\nend",
+                                 "show_code" => false))
+    results_array = writeandreadserver(pipe_slv1, json_input7)
+    @test results_array[1]["text"] == "pi: redefining mathematical constant"
+    @test results_array[1]["filePath"] == "none"
+    @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
+    @test results_array[1]["type"] == "warning"
 end
