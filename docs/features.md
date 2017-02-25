@@ -270,6 +270,12 @@ Dict{String,Any} with 6 entries:
 
 julia>
 ```
+`lintserver(port,style)` style will accept four values:
+
+1. "lint-message", which is the preferred and shown in above example
+2. ["standard-linter-v1"](https://github.com/steelbrain/linter/blob/v1/docs/examples/standard-linter-v1.md)
+3. ["vscode"](https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md#diagnostic)
+4. ["standard-linter-v2"](https://github.com/steelbrain/linter/blob/master/docs/examples/standard-linter-v2.md)
 
 The old protocol for the server is:
 
