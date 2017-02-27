@@ -341,7 +341,7 @@ function lintinclude(ctx::LintContext, file::AbstractString)
 end
 
 """
-Lint all \*.jl files at a given directory.
+Lint all *.jl files at a given directory.
 Will ignore LintContext file and already included files.
 """
 function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
@@ -358,9 +358,9 @@ end
 
 function convertmsgtojson(msgs, style, dict_data)
     if style == "lint-message"
-        return JSON.json(msgs)
+        return msgs
     end
-    output = []
+    output = Any[]
     for msg in msgs
         evar = msg.variable
         txt = msg.message
@@ -408,7 +408,7 @@ function convertmsgtojson(msgs, style, dict_data)
 
         end
     end
-    return JSON.json(output)
+    return output
 end
 
 
@@ -454,7 +454,7 @@ function readandwritethestream(conn,style)
         msgs = lintfile(dict_data["file"], dict_data["code_str"])
         msgs = filtermsgs(msgs, dict_data)
         out = convertmsgtojson(msgs, style, dict_data)
-        write(conn,out)
+        JSON.print(conn, out)
     end
 end
 

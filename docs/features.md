@@ -215,14 +215,14 @@ Existing plugins:
 
 The new protocol for the server is JSON in both input and output:
 ```json
-{
-  'file': "path_to_the_file",
-  'code_str': "full_text_of_the_file",
-  'ignore_codes': ["E381", "W361", "I171"],
-  'ignore_warnings': false,
-  'ignore_info': false,
-  'show_code': true
-}
+"{
+    \"file\":\"path_to_the_file\",
+    \"code_str\":\"full_text_of_the_file\",
+    \"ignore_codes\":[\"E381\",\"W361\",\"I171\"],
+    \"ignore_info\":false,
+    \"ignore_warnings\":false,
+    \"show_code\":true
+}"
 ```
 Only the two first `'file'` and `'code_str'` are mandatory fields. For the output
 there are four different protocols from which the `"lint-message"` is preferred,
