@@ -215,21 +215,21 @@ Existing plugins:
 
 The new protocol for the server is JSON in both input and output:
 ```json
-"{
-    \"file\":\"path_to_the_file\",
-    \"code_str\":\"full_text_of_the_file\",
-    \"ignore_codes\":[\"E381\",\"W361\",\"I171\"],
-    \"ignore_info\":false,
-    \"ignore_warnings\":false,
-    \"show_code\":true
-}"
+{
+    "file":"path_to_the_file",
+    "code_str":"full_text_of_the_file",
+    "ignore_codes":["E381","W361","I171"],
+    "ignore_info":false,
+    "ignore_warnings":false,
+    "show_code":true
+}
 ```
-Only the two first `'file'` and `'code_str'` are mandatory fields. For the output
-there are four different protocols from which the `"lint-message"` is preferred,
-because it is the direct match of `LintMessage` and this way will be always up
-to date. Other three types are for convenience, they give you the opportunity to
+Only the two first `"file"` and `"code_str"` are mandatory fields. For the output
+there are four different protocols from which the `"lint-message"` is the direct
+match of `LintMessage` and this way will be always up to date, but can also break.
+Other three types are for convenience, they give you the opportunity to
 directly pass the messages forward for example Atom linter. Here is one full example,
-[to see more examples, see the tests](https://github.com/tonyhffong/Lint.jl/blob/master/test/server.jl)
+[to see more examples, see the tests.](https://github.com/tonyhffong/Lint.jl/blob/master/test/server.jl)
 ```julia
 julia> using Lint
 
@@ -276,6 +276,22 @@ julia>
 2. ["standard-linter-v1"](https://github.com/steelbrain/linter/blob/v1/docs/examples/standard-linter-v1.md)
 3. ["vscode"](https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md#diagnostic)
 4. ["standard-linter-v2"](https://github.com/steelbrain/linter/blob/master/docs/examples/standard-linter-v2.md)
+
+If any of the above four JSON formats is not answering your needs, please make a
+[new pull request](https://github.com/tonyhffong/Lint.jl/pulls). The file you want
+to edit is [Lint.jl](https://github.com/tonyhffong/Lint.jl/blob/master/src/Lint.jl)
+and the function is called `convertmsgtojson`. It is enough to add one `elseif`
+block, here is one of them as an example:
+```julia
+elseif style == "standard-linter-v2"
+    push!(output, Dict("severity" => etype,
+                       "location" => Dict("file" => file,
+                                           "position" => errorrange),
+                       "excerpt" => code,
+                       "description" => "$evar: $txt"))
+
+end
+```
 
 The old protocol for the server is:
 
