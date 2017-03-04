@@ -240,20 +240,21 @@ julia> if is_windows()
        else # linux, osx
            pipe_lm = tempname()
        end
-"/tmp/juliaeQz3oF"
+"/tmp/julial73DPo"
 
 julia> server_lm = @async lintserver(pipe_lm,"lint-message")
-Server running on port/pipe /tmp/juliaeQz3oF ...
-Task (queued) @0x00007f11d0b64760
+Server running on port/pipe /tmp/julial73DPo ...
+Task (queued) @0x00007f1b20a38280
 
-julia> json_input1 = JSON.json(Dict("file" => "none", "code_str" => "something"))
-"{\"file\":\"none\",\"code_str\":\"something\"}"
+julia> input = Dict("file" => "none", "code_str" => "something")
+Dict{String,String} with 2 entries:
+  "file"     => "none"
+  "code_str" => "something"
 
 julia> conn = connect(pipe_lm)
 Base.PipeEndpoint(open, 0 bytes waiting)
 
-julia> write(conn, json_input1)
-38
+julia> JSON.print(conn, input)
 
 julia> out = JSON.parse(conn)
 1-element Array{Any,1}:
@@ -268,7 +269,7 @@ Dict{String,Any} with 6 entries:
   "code"     => "E321"
   "variable" => "something"
 
-julia>
+julia> 
 ```
 `lintserver(port,style)` style will accept four values:
 
