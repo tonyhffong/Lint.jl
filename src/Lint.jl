@@ -341,7 +341,7 @@ function lintinclude(ctx::LintContext, file::AbstractString)
 end
 
 """
-Lint all *.jl files at a given directory.
+Lint all \*.jl files at a given directory.
 Will ignore LintContext file and already included files.
 """
 function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
@@ -382,7 +382,9 @@ function convertmsgtojson(msgs, style, dict_data)
 
         if style == "standard-linter-v1"
             if haskey(dict_data,"show_code")
-                if !dict_data["show_code"]
+                if dict_data["show_code"]
+                    msgtext = "$code $evar: $txt"
+                else
                     msgtext = "$evar: $txt"
                 end
             else
