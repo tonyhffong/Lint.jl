@@ -341,7 +341,7 @@ function lintinclude(ctx::LintContext, file::AbstractString)
 end
 
 """
-Lint all \*.jl files at a given directory.
+Lint all .jl ending files at a given directory.
 Will ignore LintContext file and already included files.
 """
 function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
