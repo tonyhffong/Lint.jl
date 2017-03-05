@@ -80,7 +80,7 @@ end
 
     function writeandreadserver(pipe,json_input)
         conn = connect(pipe)
-        write(conn, json_input)
+        JSON.print(conn, json_input)
         JSON.parse(conn)
     end
 
@@ -90,11 +90,9 @@ end
     server_slv2 = @async lintserver(pipe_slv2,"standard-linter-v2")
     sleep(1)
 
-    json_input1 = JSON.json(Dict("file" => "none", "code_str" => "something"))
-    json_input2 = JSON.json(Dict("file" => "none",
-                                 "code_str" => "pi=3"))
-    json_input3 = JSON.json(Dict("file" => "none",
-                                 "code_str" => "function a(b)\nend"))
+    json_input1 = Dict("file" => "none", "code_str" => "something")
+    json_input2 = Dict("file" => "none", "code_str" => "pi=3")
+    json_input3 = Dict("file" => "none", "code_str" => "function a(b)\nend")
 
     results_array = writeandreadserver(pipe_lm, json_input1)
     @test results_array[1]["line"] == 1
@@ -136,36 +134,34 @@ end
     @test results_array[1]["excerpt"] == "E321"
 
 
-    json_input4 = JSON.json(Dict("file" => "none",
-                                 "code_str" => "function a(b)\nend",
-                                 "ignore_info" => true))
+    json_input4 = Dict("file" => "none", "code_str" => "function a(b)\nend",
+                       "ignore_info" => true)
     results_array = writeandreadserver(pipe_lm, json_input4)
     @test isempty(results_array)
 
-    json_input5 = JSON.json(Dict("file" => "none",
-                                 "code_str" => "pi = 1",
-                                 "ignore_warnings" => true))
+    json_input5 = Dict("file" => "none", "code_str" => "pi = 1",
+                       "ignore_warnings" => true)
     results_array = writeandreadserver(pipe_lm, json_input5)
     @test isempty(results_array)
 
-    json_input6 = JSON.json(Dict("file" => "none",
-                                 "code_str" => "pi = 1\nfunction a(b)\nend",
-                                 "ignore_codes" => ["I382","W351"]))
+    json_input6 = Dict("file" => "none",
+                       "code_str" => "pi = 1\nfunction a(b)\nend",
+                       "ignore_codes" => ["I382","W351"])
     results_array = writeandreadserver(pipe_lm, json_input6)
     @test isempty(results_array)
 
-    json_input7 = JSON.json(Dict("file" => "none",
-                                 "code_str" => "pi = 1\nfunction a(b)\nend",
-                                 "show_code" => false))
+    json_input7 = Dict("file" => "none",
+                       "code_str" => "pi = 1\nfunction a(b)\nend",
+                       "show_code" => false)
     results_array = writeandreadserver(pipe_slv1, json_input7)
     @test results_array[1]["text"] == "pi: redefining mathematical constant"
     @test results_array[1]["filePath"] == "none"
     @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["type"] == "warning"
 
-    json_input8 = JSON.json(Dict("file" => "none",
-                                 "code_str" => "pi = 1\nfunction a(b)\nend",
-                                 "show_code" => true))
+    json_input8 = Dict("file" => "none",
+                       "code_str" => "pi = 1\nfunction a(b)\nend",
+                       "show_code" => true)
     results_array = writeandreadserver(pipe_slv1, json_input8)
     @test results_array[1]["text"] == "W351 pi: redefining mathematical constant"
     @test results_array[1]["filePath"] == "none"
