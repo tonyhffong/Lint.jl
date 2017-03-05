@@ -162,4 +162,13 @@ end
     @test results_array[1]["filePath"] == "none"
     @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["type"] == "warning"
+
+    json_input8 = JSON.json(Dict("file" => "none",
+                                 "code_str" => "pi = 1\nfunction a(b)\nend",
+                                 "show_code" => true))
+    results_array = writeandreadserver(pipe_slv1, json_input8)
+    @test results_array[1]["text"] == "W351 pi: redefining mathematical constant"
+    @test results_array[1]["filePath"] == "none"
+    @test results_array[1]["range"] == Array[[0, 0], [0, 80]]
+    @test results_array[1]["type"] == "warning"
 end
