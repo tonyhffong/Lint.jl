@@ -1,26 +1,27 @@
 function lintdict(ex::Expr, ctx::LintContext)
     typed = isexpr(ex.args[1], :curly)
-    st = 2
     ks = Set{Any}()
     ktypes = Set{Any}()
     vtypes = Set{Any}()
-    for i in st:length(ex.args)
-        a = ex.args[i]
-        if typeof(a) == Expr && a.head == :(=>)
-            if typeof(a.args[1]) != Expr
-                if in(a.args[1], ks)
-                    msg(ctx, :E334, a.args[1], "duplicate key in Dict")
+    for a in ex.args[2:end]
+        if ispairexpr(a)
+            keyexpr = lexicalfirst(a)
+            lit = lexicalvalue(keyexpr)
+            if !isnull(lit)
+                if keyexpr in ks
+                    msg(ctx, :E334, keyexpr, "duplicate key in Dict")
                 end
-                push!(ks, a.args[1])
+                push!(ks, keyexpr)
             end
-            for (j,s) in [(1,ktypes), (2,vtypes)]
-                if typeof(a.args[j]) <: QuoteNode && typeof(a.args[j].value) <: Symbol
-                    push!(s, Symbol)
-                elseif typeof(a.args[j]) <: Number || typeof(a.args[j]) <: AbstractString
-                    push!(s, typeof(a.args[j]))
+            for (j,s) in [(lexicalfirst,ktypes), (lexicallast,vtypes)]
+                kvexpr = j(a)
+                typeguess = lexicaltypeof(kvexpr)
+                if isleaftype(typeguess)
+                    push!(s, typeguess)
+                elseif isexpr(kvexpr, :call) && in(kvexpr.args[1], [:Date, :DateTime])
+                    # TODO: use the existing guesstype infrastructure
                     # we want to add more immutable types such as Date, DateTime, etc.
-                elseif isexpr(a.args[j], :call) && in(a.args[j].args[1], [:Date, :DateTime])
-                    push!(s, a.args[j].args[1])
+                    push!(s, kvexpr.args[1])
                 else
                     if typed
                         push!(s, Any)
