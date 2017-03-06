@@ -125,9 +125,9 @@ function lintlocal(ex::Expr, ctx::LintContext)
             sym = sube.args[1]
             vi = VarInfo(ctx.line)
             try
-                dt = eval(Main, sube.args[2])
-                if isa(dt, Type)
-                    vi.typeactual = dt
+                dt = stdlibobject(sube.args[2])
+                if !isnull(dt) && isa(get(dt), Type)
+                    vi.typeactual = get(dt)
                 else
                     vi.typeexpr = sube.args[2]
                 end
@@ -183,12 +183,9 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             msg(ctx, :I672, "iteration works for a number but it may be a typo")
         end
 
-        if rhstype == Union{}
-            rhstype = Union{}
-        elseif rhstype <: Tuple || rhstype <: Set || rhstype <: Array || rhstype <: Range || rhstype <: Enumerate
-            rhstype = eltype(rhstype)
+        if rhstype <: Union{Tuple,Set,Array,Range,Enumerate}
+            rhstype = StaticTypeAnalysis.eltype(rhstype)
         elseif rhstype <: Associative
-            # @lintpragma("Ignore unstable type variable rhstype")
             rhstype = Tuple{keytype(rhstype), valuetype(rhstype)}
         end
 
@@ -213,7 +210,9 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         if !isa(s, Symbol) # a.b or a[b]
             if isexpr(s, [:(.), :ref])
                 containertype = guesstype(s.args[1], ctx)
-                if isa(containertype, DataType) && isleaftype(containertype) && !containertype.mutable
+                if isa(unwrap_unionall(containertype), DataType) &&
+                   !isabstract(containertype) &&
+                   !unwrap_unionall(containertype).mutable
                     msg(ctx, :E525, s.args[1], "is of an immutable type $(containertype)")
                 end
             end

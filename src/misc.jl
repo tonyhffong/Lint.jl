@@ -23,9 +23,6 @@ end
 
 function lintvect(ex::Expr, ctx::LintContext)
     for a in ex.args
-        if isexpr(a, :vect)
-            msg(ctx, :E424, "nested vect is treated as a 1-dimensional array. Use [a;b] instead")
-        end
         lintexpr(a, ctx)
     end
 end

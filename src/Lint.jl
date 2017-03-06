@@ -4,7 +4,14 @@ module Lint
 
 using Base.Meta
 using Compat
+using Compat.TypeUtils
 using JSON
+
+if isdefined(Base, :unwrap_unionall)
+    using Base: unwrap_unionall
+else
+    unwrap_unionall(x) = x
+end
 
 export LintMessage, LintContext, LintStack
 export lintfile, lintstr, lintpkg, lintserver, @lintpragma
@@ -268,10 +275,6 @@ function lintexpr(ex::Expr, ctx::LintContext)
         lintref(ex, ctx)
     elseif ex.head == :typed_vcat# it could be a ref a[b], or an array Int[1,2]
         linttyped_vcat(ex, ctx)
-    elseif ex.head == :dict # homogeneous dictionary
-        lintdict(ex, ctx; typed=false)
-    elseif ex.head == :typed_dict # mixed type dictionary
-        lintdict(ex, ctx; typed=true)
     elseif ex.head == :vcat
         lintvcat(ex, ctx)
     elseif ex.head == :vect # 0.4

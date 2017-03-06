@@ -94,11 +94,8 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
     end
 
     if ex.args[1] == Symbol("@compat")
-        if isexpr(ex.args[2], :call) && (ex.args[2].args[1]== :Dict ||
-            isexpr(ex.args[2].args[1], :curly) && ex.args[2].args[1].args[1] == :Dict)
-            lintdict4(ex.args[2], ctx)
-            return
-        end
+        # TODO: check number of arguments
+        lintexpr(ex.args[2], ctx)
     end
 
     if ex.args[1] == Symbol("@gensym")

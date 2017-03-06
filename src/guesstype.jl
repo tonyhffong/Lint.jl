@@ -1,5 +1,4 @@
-
-import Base: eltype
+using Base: isexported
 
 keytype(::Type{Any}) = Any
 valuetype(::Type{Any}) = Any
@@ -19,62 +18,74 @@ function arraytype_dims(elt, dimst)
     end
 end
 
-function evaltype(ex::Symbol)
-    ret = Any
-    try
-        ret = getfield(Base, ex)
-    end
-    return isa(ret, Type) ? ret : Any
-end
-evaltype(::Any) = Any
+"""
+    stdlibobject(name::Symbol)
 
-# ex should be a type. figure out what it is
-function parsetype(ex)
-    ret = Any
-    if isa(ex, Symbol)
-        return evaltype(ex)
-    elseif typeof(ex) <: Expr
-        if isexpr(ex, :curly)
-            if ex.args[1] == :Array
-                elt = Any
-                if length(ex.args) == 1
-                    return Array
-                elseif length(ex.args) >= 2
-                    elt = evaltype(ex.args[2])
-                    if length(ex.args) == 2
-                        return Array{elt}
-                    elseif typeof(ex.args[3]) <: Integer
-                        return Array{elt, ex.args[3]}
-                    else
-                        return Array{elt}
-                    end
-                end
-            elseif ex.args[1] == :Dict
-                if length(ex.args) == 1
-                    return Dict
-                elseif length(ex.args) == 3
-                    kt = parsetype(ex.args[2])
-                    vt = parsetype(ex.args[3])
-                    return Dict{kt, vt}
-                end
-            elseif ex.args[1] == :Vector
-                if length(ex.args) != 2
-                    return Vector
-                else
-                    vt = parsetype(ex.args[2])
-                    return Vector{vt}
-                end
-            elseif ex.args[1] == :Complex
-                if length(ex.args) != 2
-                    return Complex
-                else
-                    vt = parsetype(ex.args[2])
-                    return Complex{vt}
-                end
-            end
-        end
+If `name` is an export of Base or Core, return `Nullable{Any}(x)` where `x` is
+the object itself. Otherwise, return `Nullable{Any}()`.
+"""
+function stdlibobject(ex::Symbol)
+    if isexported(Base, ex) && isdefined(Base, ex)
+        Nullable{Any}(getfield(Base, ex))
+    elseif isexported(Core, ex) && isdefined(Core, ex)
+        Nullable{Any}(getfield(Core, ex))
+    else
+        Nullable{Any}()
     end
-    return ret
+end
+
+"""
+    stdlibobject(ex::Expr)
+
+If the given expression is curly, and each component of the curly is a standard
+library object, construct the object `x` as would have been done in the program
+itself, and return `Nullable{Any}(x)`.
+
+Otherwise, return `Nullable{Any}()`.
+"""
+function stdlibobject(ex::Expr)
+    if isexpr(ex, :curly)
+        objs = stdlibobject.(ex.args)
+        if all(!isnull, objs)
+            try
+                Nullable{Any}(Core.apply_type(get.(objs)...))
+            catch
+                Nullable{Any}()
+            end
+        else
+            Nullable{Any}()
+        end
+    else
+        Nullable{Any}()
+    end
+end
+
+"""
+    stdlibobject(ex)
+
+Return the literal embedded within a `Nullable{Any}`.
+"""
+stdlibobject(ex) = Nullable{Any}(ex)
+
+"""
+    parsetype(ex::Expr)
+
+Obtain a supertype of the type represented by `ex`.
+"""
+function parsetype(ex)
+    obj = stdlibobject(ex)
+    if !isnull(obj) && isa(get(obj), Type)
+        get(obj)
+    elseif isexpr(ex, :curly)
+        obj = stdlibobject(ex.args[1])
+        if !isnull(obj) && isa(get(obj), Type) && get(obj) !== Union
+            get(obj)
+        else
+            Any
+        end
+    else
+        Any
+    end
 end
 
 function guesstype(ex, ctx::LintContext)
@@ -86,40 +97,18 @@ function guesstype(ex, ctx::LintContext)
         return t
     end
     if t == Symbol # check if we have seen it
-        if ex == :nothing
-            return Void
-        end
-        if ex == :(:)
-            return Colon
-        end
-        # TODO: this should be a module function
-        checkret = x -> begin
-            if isa(x, Type)
-                return x
-            else
-                tmp = x
-                try
-                    tmp = eval(x)
-                end
-                if isa(tmp, Type)
-                    return tmp
-                else
-                    return x
-                end
-            end
-        end
         stacktop = ctx.callstack[end]
         sym = ex
         for i in length(stacktop.localvars):-1:1
             if haskey(stacktop.localvars[i], sym)
                 ret = stacktop.localvars[i][sym].typeactual
-                return checkret(ret)
+                return ret
             end
         end
         for i in length(stacktop.localarguments):-1:1
             if haskey(stacktop.localarguments[i], sym)
                 ret = stacktop.localarguments[i][sym].typeactual
-                return checkret(ret)
+                return ret
             end
         end
         for i in length(ctx.callstack):-1:1
@@ -133,14 +122,12 @@ function guesstype(ex, ctx::LintContext)
                 return Module
             end
         end
-        try
-            if isdefined(Base, ex)
-                val = getfield(Base, ex)
-                if isa(val, Type)
-                    return Type{val}
-                else
-                    return typeof(val)
-                end
+        val = stdlibobject(ex)
+        if !isnull(val)
+            if isa(get(val), Type)
+                return Type{get(val)}
+            else
+                return typeof(get(val))
             end
         end
         return Any
@@ -163,43 +150,11 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :(::)) && length(ex.args) == 2
-        return evaltype(ex.args[2])
+        return parsetype(ex.args[2])
     end
 
     if isexpr(ex, :block)
         return isempty(ex.args) ? Void : guesstype(ex.args[end], ctx)
-    end
-
-    if isexpr(ex, :call) && ex.args[1] == :convert && typeof(ex.args[2]) == Symbol
-        return evaltype(ex.args[2])
-    end
-
-    # this is hackish because the return type is a Symbol, not a Type
-    if isexpr(ex, :call) && ex.args[1] == :new
-        return Symbol(ctx.scope)
-    end
-
-    # another detection for constructor calling another constructor
-    # A() = A(default)
-    if isexpr(ex, :call) && Symbol(ctx.scope) == ex.args[1]
-        found = false
-        for i = length(ctx.callstack):-1:1
-            found = in(ex.args[1], ctx.callstack[i].types)
-            if found
-                return ex.args[1]
-            end
-        end
-    end
-    # A() = A{T}(default)
-    if isexpr(ex, :call) && isexpr(ex.args[1], :curly) &&
-            Symbol(ctx.scope) == ex.args[1].args[1]
-        found = false
-        for i = length(ctx.callstack):-1:1
-            found = in(ex.args[1].args[1], ctx.callstack[i].types)
-            if found
-                return ex.args[1].args[1]
-            end
-        end
     end
 
     if isexpr(ex, :return)
@@ -208,39 +163,59 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :call)
+        # TODO: deal with vararg (...) calls properly
         fn = ex.args[1]
         argtypes = map(x -> guesstype(x, ctx), ex.args[2:end])
-        if isdefined(Core.Inference, :return_type)
-            if isa(fn, Symbol) && isdefined(Base, fn) &&
-               all(x -> isa(x, Type) && isleaftype(x), argtypes)
-                inferred = Core.Inference.return_type(
-                    getfield(Base, fn),
-                    Tuple{argtypes...})
-                if inferred ≠ Any
-                    return inferred
+
+        # check if it's a constructor for user-defined type, and figure
+        # out what type
+        # this is hackish because the return type is a Symbol, not a Type
+        if fn == :new
+            return Symbol(ctx.scope)
+        end
+
+        # another detection for constructor calling another constructor
+        # A() = A(default)
+        if Symbol(ctx.scope) == fn
+            found = false
+            for i = length(ctx.callstack):-1:1
+                found = in(fn, ctx.callstack[i].types)
+                if found
+                    return fn
                 end
             end
         end
-        if fn == :enumerate
-            return Enumerate{guesstype(ex.args[2], ctx)}
-        elseif fn == :finalizer
-            return Void
-        elseif fn == :Int
-            return Int
-        elseif fn == :Int8
-            return Int8
-        elseif fn == :Int16
-            return Int16
-        elseif fn == :Int32
-            return Int32
-        elseif fn == :Int64
-            return Int64
-        elseif fn == :Float64
-            return Float64
-        elseif fn == :Complex
-            return Complex
-        elseif fn == :Rational
-            return Rational
+        # A() = A{T}(default)
+        if isexpr(fn, :curly) &&
+                Symbol(ctx.scope) == fn.args[1]
+            found = false
+            for i = length(ctx.callstack):-1:1
+                found = in(fn.args[1], ctx.callstack[i].types)
+                if found
+                    return fn.args[1]
+                end
+            end
+        end
+
+        # infer return types of Base functions
+        obj = stdlibobject(fn)
+        if !isnull(obj)
+            inferred = try
+                typejoin(Base.return_types(
+                    get(obj),
+                    Tuple{(isa(t, Type) ? t : Any for t in argtypes)...})...)
+            catch  # error might be thrown if generic function, try using inference
+                if all(typ -> isa(typ, Type) && isleaftype(typ), argtypes)
+                    Core.Inference.return_type(
+                        get(obj),
+                        Tuple{argtypes...})
+                else
+                    Any
+                end
+            end
+            if inferred ≠ Any
+                return inferred
+            end
         end
     end
 
@@ -265,139 +240,30 @@ function guesstype(ex, ctx::LintContext)
         return Type
     end
 
-    if isexpr(ex, :call) && isexpr(ex.args[1], :curly)
-        return parsetype(ex.args[1])
-    end
-
-    if isexpr(ex, :call) && ex.args[1] == :rand
-        if length(ex.args) == 1
-            return Float64
-        else
-            return Array{Float64, length(ex.args) - 1}
-        end
-    end
-
-    if isexpr(ex, :call) && ex.args[1] == :Array
-        ret = Array
-        elt = evaltype(ex.args[2])
-
-        try
-            if length(ex.args) == 3
-                if isexpr(ex.args[3], :tuple)
-                    return Array{elt, length(ex.args[3].args)}
-                else
-                    lastargtype = guesstype(ex.args[3], ctx)
-                    if lastargtype <: Integer
-                        return Array{elt, 1}
-                    elseif lastargtype <: Tuple{Vararg{Integer}}
-                        return arraytype_dims(elt, lastargtype)
-                    else
-                        return Array{elt}
-                    end
-                end
-            else
-                return Array{elt, length(ex.args)-2}
-            end
-        end
-    end
-
-    if isexpr(ex, :call) && in(ex.args[1], [:zeros, :ones])
-        sig = map(x -> guesstype(x, ctx), ex.args[2:end])
-
-        if length(sig) >= 1 && sig[1] <: Type
-            elt = evaltype(ex.args[2])
-            if length(sig) == 2 && isexpr(ex.args[3], :tuple)
-                return Array{elt, length(ex.args[3].args)}
-            elseif length(sig) == 2 && sig[2] <: Tuple{Vararg{Integer}}
-                return arraytype_dims(elt, sig[2])
-            else
-                return Array{elt, length(ex.args)-2}
-            end
-        elseif all(y->y <: Integer, sig)
-            return Array{Float64, length(sig)}
-        elseif length(sig) == 1 && sig[1] <: Array
-            return sig[1]
-        else
-            return Array
-        end
-    end
-
-    if isexpr(ex, :call) && ex.args[1] == :transpose
-        fst = guesstype(ex.args[2], ctx)
-        return fst
-    end
-
     if isexpr(ex, Symbol("'"))
         fst = guesstype(ex.args[1], ctx)
         return fst
     end
 
-    if isexpr(ex, :call) && in(ex.args[1], [:length, :sizeof])
-        return Int
-    end
-
-    if isexpr(ex, :call) && in(ex.args[1], [:size])
-        fst = guesstype(ex.args[2], ctx)
-        if fst <: Array
-            try
-                nd = ndims(fst)
-                if nd == 1 || length(ex.args) == 3
-                    return Int
-                else
-                    # TODO this should be fixed not just ignored
-                    @lintpragma("Ignore unused _")
-                    return Tuple{ntuple(_ -> Int, nd)...}
-                end
-            end
-        end
-        return Any
-    end
-
-    if isexpr(ex, :call) && ex.args[1] == :reshape
-        sig = Any[]
-        for i = 2:length(ex.args)
-            push!(sig, guesstype(ex.args[i], ctx))
-        end
-        if !(sig[1] <: AbstractArray)
-            return Any
-        end
-        eletyp = sig[1] == Union{} ? Union{} : eltype(sig[1])
-        # dump(eletyp)
-        if length(sig)==2
-            if sig[2] <: Number
-                return Array{eletyp, 1}
-            elseif sig[2] <: Tuple{Vararg{Integer}}
-                return arraytype_dims(eletyp, sig[2])
-            else
-                return Array{eletyp}
-            end
-        else
-            return Array{eletyp, length(sig) - 1}
-        end
-    end
-
-    if isexpr(ex, :call) && ex.args[1] == :repeat
-        ret = guesstype(ex.args[2], ctx)
-        if ret <: AbstractString
-            return ret
-        end
-    end
-
-    if isexpr(ex, :call) && ex.args[1] == :Dict
-        return Dict
-    end
-
     if isexpr(ex, :ref) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
         if isexpr(ex.args[1], :curly) # must be a datatype, right?
-            elt = parsetype(ex.args[1])
-            return Array{elt, 1}
+            elt = stdlibobject(ex.args[1])
+            if !isnull(elt) && isa(get(elt), Type)
+                return Vector{get(elt)}
+            else
+                return Vector
+            end
         end
 
-        if typeof(ex.args[1]) == Symbol
+        if isa(ex.args[1], Symbol)
             what = registersymboluse(ex.args[1], ctx, false)
             if what == :Type
-                elt = parsetype(ex.args[1])
-                return Array{elt, 1}
+                elt = stdlibobject(ex.args[1])
+                if !isnull(elt) && isa(get(elt), Type)
+                    return Vector{get(elt)}
+                else
+                    return Vector
+                end
             elseif what == :Any
                 msg(ctx, :W543, ex.args[1], "Lint cannot determine if Type or not")
                 return Any
@@ -414,7 +280,7 @@ function guesstype(ex, ctx::LintContext)
             end
             ktypeactual = guesstype(ex.args[2], ctx)
             if ktypeactual <: Integer
-                return partyp == Union{} ? Union{} : eltype(partyp)
+                return StaticTypeAnalysis.eltype(partyp)
             elseif isexpr(ex.args[2], :(:)) # range too
                 return partyp
             elseif isexpr(ex.args[2], :call) && ex.args[2].args[1] == :Colon
@@ -423,7 +289,7 @@ function guesstype(ex, ctx::LintContext)
                 return Any
             end
         elseif partyp <: AbstractArray
-            eletyp = partyp == Union{} ? Union{} : eltype(partyp)
+            eletyp = StaticTypeAnalysis.eltype(partyp)
             try
                 nd = ndims(partyp) # This may throw if we couldn't infer the dimension
                 tmpdim = nd - (length(ex.args)-1)
@@ -478,16 +344,7 @@ function guesstype(ex, ctx::LintContext)
                 return partyp
             end
         elseif partyp <: Tuple
-            return partyp == Union{} ? Union{} : eltype(partyp)
-        #=
-        elseif isdefined(Main, :AbstractDataFrame) && partyp <: AbstractDataFrame
-            ktypeactual = guesstype(ex.args[2], ctx)
-            if ktypeactual <: Symbol || ktypeactual <: Integer
-                return AbstractDataArray
-            else
-                return Any
-            end
-        =#
+            return StaticTypeAnalysis.eltype(partyp)
         elseif partyp != Any
             if ctx.versionreachable(VERSION) && !pragmaexists("$(partyp) is a container type", ctx)
                 msg(ctx, :E521, ex.args[1], "apparent type $(partyp) is not a container type")
@@ -502,13 +359,6 @@ function guesstype(ex, ctx::LintContext)
         return Pair{t1,t2}
     end
 
-    if isexpr(ex, :typed_dict) && isexpr(ex.args[1], :(=>)) &&
-        typeof(ex.args[1].args[1]) == Symbol && typeof(ex.args[1].args[2]) == Symbol
-        return Dict{evaltype(ex.args[1].args[1]), evaltype(ex.args[1].args[2])}
-    end
-    if isexpr(ex, :dict)
-        return Dict
-    end
     if isexpr(ex, :comparison)
         return Bool
     end

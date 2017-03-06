@@ -17,4 +17,13 @@ else
     """)
 end
 
+"""
+    StaticTypeAnalysis.eltype(T::Type)
+
+Return `S` as specific as possible such that all objects of type `T` have
+element type `S`.
+"""
+eltype(::Type{Union{}}) = Union{}
+eltype(T::Type) = Base.eltype(T)
+
 end

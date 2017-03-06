@@ -55,14 +55,26 @@ end
           test = "Hello" + "World"
           """
     socket = connect(port)
-    lintbyserver(socket,str)
-    response = readfromserver_old(socket)
-    @test response == "none:1 E422 : string uses * to concatenate\n"
+    lintbyserver(socket, str)
+    response = ""
+    line = "."
+    while !isempty(line)
+        line = chomp(readline(socket))
+        response *= line
+    end
+
+    @test response == "none:1 E422 : string uses * to concatenate"
 
     socket = connect(port)
-    lintbyserver(socket,str)
-    res = readfromserver_new(socket)
-    @test res == "none:1 E422 : string uses * to concatenate\n\n"
+    lintbyserver(socket, str)
+    res = ""
+    line = ""
+    while isopen(socket)
+        res *= line
+        line = chomp(readline(socket))
+    end
+
+    @test res == "none:1 E422 : string uses * to concatenate"
 end
 
 @testset "Testing lintserver() with named pipe and JSON format" begin

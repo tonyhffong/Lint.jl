@@ -42,13 +42,17 @@ msgs = lintstr(s)
 s = """
 function f()
     x = rand(3)
+    y = rand(Bool, 5, 5)
     @lintpragma("Info type x")
-    return x
+    @lintpragma("Info type y")
+    return x, y
 end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(x) == Array{Float64,1}")
+@test msgs[2].code == :I271
+@test contains(msgs[2].message, "typeof(y) == Array{Bool,2}")
 
 s = """
 function f(x)
@@ -176,8 +180,6 @@ s = """
 function f(n)
     a = Array(Float64, (1,2,3))
     @lintpragma("Info type a")
-    b = Array(Float64, n) # we don't know what n is
-    @lintpragma("Info type b")
     c = Array(Float64, 1,2,3)
     @lintpragma("Info type c")
     d = zeros(Float64, (1,2))
@@ -189,10 +191,9 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(a) == Array{Float64,3}")
-@test contains(msgs[2].message, "typeof(b) == Array{Float64,N}")
-@test contains(msgs[3].message, "typeof(c) == Array{Float64,3}")
-@test contains(msgs[4].message, "typeof(d) == Array{Float64,2}")
-@test contains(msgs[5].message, "typeof(e1) == Array{Float64,1}")
+@test contains(msgs[2].message, "typeof(c) == Array{Float64,3}")
+@test contains(msgs[3].message, "typeof(d) == Array{Float64,2}")
+@test contains(msgs[4].message, "typeof(e1) == Array{Float64,1}")
 
 s = """
 function f()

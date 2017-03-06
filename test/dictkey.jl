@@ -1,12 +1,12 @@
 s = """
-@compat Dict(:a=>1, :b=>2, :a=>3)
+Dict(:a=>1, :b=>2, :a=>3)
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E334
 @test contains(msgs[1].message, "duplicate key in Dict")
 
 s = """
-@compat Dict{Symbol,Int}(:a=>1, :b=>"")
+Dict{Symbol,Int}(:a=>1, :b=>"")
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E532
@@ -14,7 +14,7 @@ msgs = lintstr(s)
     "mixed type dict")
 
 s = """
-@compat Dict{Symbol,Int}(:a=>1, "b"=>2)
+Dict{Symbol,Int}(:a=>1, "b"=>2)
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E531
