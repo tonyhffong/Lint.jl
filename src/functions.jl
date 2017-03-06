@@ -517,9 +517,9 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
                     for kw in ex.args[i].args
                         if isexpr(kw, :(...))
                             lintexpr(kw.args[1], ctx)
-                        elseif isexpr(kw, :(=>))
-                            lintexpr(kw.args[1], ctx)
-                            lintexpr(kw.args[2], ctx)
+                        elseif ispairexpr(kw)
+                            lintexpr(lexicalfirst(kw), ctx)
+                            lintexpr(lexicallast(kw), ctx)
                         elseif isa(kw, Expr) && length(kw.args) == 2
                             lintexpr(kw.args[2], ctx)
                         elseif isa(kw, Symbol)
