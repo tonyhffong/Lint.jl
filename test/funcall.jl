@@ -224,8 +224,10 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "typeof(a) == Array")
 @test msgs[2].code == :I271
 @test contains(msgs[2].message, "typeof(n) == Tuple{Int64}")
-@test msgs[3].code == :I271
-@test contains(msgs[3].message, "typeof(tmp) == Array")
+if VERSION ≥ v"0.6-"
+    @test msgs[3].code == :I271
+    @test contains(msgs[3].message, "typeof(tmp) == Array")
+end
 @test msgs[4].code == :I271
 @test contains(msgs[4].message, "typeof(T) == Type")
 if VERSION ≥ v"0.6-"

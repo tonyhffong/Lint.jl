@@ -36,13 +36,13 @@ end
     socket = connect(port)
     lintbyserver(socket)
     response = ""
-    line = ""
-    while line != "\n"
+    line = "."
+    while !isempty(line)
+        line = chomp(readline(socket))
         response *= line
-        line = readline(socket)
     end
 
-    @test response == "none:1 E422 : string uses * to concatenate\n"
+    @test response == "none:1 E422 : string uses * to concatenate"
 
     socket = connect(port)
     lintbyserver(socket)
@@ -50,10 +50,10 @@ end
     line = ""
     while isopen(socket)
         res *= line
-        line = readline(socket)
+        line = chomp(readline(socket))
     end
 
-    @test res == "none:1 E422 : string uses * to concatenate\n\n"
+    @test res == "none:1 E422 : string uses * to concatenate"
 end
 
 # This isn't working on the nightly build. Ideally we explicitly stop the server process (as
