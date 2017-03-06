@@ -85,8 +85,10 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "typeof(x1) == Array{Float64,2}")
 @test msgs[2].code == :I271
 @test contains(msgs[2].message, "typeof(x2) == Array{Int64,2}")
-@test msgs[3].code == :I271
-@test contains(msgs[3].message, "typeof(x3) == $Array")
+if VERSION ≥ v"0.6-"
+    @test msgs[3].code == :I271
+    @test contains(msgs[3].message, "typeof(x3) == $Array")
+end
 @test msgs[4].code == :I271
 @test contains(msgs[4].message, "typeof(x4) == Array{Float64,2}")
 
