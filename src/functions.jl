@@ -4,22 +4,7 @@ const commoncollmethods = Dict{Symbol, Set{Type}}()
 
 # deprecation of specialized version of constructors
 const deprecated_constructors =
-    Dict(:symbol  => :Symbol,
-         :uint    => :UInt,
-         :uint8   => :UInt8,
-         :uint16  => :UInt16,
-         :uint32  => :UInt32,
-         :uint64  => :UInt64,
-         :uint128 => :UInt128,
-         :float16 => :Float16,
-         :float32 => :Float32,
-         :float64 => :Float64,
-         :int     => :Int,
-         :int8    => :Int8,
-         :int16   => :Int16,
-         :int32   => :Int32,
-         :int64   => :Int64,
-         :int128  => :Int128)
+    Dict(:symbol => :Symbol)
 
 const not_constructible = Set([:Union, :Tuple, :Type])
 
@@ -122,8 +107,8 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     msg(ctx, :E536, temptype, "use {T<:...} instead of a known type")
                 end
                 if in(typeconstraint, knowntypes)
-                    dt = eval(typeconstraint)
-                    if isa(dt, Type) && isleaftype(dt)
+                    dt = parsetype(typeconstraint)
+                    if isleaftype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
                 end
@@ -267,13 +252,11 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         try
             vi = stacktop.localarguments[end][s]
             if haskey(assertions, s)
-                dt = eval(assertions[s])
-                if isa(dt, Type)
-                    vi.typeactual = dt
-                    if dt != Any && haskey(typeRHShints, s) && typeRHShints[s] != Any &&
-                        !(typeRHShints[s] <: dt)
-                        msg(ctx, :E516, s, "type assertion and default seem inconsistent")
-                    end
+                dt = parsetype(assertions[s])
+                vi.typeactual = dt
+                if dt != Any && haskey(typeRHShints, s) && typeRHShints[s] != Any &&
+                    !(typeRHShints[s] <: dt)
+                    msg(ctx, :E516, s, "type assertion and default seem inconsistent")
                 end
             elseif haskey(typeRHShints, s)
                 vi.typeactual = typeRHShints[s]
@@ -390,6 +373,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         else
             inclfile = ""
             try
+                # TODO: not a good idea...
                 inclfile = eval(ex.args[2])
             catch
                 inclfile = string(ex.args[2])
@@ -414,7 +398,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         end
 
         if ex.args[1] == :Dict || isexpr(ex.args[1], :curly) && ex.args[1].args[1] == :Dict
-            lintdict4(ex, ctx)
+            lintdict(ex, ctx)
             return
         end
         known=false
@@ -429,10 +413,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             end
             msg(ctx, :I481, ex.args[1], "replace $(ex.args[1])() with $(repl)()$(suffix)")
         end
-        if VERSION < v"0.5-" && ex.args[1] == :String
-            msg(ctx, :E537, ex.args[1],
-                "String constructor does not exist in v0.4; use string() instead")
-        elseif ex.args[1] in not_constructible
+        if ex.args[1] in not_constructible
             msg(ctx, :W441, "type $(ex.args[1]) is not constructible like this")
         elseif ex.args[1] == :(+)
             lintplus(ex, ctx)
@@ -518,8 +499,8 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             s = lowercase(string(ex.args[1]))
             if contains(s,"error") || contains(s,"exception") || contains(s,"mismatch") || contains(s,"fault")
                 try
-                    dt = eval(ex.args[1])
-                    if isa(dt, Type) && dt <: Exception && !pragmaexists( "Ignore unthrown " * string(ex.args[1]), ctx)
+                    dt = parsetype(ex.args[1])
+                    if dt <: Exception && !pragmaexists( "Ignore unthrown " * string(ex.args[1]), ctx)
                         msg(ctx, :W448, string(ex.args[1]) * " is an Exception but it is not enclosed in a throw()")
                     end
                 end
@@ -536,9 +517,9 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
                     for kw in ex.args[i].args
                         if isexpr(kw, :(...))
                             lintexpr(kw.args[1], ctx)
-                        elseif isexpr(kw, :(=>))
-                            lintexpr(kw.args[1], ctx)
-                            lintexpr(kw.args[2], ctx)
+                        elseif ispairexpr(kw)
+                            lintexpr(lexicalfirst(kw), ctx)
+                            lintexpr(lexicallast(kw), ctx)
                         elseif isa(kw, Expr) && length(kw.args) == 2
                             lintexpr(kw.args[2], ctx)
                         elseif isa(kw, Symbol)

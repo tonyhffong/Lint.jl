@@ -78,7 +78,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E421   | (no longer used)
 | E422   | string uses * to concatenate
 | E423   | named keyword argument must have a default
-| E424   | nested vect is treated as a 1-dimensional array. Use [a;b] instead
+| E424   | (no longer used)
 | E425   | use lintpragma macro inside type declaration
 | E431   | use of length() in a Boolean context, use isempty()
 | E432   | though valid in 0.4, use x() instead of y()
@@ -105,7 +105,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E534   | introducing a new name for an implicit argument to the function, use {T<:X}
 | E535   | introducing a new name for an algebric data type, use {T<:X}
 | E536   | use {T<:...} instead of a known type
-| E537   | String constructor does not exist in v0.4; use string() instead
+| E537   | (removed)
 | E538   | known type in parametric data type, use {T<:...}
 |        |
 | **E6** | *Structure Error*
