@@ -32,7 +32,7 @@ If your package always lints clean, you may want to keep it that way in a test:
 lintfile("your_file.jl")
 ```
 
-`lintfile` will follow any `include` statements to resulove any variables. But will only return warnings for the file you are linting.
+`lintfile` will follow any `include` statements to resolve any variables. But will only return warnings for the file you are linting.
 
 
 ## lintstr
