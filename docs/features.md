@@ -209,10 +209,92 @@ Make Julia start listening on a given port and return lint messages to requests 
 This feature is useful when you want to lint julia code in a non julia environment.
 
 Existing plugins:
+
  * Sublime Text: [SublimeLinter-contrib-julialintserver](https://github.com/invenia/SublimeLinter-contrib-julialintserver)
  * linter-julia for Atom: [linter-julia](https://github.com/TeroFrondelius/linter-julia)
 
-The protocol for the server is:
+The new protocol for the server is JSON in both input and output:
+```json
+{
+    "file":"path_to_the_file",
+    "code_str":"full_text_of_the_file",
+    "ignore_codes":["E381","W361","I171"],
+    "ignore_info":false,
+    "ignore_warnings":false,
+    "show_code":true
+}
+```
+Only the two first `"file"` and `"code_str"` are mandatory fields. For the output
+there are four different protocols from which the `"lint-message"` is the direct
+match of `LintMessage` and this way will be always up to date, but can also break.
+Other three types are for convenience, they give you the opportunity to
+directly pass the messages forward for example Atom linter. Here is one full example,
+[to see more examples, see the tests.](https://github.com/tonyhffong/Lint.jl/blob/master/test/server.jl)
+```julia
+julia> using Lint
+
+julia> using JSON
+
+julia> if is_windows()
+           pipe_lm = "\\\\.\\pipe\\testsocket"
+       else # linux, osx
+           pipe_lm = tempname()
+       end
+"/tmp/julial73DPo"
+
+julia> server_lm = @async lintserver(pipe_lm,"lint-message")
+Server running on port/pipe /tmp/julial73DPo ...
+Task (queued) @0x00007f1b20a38280
+
+julia> input = Dict("file" => "none", "code_str" => "something")
+Dict{String,String} with 2 entries:
+  "file"     => "none"
+  "code_str" => "something"
+
+julia> conn = connect(pipe_lm)
+Base.PipeEndpoint(open, 0 bytes waiting)
+
+julia> JSON.print(conn, input)
+
+julia> out = JSON.parse(conn)
+1-element Array{Any,1}:
+ Dict{String,Any}(Pair{String,Any}("line",1),Pair{String,Any}("scope",""),Pair{String,Any}("message","use of undeclared symbol"),Pair{String,Any}("file","none"),Pair{String,Any}("code","E321"),Pair{String,Any}("variable","something"))
+
+julia> out[1]
+Dict{String,Any} with 6 entries:
+  "line"     => 1
+  "scope"    => ""
+  "message"  => "use of undeclared symbol"
+  "file"     => "none"
+  "code"     => "E321"
+  "variable" => "something"
+
+julia> 
+```
+`lintserver(port,style)` style will accept four values:
+
+1. "lint-message", which is the preferred and shown in above example
+2. ["standard-linter-v1"](https://github.com/steelbrain/linter/blob/v1/docs/examples/standard-linter-v1.md)
+3. ["vscode"](https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md#diagnostic)
+4. ["standard-linter-v2"](https://github.com/steelbrain/linter/blob/master/docs/examples/standard-linter-v2.md)
+
+If any of the above four JSON formats is not answering your needs, please make a
+[new pull request](https://github.com/tonyhffong/Lint.jl/pulls). The file you want
+to edit is [Lint.jl](https://github.com/tonyhffong/Lint.jl/blob/master/src/Lint.jl)
+and the function is called `convertmsgtojson`. It is enough to add one `elseif`
+block, here is one of them as an example:
+```julia
+elseif style == "standard-linter-v2"
+    push!(output, Dict("severity" => etype,
+                       "location" => Dict("file" => file,
+                                           "position" => errorrange),
+                       "excerpt" => code,
+                       "description" => "$evar: $txt"))
+
+end
+```
+
+The old protocol for the server is:
 
 1. The file path followed by a new line
 2. The number of bytes of code being sent followed by a new line
