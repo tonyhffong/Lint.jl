@@ -6,6 +6,7 @@ using Base.Meta
 using Compat
 using Compat.TypeUtils
 using JSON
+import Compat: readline
 
 if isdefined(Base, :unwrap_unionall)
     using Base: unwrap_unionall
@@ -439,9 +440,9 @@ function readandwritethestream(conn,style)
     if style == "original_behaviour"
         # println("Connection accepted")
         # Get file, code length and code
-        file = strip(readline(conn))
+        file = readline(conn)
         # println("file: ", file)
-        code_len = parse(Int, strip(readline(conn)))
+        code_len = parse(Int, readline(conn))
         # println("Code bytes: ", code_len)
         code = Compat.UTF8String(read(conn, code_len))
         # println("Code received")
