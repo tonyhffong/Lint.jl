@@ -33,7 +33,7 @@ getindexable{T<:Union{Tuple,Pair,Array,Number}}(::Type{T}) = true
 getindexable(::Type) = false
 
 """
-    StaticTypeAnalysis.length(T::Type)
+    StaticTypeAnalysis.length(T::Type) :: Nullable{Int}
 
 If it can be determined that all objects of type `T` have length `n`, then
 return `Nullable(n)`. Otherwise, return `Nullable{Int}()`.
@@ -42,7 +42,11 @@ length(::Type{Union{}}) = Nullable(0)
 length(::Type) = Nullable{Int}()
 length{T<:Pair}(::Type{T}) = Nullable(2)
 if VERSION < v"0.6-"
-    length{T<:Tuple}(::Type{T}) = Nullable{Int}(Base.length(T.parameters))
+    length{T<:Tuple}(::Type{T}) = if Core.Inference.isvatuple(T)
+        Nullable{Int}()
+    else
+        Nullable{Int}(Base.length(T.types))
+    end
 else
     include_string("""
     length(::Type{T}) where T <: NTuple{N, Any} where N = Nullable{Int}(N)
