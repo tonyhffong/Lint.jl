@@ -141,7 +141,7 @@ function lintfile(file::AbstractString, code::AbstractString)
 end
 
 function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), lineoffset = 0)
-    linecharc = cumsum(map(x->endof(x)+1, @compat(split(str, "\n", keep=true))))
+    linecharc = cumsum(map(x->endof(x)+1, split(str, "\n", keep=true)))
     numlines = length(linecharc)
     i = start(str)
     while !done(str,i)
@@ -243,6 +243,7 @@ function lintexpr(ex::Expr, ctx::LintContext)
     elseif ex.head == :type
         linttype(ex, ctx)
     elseif ex.head == :typealias
+        # TODO: deal with X{T} = Y assignments, also const X = Y
         linttypealias(ex, ctx)
     elseif ex.head == :abstract
         lintabstract(ex, ctx)

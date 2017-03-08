@@ -52,7 +52,15 @@ end
 istopmacro(ex, mod, mac) = ex in (
     mac,
     GlobalRef(mod, mac),
-    Expr(:(.), Symbol(string(mod), mac)))
+    Expr(:(.), Symbol(string(mod)), mac))
+
+function lintcompat(ex::Expr, ctx::LintContext)
+    if length(ex.args) == 2
+        lintexpr(Compat._compat(ex.args[2]), ctx)
+    else
+        msg(ctx, :E437, ex, "@compat called with wrong number of arguments")
+    end
+end
 
 function lintmacrocall(ex::Expr, ctx::LintContext)
     if istopmacro(ex.args[1], Base, Symbol("@deprecate"))
@@ -93,9 +101,9 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
         return
     end
 
-    if ex.args[1] == Symbol("@compat")
-        # TODO: check number of arguments
-        lintexpr(ex.args[2], ctx)
+    if istopmacro(ex.args[1], Compat, Symbol("@compat"))
+        lintcompat(ex, ctx)
+        return
     end
 
     if ex.args[1] == Symbol("@gensym")

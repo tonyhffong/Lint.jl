@@ -33,7 +33,7 @@ function lintifexpr(ex::Expr, ctx::LintContext)
         (verconstraint1, verconstraint2) = versionconstraint(ex.args[1])
         if verconstraint1 != nothing
             tmpvtest = ctx.versionreachable
-            ctx.versionreachable = _->(tmpvtest(_) && verconstraint1(_))
+            ctx.versionreachable = x->(tmpvtest(x) && verconstraint1(x))
         end
         insideif(x -> lintexpr(ex.args[2], x), ctx)
         if verconstraint1 != nothing
@@ -42,7 +42,7 @@ function lintifexpr(ex::Expr, ctx::LintContext)
         if length(ex.args) > 2
             if verconstraint2 != nothing
                 tmpvtest = ctx.versionreachable
-                ctx.versionreachable = _->(tmpvtest(_) && verconstraint2(_))
+                ctx.versionreachable = x->(tmpvtest(x) && verconstraint2(x))
             end
             insideif(x -> lintexpr(ex.args[3], x), ctx)
             if verconstraint2 != nothing

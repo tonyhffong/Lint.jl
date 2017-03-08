@@ -103,7 +103,7 @@ function lintglobal(ex::Expr, ctx::LintContext)
                 register_global(
                     ctx,
                     sym,
-                    @compat(Dict{Symbol,Any}(:file=>ctx.file, :line=>ctx.line))
+                    Dict{Symbol,Any}(:file=>ctx.file, :line=>ctx.line)
                )
             end
         elseif isexpr(sym, ASSIGN_OPS)
@@ -169,14 +169,27 @@ function resolveLHSsymbol(ex, syms::Array{Any,1}, ctx::LintContext, assertions::
 end
 
 function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false) # is it a local decl & assignment?
-    lintexpr(ex.args[2], ctx)
+    lhs = ex.args[1]
+
+    # lower curly
+    rhstype = Any
+    if isexpr(lhs, :curly)
+        isConst = true
+        lhs = withincurly(lhs)
+        rhstype = Type
+        # TODO: lint the RHS too
+    else
+        lintexpr(ex.args[2], ctx)
+    end
 
     syms = Any[]
     assertions = Dict{Symbol, Any}()
-    resolveLHSsymbol(ex.args[1], syms, ctx, assertions)
+    resolveLHSsymbol(lhs, syms, ctx, assertions)
     tuplelen = length(syms)
-    lhsIsTuple = Meta.isexpr(ex.args[1], :tuple)
-    rhstype = guesstype(ex.args[2], ctx)
+    lhsIsTuple = Meta.isexpr(lhs, :tuple)
+    if rhstype == Any
+        rhstype = guesstype(ex.args[2], ctx)
+    end
 
     if rhstype == Union{}
         msg(ctx, :E539, rhstype, "assigning an error to a variable")
@@ -328,7 +341,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             register_global(
                 ctx,
                 s,
-                @compat(Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line))
+                Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
            )
         end
     end
