@@ -66,14 +66,14 @@ Return the first entry of the given pair expression, determined lexically.
 Note that on v0.5, this is the first argument of the expression, whereas on
 v0.6, this is the second argument of the expression.
 """
-lexicalfirst(x) = VERSION < v"0.6-" ? x.args[1] : x.args[2]
+lexicalfirst(x) = VERSION < v"0.6.0-dev.2613" ? x.args[1] : x.args[2] # changed by julia PR #20327
 
 """
 Return the last entry of the given pair expression, determined lexically.  Note
 that on v0.5, this is the second argument of the expression, whereas on v0.6,
 this is the third argument of the expression.
 """
-lexicallast(x) = VERSION < v"0.6-" ? x.args[2] : x.args[3]
+lexicallast(x) = VERSION < v"0.6.0-dev.2613" ? x.args[2] : x.args[3] # changed by julia PR #20327
 
 """
 Return `true` if the value represented by expression `x` is exactly `x` itself;
