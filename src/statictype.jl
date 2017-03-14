@@ -41,7 +41,8 @@ return `Nullable(n)`. Otherwise, return `Nullable{Int}()`.
 length(::Type{Union{}}) = Nullable(0)
 length(::Type) = Nullable{Int}()
 length{T<:Pair}(::Type{T}) = Nullable(2)
-if VERSION < v"0.6-"
+
+if VERSION < v"0.6.0-dev.2123" # where syntax introduced by julia PR #18457
     length{T<:Tuple}(::Type{T}) = if Core.Inference.isvatuple(T)
         Nullable{Int}()
     else
