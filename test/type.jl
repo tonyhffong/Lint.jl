@@ -92,7 +92,7 @@ end
 msgs = lintstr(s)
 @test isempty(msgs)
 
-if VERSION ≥ v"0.6-"
+if VERSION ≥ v"0.6.0-dev.2746"
     @testset "Type Alias Shadowing" begin
         s = """
         const TT = Int64
