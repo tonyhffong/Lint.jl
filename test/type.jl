@@ -92,20 +92,24 @@ end
 msgs = lintstr(s)
 @test isempty(msgs)
 
-s = """
-const TT = Int64
-@compat SharedVector{X} = SharedArray{X,1}
+if VERSION ≥ v"0.6-"
+    @testset "Type Alias Shadowing" begin
+        s = """
+        const TT = Int64
+        @compat SharedVector{X} = SharedArray{X,1}
 
-type MyType{X}
-    t::X
-    MyType(x) = new(convert(X, x))
+        type MyType{X}
+            t::X
+            MyType(x) = new(convert(X, x))
+        end
+        """
+        msgs = lintstr(s)
+        @test length(msgs) == 1
+        @test msgs[1].code == :I392
+        @test msgs[1].variable == "SharedVector"
+        @test contains(msgs[1].message, "synonymous export from Base")
+    end
 end
-"""
-msgs = lintstr(s)
-@test length(msgs) == 1
-@test msgs[1].code == :I392
-@test msgs[1].variable == "SharedVector"
-@test contains(msgs[1].message, "synonymous export from Base")
 
 s = """
 @compat abstract type SomeAbsType end

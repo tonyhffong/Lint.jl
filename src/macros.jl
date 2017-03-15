@@ -55,7 +55,14 @@ istopmacro(ex, mod, mac) = ex in (
     Expr(:(.), Symbol(string(mod)), mac))
 
 function lintcompat(ex::Expr, ctx::LintContext)
-    if length(ex.args) == 2
+    if VERSION < v"0.6.0-dev.2746" &&
+       length(ex.args) == 2 && isexpr(ex.args[2], :abstract) &&
+       length(ex.args[2].args) == 1 && isexpr(ex.args[2].args[1], :type)
+        lintexpr(Compat._compat_abstract(ex.args[2].args[1]), ctx)
+    elseif VERSION < v"0.6.0-dev.2746" &&
+           length(ex.args) == 3 && ex.args[2] == :primitive
+        lintexpr(Compat._compat_primitive(ex.args[3]), ctx)
+    elseif length(ex.args) == 2
         lintexpr(Compat._compat(ex.args[2]), ctx)
     else
         msg(ctx, :E437, ex, "@compat called with wrong number of arguments")
