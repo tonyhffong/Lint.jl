@@ -17,7 +17,7 @@ function Base.show(io::IO, res::LintResult)
     show(io, res.messages)
     print(io, ")")
 end
-@compat function Base.show(io::IO, ::MIME"text/plain", res::LintResult)
+function Base.show(io::IO, ::MIME"text/plain", res::LintResult)
     for m in res.messages
         Base.println_with_color(LINT_RESULT_COLORS[level(m)], io, string(m))
     end

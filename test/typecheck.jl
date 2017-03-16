@@ -257,3 +257,26 @@ end
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+
+@testset "E539" begin
+    # assigning error to a variable
+    @test messageset(lintstr("""
+    x = throw(ArgumentError("error!"))
+    """)) == Set([:E539])
+
+    @test messageset(lintstr("""
+    x = 1 + "x"
+    """)) == Set([:E422, :E539])
+
+    @test isempty(lintstr("""
+    x = 1 + 1 == 2 ? "OK" : error("problem")
+    """))
+
+    @test messageset(lintstr("""
+    x, y = error()
+    """)) == Set([:E539])
+
+    @test messageset(lintstr("""
+    κ = sqrt("x")
+    """)) == Set([:E539])
+end

@@ -3,7 +3,8 @@ module ExpressionUtils
 using Base.Meta
 
 export split_comparison, simplify_literal, ispairexpr, isliteral,
-       lexicaltypeof, lexicalfirst, lexicallast, lexicalvalue
+       lexicaltypeof, lexicalfirst, lexicallast, lexicalvalue,
+       withincurly
 
 # TODO: remove when 0.5 support dropped
 function BROADCAST(f, x::Nullable)
@@ -13,6 +14,24 @@ function BROADCAST(f, x::Nullable)
         Nullable(f(get(x)))
     end
 end
+
+"""
+    withincurly(ex)
+
+Get just the function part of a function declaration, or just the type head of
+a parameterized type name.
+
+```jldoctest
+julia> using Lint.ExpressionUtils
+
+julia> withincurly(:(Vector{T}))
+:Vector
+
+julia> withincurly(:((::Type{T}){T}))
+:(::Type{T})
+```
+"""
+withincurly(ex) = isexpr(ex, :curly) ? ex.args[1] : ex
 
 """
     split_comparison(::Expr)

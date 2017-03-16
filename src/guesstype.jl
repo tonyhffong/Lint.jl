@@ -163,8 +163,11 @@ function guesstype(ex, ctx::LintContext)
     end
 
     if isexpr(ex, :call)
-        # TODO: deal with vararg (...) calls properly
         fn = ex.args[1]
+        if any(x -> isexpr(x, :kw) || isexpr(x, :(...)), ex.args[2:end])
+            # TODO: smarter way to deal with kw/vararg
+            return Any
+        end
         argtypes = map(x -> guesstype(x, ctx), ex.args[2:end])
 
         # check if it's a constructor for user-defined type, and figure
@@ -199,20 +202,9 @@ function guesstype(ex, ctx::LintContext)
 
         # infer return types of Base functions
         obj = stdlibobject(fn)
+        type_argtypes = [isa(t, Type) ? t : Any for t in argtypes]
         if !isnull(obj)
-            inferred = try
-                typejoin(Base.return_types(
-                    get(obj),
-                    Tuple{(isa(t, Type) ? t : Any for t in argtypes)...})...)
-            catch  # error might be thrown if generic function, try using inference
-                if all(typ -> isa(typ, Type) && isleaftype(typ), argtypes)
-                    Core.Inference.return_type(
-                        get(obj),
-                        Tuple{argtypes...})
-                else
-                    Any
-                end
-            end
+            inferred = StaticTypeAnalysis.infertype(get(obj), type_argtypes)
             if inferred ≠ Any
                 return inferred
             end

@@ -86,6 +86,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E434   | value at position #i is the referenced x. Possible typo?
 | E435   | new is provided with more arguments than fields
 | E436   | more indices than dimensions
+| E437   | @compat called with wrong number of arguments
 |        |
 | **E5** | *Type Error*
 | E511   | apparent non-Bool type
@@ -103,10 +104,11 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E532   | multiple value types detected. Use Dict{K,Any}() for mixed type dict
 | E533   | type parameters are invariant, try f{T<:Number}(x::T)...
 | E534   | introducing a new name for an implicit argument to the function, use {T<:X}
-| E535   | introducing a new name for an algebric data type, use {T<:X}
+| E535   | (no longer used)
 | E536   | use {T<:...} instead of a known type
 | E537   | (removed)
 | E538   | known type in parametric data type, use {T<:...}
+| E539   | assigning an error to a variable
 |        |
 | **E6** | *Structure Error*
 | E611   | constructor doesn't seem to return the constructed object
@@ -140,6 +142,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W543   | cannot determine if Type or not
 | W544   | cannot determine if Type or not
 | W545   | previously used variable has apparent type X, but now assigned Y
+| W546   | implicitly discarding values, m of n used
 |        |
 | **W6** | *Structure Warning*
 | W641   | unreachable code after return
@@ -163,6 +166,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I382   | argument declared but not used
 | I391   | also a global from src
 | I392   | local variable might cause confusion with a synonymous export from Base
+| I393   | using an existing type as type parameter name is probably a typo
 |        |
 | **I4** | *Usage Info*
 | I472   | assignment in the if-predicate clause

@@ -35,7 +35,7 @@ function lintusing(ex::Expr, ctx::LintContext)
             register_global(
                 ctx,
                 s,
-                @compat(Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line))
+                Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
            )
         end
     end
@@ -53,7 +53,7 @@ function lintusing(ex::Expr, ctx::LintContext)
                     register_global(
                         ctx,
                         n,
-                        @compat(Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line))
+                        Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
                    )
                 end
             end
@@ -103,7 +103,7 @@ function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
             register_global(
                 ctx,
                 ex.args[1],
-                @compat(Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line))
+                Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
             )
             eval(Main, ex)
             lastpart = ex.args[end]
