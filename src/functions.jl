@@ -56,6 +56,11 @@ function lintfuncargtype(ex, ctx::LintContext)
     end
 end
 
+function isstandardtype(x)
+    obj = stdlibobject(x)
+    !isnull(obj) && isa(get(obj), Type)
+end
+
 # if ctorType isn't symbol("") then we are in the context of
 # a constructor for a type. We would check
 # * if the function name matches the type name
@@ -94,7 +99,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         for i in 2:length(ex.args[1].args[1].args)
             adt = ex.args[1].args[1].args[i]
             if isa(adt, Symbol)
-                if in(adt, knowntypes)
+                if isstandardtype(adt)
                     msg(ctx, :E534, adt, "introducing a new name for an implicit " *
                         "argument to the function, use {T<:$(adt)}")
                 else
@@ -103,10 +108,10 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             elseif isexpr(adt, :(<:))
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
-                if in(temptype, knowntypes)
+                if isstandardtype(temptype)
                     msg(ctx, :E536, temptype, "use {T<:...} instead of a known type")
                 end
-                if in(typeconstraint, knowntypes)
+                if isstandardtype(typeconstraint)
                     dt = parsetype(typeconstraint)
                     if isleaftype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
@@ -393,37 +398,43 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             lintinclude(ctx, inclfile)
         end
     else
-        if isexpr(ex.args[1], :curly)
-            lintcurly(ex.args[1], ctx)
-        end
-
-        if ex.args[1] == :Dict || isexpr(ex.args[1], :curly) && ex.args[1].args[1] == :Dict
-            lintdict(ex, ctx)
-            return
-        end
-        known=false
-
-        versionreachable = ctx.versionreachable(VERSION)
-        if versionreachable && haskey(deprecated_constructors, ex.args[1])
-            repl = string(deprecated_constructors[ex.args[1]])
-            suffix = ""
-            if contains(repl, "Int")
-                suffix = ", or some of the other explicit conversion functions. " *
-                    "(round, trunc, etc...)"
+        if withincurly(ex.args[1]) == :new
+            tname = Symbol(ctx.scope)
+            for i = length(ctx.callstack):-1:1
+                if haskey(ctx.callstack[i].typefields, tname)
+                    fields = ctx.callstack[i].typefields[tname]
+                    if 0 < length(ex.args) - 1 < length(fields)
+                        if !pragmaexists("Ignore short new argument", ctx, deep=false)
+                            msg(ctx, :I671, "new is provided with fewer arguments than fields")
+                        end
+                    elseif length(fields) < length(ex.args) - 1
+                        msg(ctx, :E435, "new is provided with more arguments than fields")
+                    end
+                    break
+                end
             end
-            msg(ctx, :I481, ex.args[1], "replace $(ex.args[1])() with $(repl)()$(suffix)")
+        else
+            lintexpr(ex.args[1], ctx)
+        end
+        func = stdlibobject(ex.args[1])
+
+        if !isnull(func) && isa(get(func), Type) && get(func) <: Dict
+            lintdict(ex, ctx)
+        end
+
+        if haskey(deprecated_constructors, ex.args[1])
+            repl = string(deprecated_constructors[ex.args[1]])
+            msg(ctx, :I481, ex.args[1], "replace $(ex.args[1])() with $(repl)()")
         end
         if ex.args[1] in not_constructible
             msg(ctx, :W441, "type $(ex.args[1]) is not constructible like this")
         elseif ex.args[1] == :(+)
             lintplus(ex, ctx)
-            known = true
         end
 
         skiplist = Int[]
 
         if isa(ex.args[1], Symbol) && haskey(commoncollmethods, ex.args[1])
-            known=true
             s = ex.args[1]
             typesig = Any[]
             for i in 2:length(ex.args)
@@ -448,33 +459,10 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             push!(skiplist, 3)
         end
 
-        if ex.args[1] == :new
-            tname = Symbol(ctx.scope)
-            for i = length(ctx.callstack):-1:1
-                if haskey(ctx.callstack[i].typefields, tname)
-                    fields = ctx.callstack[i].typefields[tname]
-                    if 0 < length(ex.args) - 1 < length(fields)
-                        if !pragmaexists("Ignore short new argument", ctx, deep=false)
-                            msg(ctx, :I671, "new is provided with fewer arguments than fields")
-                        end
-                    elseif length(fields) < length(ex.args) - 1
-                        msg(ctx, :E435, "new is provided with more arguments than fields")
-                    end
-                    break
-                end
-            end
-            known=true
-        end
-
         st = 2
         if ex.args[1] == :ifelse
             lintboolean(ex.args[2], ctx)
             st = 3
-            known = true
-        end
-
-        if !known && isa(ex.args[1], Symbol)
-            registersymboluse(ex.args[1], ctx, false)
         end
 
         num_args = length(ex.args)

@@ -23,15 +23,10 @@ function Base.show(io::IO, ::MIME"text/plain", res::LintResult)
     end
 end
 
-Base.length(r::LintResult) = length(r.messages)
 Base.size(r::LintResult) = size(r.messages)
-Base.isempty(r::LintResult) = isempty(r.messages)
-Base.start(r::LintResult) = start(r.messages)
-Base.done(r::LintResult, s) = done(r.messages, s)
-Base.next(r::LintResult, s) = next(r.messages, s)
 
 # delegate getindex to parent collection
-Base.getindex(r::LintResult, i...) = r.messages[i...]
+Base.getindex(r::LintResult, i::Int) = r.messages[i]
 
 # this function is useful for filtering on severity level
 Base.filter(p, r::LintResult) = LintResult(filter(p, r.messages))

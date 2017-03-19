@@ -63,10 +63,16 @@ function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
     end
 
     # a bunch of whitelist to just grandfather-in
-    if sym in knowntypes
-        return :Type
+    obj = stdlibobject(sym)
+    if !isnull(obj)
+        if isa(get(obj), Type)
+            return :Type
+        else
+            return :var
+        end
     end
-    if sym in knownsyms
+    # TODO: deal with end correctly instead of this hack
+    if sym == :end
         return :var
     end
 
@@ -239,8 +245,8 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         end
         if s == :call
             msg(ctx, :E332, s, "should not be used as a variable name")
-        elseif in(s, knownsyms)
-            if in(s, [:e, :pi, :eu, :catalan, :eulergamma, :golden, :π, :γ, :φ])
+        elseif !isnull(stdlibobject(s))
+            if s in [:e, :pi, :eu, :catalan, :eulergamma, :golden, :π, :γ, :φ]
                 if ctx.file != "constants.jl"
                     msg(ctx, :W351, s, "redefining mathematical constant")
                 end

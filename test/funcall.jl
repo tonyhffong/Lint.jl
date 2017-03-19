@@ -197,7 +197,7 @@ msgs = lintstr(s)
 s = """
 g(; x=0, y=1) = x+y
 function f()
-    d = @compat(Dict{Symbol, Int}(:x=>6, :y=>4))
+    d = Dict{Symbol, Int}(:x=>6, :y=>4)
     g(; d...)
 end
 """
@@ -379,6 +379,7 @@ msgs = lintstr(s)
 @test isempty(msgs)
 
 s = """
+f(; a=1) = a
 a = :b
 f(; a => 1)
 """
@@ -386,6 +387,7 @@ msgs = lintstr(s)
 @test isempty(msgs)
 
 s="""
+f(; a=1) = a
 a = (:a, 1)
 f(; a)
 """
@@ -393,6 +395,7 @@ msgs = lintstr(s)
 @test isempty(msgs)
 
 s = """
+f(; x=1) = x
 f(; 2)
 """
 msgs = lintstr(s)

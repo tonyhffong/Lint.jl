@@ -6,11 +6,12 @@ function linttype(ex::Expr, ctx::LintContext)
     end
     typeparams = Symbol[]
 
+    # TODO: this duplicates the code in functions.jl
     processCurly = (sube)->begin
         for i in 2:length(sube.args)
             adt= sube.args[i]
             if isa(adt, Symbol)
-                typefound = in(adt, knowntypes)
+                typefound = isstandardtype(adt)
                 if !typefound
                     for j in 1:length(ctx.callstack)
                         if in(adt, ctx.callstack[j].types)
@@ -29,7 +30,7 @@ function linttype(ex::Expr, ctx::LintContext)
                 typeconstraint = adt.args[2]
 
                 if temptype != :T
-                    typefound = in(temptype, knowntypes)
+                    typefound = isstandardtype(temptype)
                     if !typefound
                         for j in 1:length(ctx.callstack)
                             if in(temptype, ctx.callstack[j].types)
@@ -43,7 +44,7 @@ function linttype(ex::Expr, ctx::LintContext)
                             "use {T<:...}")
                     end
                 end
-                if in(typeconstraint, knowntypes)
+                if isstandardtype(typeconstraint)
                     dt = parsetype(typeconstraint)
                     if isa(dt, Type) && isleaftype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")

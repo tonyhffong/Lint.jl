@@ -61,4 +61,9 @@ x, y = error()
 let x = :(type X end); x; end
 """)))
 
+# bug 164
+@test messageset(lintstr("""
+undefined()
+""")) == Set([:E321])
+
 end
