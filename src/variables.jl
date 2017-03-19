@@ -198,14 +198,10 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             msg(ctx, :I672, "iteration works for a number but it may be a typo")
         end
 
-        if rhstype <: Union{Tuple,Set,Array,Range,Enumerate}
-            rhstype = StaticTypeAnalysis.eltype(rhstype)
-        elseif rhstype <: Associative
-            rhstype = Tuple{keytype(rhstype), valuetype(rhstype)}
-        end
+        rhstype = StaticTypeAnalysis.eltype(rhstype)
 
         # TODO: only when LHS is tuple
-        if rhstype <: Tuple
+        if rhstype <: Union{Pair, Tuple}
             computedlength = StaticTypeAnalysis.length(rhstype)
             if !isnull(computedlength) && get(computedlength) ≠ tuplelen
                 msg(ctx, :I474, rhstype, "iteration generates tuples, " *

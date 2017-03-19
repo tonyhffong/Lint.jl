@@ -1,14 +1,5 @@
 using Base: isexported
 
-keytype(::Type{Any}) = Any
-valuetype(::Type{Any}) = Any
-
-keytype{K,V}(::Type{Associative{K,V}}) = K
-valuetype{K,V}(::Type{Associative{K,V}}) = V
-
-keytype{T<:Associative}(::Type{T}) = keytype(supertype(T))
-valuetype{T<:Associative}(::Type{T}) = valuetype(supertype(T))
-
 function arraytype_dims(elt, dimst)
     tuplen = StaticTypeAnalysis.length(dimst)
     if isnull(tuplen)
@@ -88,61 +79,45 @@ function parsetype(ex)
     end
 end
 
-function guesstype(ex, ctx::LintContext)
-    t = typeof(ex)
-    if t <: Number
-        return t
+function guesstype(ex::Symbol, ctx::LintContext)
+    stacktop = ctx.callstack[end]
+    sym = ex
+    for i in length(stacktop.localvars):-1:1
+        if haskey(stacktop.localvars[i], sym)
+            ret = stacktop.localvars[i][sym].typeactual
+            return ret
+        end
     end
-    if t <: AbstractString
-        return t
+    for i in length(stacktop.localarguments):-1:1
+        if haskey(stacktop.localarguments[i], sym)
+            ret = stacktop.localarguments[i][sym].typeactual
+            return ret
+        end
     end
-    if t == Symbol # check if we have seen it
-        stacktop = ctx.callstack[end]
-        sym = ex
-        for i in length(stacktop.localvars):-1:1
-            if haskey(stacktop.localvars[i], sym)
-                ret = stacktop.localvars[i][sym].typeactual
-                return ret
-            end
+    for i in length(ctx.callstack):-1:1
+        if sym in ctx.callstack[i].types
+            return Type
         end
-        for i in length(stacktop.localarguments):-1:1
-            if haskey(stacktop.localarguments[i], sym)
-                ret = stacktop.localarguments[i][sym].typeactual
-                return ret
-            end
+        if sym in ctx.callstack[i].functions
+            return Function
         end
-        for i in length(ctx.callstack):-1:1
-            if in(sym, ctx.callstack[i].types)
-                return Type
-            end
-            if in(sym, ctx.callstack[i].functions)
-                return Function
-            end
-            if in(sym, ctx.callstack[i].modules)
-                return Module
-            end
+        if sym in ctx.callstack[i].modules
+            return Module
         end
-        val = stdlibobject(ex)
-        if !isnull(val)
-            if isa(get(val), Type)
-                return Type{get(val)}
-            else
-                return typeof(get(val))
-            end
-        end
-        return Any
     end
+    val = stdlibobject(ex)
+    if !isnull(val)
+        if isa(get(val), Type)
+            return Type{get(val)}
+        else
+            return typeof(get(val))
+        end
+    end
+    return Any
+end
 
-    if t == QuoteNode
-        return typeof(ex.value)
-    end
-
-    if t != Expr
-        return Any
-    end
-
+function guesstype(ex::Expr, ctx::LintContext)
     ex = ExpressionUtils.expand_trivial_calls(ex)
-
 
     if isexpr(ex, :tuple)
         ts = Type[]
@@ -329,3 +304,5 @@ function guesstype(ex, ctx::LintContext)
 
     return Any
 end
+
+guesstype(ex, ctx::LintContext) = lexicaltypeof(ex)
