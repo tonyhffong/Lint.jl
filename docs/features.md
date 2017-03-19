@@ -39,7 +39,6 @@
   `@lintpragma("Ignore unstable type variable [variable name]")` just before the warning.
 * Incompatible type assertion and assignment e.g. `a::Int = 1.0`
 * Incompatible tuple assignment sizes e.g. `(a,b) = (1,2,3)`
-* Flatten behavior of nested vcat e.g. `[[1,2],[3,4]]`
 * Loop over a single number. e.g. `for i=1 end`
 * More indices than dimensions in an array lookup
 * Look up a dictionary with the wrong key type, if the key's type can be inferred.

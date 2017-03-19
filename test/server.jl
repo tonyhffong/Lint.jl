@@ -1,3 +1,5 @@
+import Compat: readline
+
 # find a good port
 conn = listenany(2228)
 close(conn[2])
@@ -39,7 +41,7 @@ end
     write(conn, "1\n")
     write(conn, "\n")
 
-    @test chomp(readline(conn)) == ""
+    @test readline(conn) == ""
 
     conn = connect(port)
     write(conn, "undeclared_symbol\n")
@@ -47,7 +49,7 @@ end
     write(conn, "bad\n")
 
     @test contains(readline(conn), "use of undeclared symbol")
-    @test chomp(readline(conn)) == ""
+    @test readline(conn) == ""
 end
 
 @testset "Testing the lintserver addition" begin
@@ -56,25 +58,24 @@ end
           """
     socket = connect(port)
     lintbyserver(socket, str)
-    response = ""
+    response = String[]
     line = "."
     while !isempty(line)
-        line = chomp(readline(socket))
-        response *= line
+        line = readline(socket)
+        push!(response, line)
     end
 
-    @test response == "none:1 E422 : string uses * to concatenate"
+    @test "none:1 E422 : string uses * to concatenate" in response
 
     socket = connect(port)
     lintbyserver(socket, str)
-    res = ""
-    line = ""
+    response = String[]
     while isopen(socket)
-        res *= line
-        line = chomp(readline(socket))
+        line = readline(socket)
+        push!(response, line)
     end
 
-    @test res == "none:1 E422 : string uses * to concatenate"
+    @test "none:1 E422 : string uses * to concatenate" in response
 end
 
 @testset "Testing lintserver() with named pipe and JSON format" begin

@@ -3,7 +3,8 @@ module ExpressionUtils
 using Base.Meta
 
 export split_comparison, simplify_literal, ispairexpr, isliteral,
-       lexicaltypeof, lexicalfirst, lexicallast, lexicalvalue
+       lexicaltypeof, lexicalfirst, lexicallast, lexicalvalue,
+       withincurly, expand_trivial_calls
 
 # TODO: remove when 0.5 support dropped
 function BROADCAST(f, x::Nullable)
@@ -13,6 +14,24 @@ function BROADCAST(f, x::Nullable)
         Nullable(f(get(x)))
     end
 end
+
+"""
+    withincurly(ex)
+
+Get just the function part of a function declaration, or just the type head of
+a parameterized type name.
+
+```jldoctest
+julia> using Lint.ExpressionUtils
+
+julia> withincurly(:(Vector{T}))
+:Vector
+
+julia> withincurly(:((::Type{T}){T}))
+:(::Type{T})
+```
+"""
+withincurly(ex) = isexpr(ex, :curly) ? ex.args[1] : ex
 
 """
     split_comparison(::Expr)
@@ -116,5 +135,26 @@ That is, the maximal amount of information detectable from the lexical context
 alone.
 """
 lexicaltypeof(x) = get(BROADCAST(typeof, lexicalvalue(x)), Any)
+
+"""
+    expand_trivial_calls(x)
+
+Expand the outer layer of trivial calls. Trivial calls are defined as
+expression nodes that almost always lower to calls but are not represented as
+such. The special case lowering of `A*B'` is neglected.
+"""
+function expand_trivial_calls(ex)
+    if isexpr(ex, :(:))
+        Expr(:call, :colon, ex.args...)
+    elseif isexpr(ex, Symbol("'"))
+        Expr(:call, :ctranspose, ex.args...)
+    elseif isexpr(ex, Symbol(".'"))
+        Expr(:call, :transpose, ex.args...)
+    elseif isexpr(ex, :(=>))
+        Expr(:call, :(=>), ex.args...)
+    else
+        ex
+    end
+end
 
 end

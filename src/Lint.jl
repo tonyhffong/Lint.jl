@@ -6,6 +6,7 @@ using Base.Meta
 using Compat
 using Compat.TypeUtils
 using JSON
+import Compat: readline
 
 if isdefined(Base, :unwrap_unionall)
     using Base: unwrap_unionall
@@ -140,7 +141,7 @@ function lintfile(file::AbstractString, code::AbstractString)
 end
 
 function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), lineoffset = 0)
-    linecharc = cumsum(map(x->endof(x)+1, @compat(split(str, "\n", keep=true))))
+    linecharc = cumsum(map(x->endof(x)+1, split(str, "\n", keep=true)))
     numlines = length(linecharc)
     i = start(str)
     while !done(str,i)
@@ -242,6 +243,7 @@ function lintexpr(ex::Expr, ctx::LintContext)
     elseif ex.head == :type
         linttype(ex, ctx)
     elseif ex.head == :typealias
+        # TODO: deal with X{T} = Y assignments, also const X = Y
         linttypealias(ex, ctx)
     elseif ex.head == :abstract
         lintabstract(ex, ctx)
@@ -439,9 +441,9 @@ function readandwritethestream(conn,style)
     if style == "original_behaviour"
         # println("Connection accepted")
         # Get file, code length and code
-        file = strip(readline(conn))
+        file = readline(conn)
         # println("file: ", file)
-        code_len = parse(Int, strip(readline(conn)))
+        code_len = parse(Int, readline(conn))
         # println("Code bytes: ", code_len)
         code = Compat.UTF8String(read(conn, code_len))
         # println("Code received")

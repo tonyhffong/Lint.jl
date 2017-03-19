@@ -7,23 +7,21 @@ end
 msgs = lintstr(s)
 @test isempty(msgs)
 
-s = """
-type MyType{Int64}
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E535
-@test msgs[1].variable == "Int64"
-@test contains(msgs[1].message, "introducing a new name for an algebric data type")
+@testset "I393" begin
+    s = """
+    type MyType{Int64}
+    end
+    """
+    msgs = lintstr(s)
+    @test msgs[1].code == :I393
+    @test msgs[1].variable == "Int64"
+    @test contains(msgs[1].message, "using an existing type as type parameter name is probably a typo")
 
-s = """
-type MyType{Int64} <: Float64
+    @test messageset(lintstr("""
+    type MyType{Int64} <: Float64
+    end
+    """)) == Set([:I393])
 end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E535
-@test msgs[1].variable == "Int64"
-@test contains(msgs[1].message, "introducing a new name for an algebric data type")
 
 s = """
 type MyType{T<:Int}
@@ -94,26 +92,31 @@ end
 msgs = lintstr(s)
 @test isempty(msgs)
 
-s = """
-typealias TT Int64
-typealias SharedVector{TT} SharedArray{TT,1}
+if VERSION ≥ v"0.6.0-dev.2746"
+    @testset "Type Alias Shadowing" begin
+        s = """
+        const TT = Int64
+        @compat SharedVector{X} = SharedArray{X,1}
 
-type MyType{TT}
-    t::TT
-    MyType(x) = new(convert(TT, x))
+        type MyType{X}
+            t::X
+            MyType(x) = new(convert(X, x))
+        end
+        """
+        msgs = lintstr(s)
+        @test length(msgs) == 1
+        @test msgs[1].code == :I392
+        @test msgs[1].variable == "SharedVector"
+        @test contains(msgs[1].message, "synonymous export from Base")
+    end
 end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E535
-@test msgs[1].variable == "TT"
-@test contains(msgs[1].message, "introducing a new name for an algebric data type")
 
 s = """
-abstract SomeAbsType
-abstract SomeAbsNum <: Number
-abstract SomeAbsVec1{T} <: Array{T,1}
-abstract SomeAbsVec2{T}
-bitstype 8 MyBitsType
+@compat abstract type SomeAbsType end
+@compat abstract type SomeAbsNum <: Number end
+@compat abstract type SomeAbsVec1{T} <: Array{T,1} end
+@compat abstract type SomeAbsVec2{T} end
+@compat primitive type MyBitsType 8 end
 
 type MyType{T<:SomeAbsType}
     t::T
@@ -198,7 +201,7 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "use lintpragma macro inside type declaration")
 
 s = """
-bitstype a 8
+@compat primitive type 8 a end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E524

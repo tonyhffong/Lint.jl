@@ -20,8 +20,7 @@ function linttype(ex::Expr, ctx::LintContext)
                     end
                 end
                 if typefound && adt != :T
-                    msg(ctx, :E535, adt, "introducing a new name for an algebric data " *
-                        "type, use {T<:$(adt)}")
+                    msg(ctx, :I393, adt, "using an existing type as type parameter name is probably a typo")
                 end
                 push!(ctx.callstack[end].types, adt)
                 push!(typeparams, adt)
@@ -138,10 +137,9 @@ function linttype(ex::Expr, ctx::LintContext)
 end
 
 function linttypealias(ex::Expr, ctx::LintContext)
+    # TODO: make this just part of lintassignment
     if isa(ex.args[1], Symbol)
-        push!(ctx.callstack[end].types, ex.args[1])
-    elseif isexpr(ex.args[1], :curly)
-        push!(ctx.callstack[end].types, ex.args[1].args[1])
+        push!(ctx.callstack[end].types, withincurly(ex.args[1]))
     end
 end
 

@@ -103,7 +103,7 @@ function lintglobal(ex::Expr, ctx::LintContext)
                 register_global(
                     ctx,
                     sym,
-                    @compat(Dict{Symbol,Any}(:file=>ctx.file, :line=>ctx.line))
+                    Dict{Symbol,Any}(:file=>ctx.file, :line=>ctx.line)
                )
             end
         elseif isexpr(sym, ASSIGN_OPS)
@@ -169,16 +169,31 @@ function resolveLHSsymbol(ex, syms::Array{Any,1}, ctx::LintContext, assertions::
 end
 
 function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false) # is it a local decl & assignment?
-    lintexpr(ex.args[2], ctx)
+    lhs = ex.args[1]
+
+    # lower curly
+    rhstype = Any
+    if isexpr(lhs, :curly)
+        isConst = true
+        lhs = withincurly(lhs)
+        rhstype = Type
+        # TODO: lint the RHS too
+    else
+        lintexpr(ex.args[2], ctx)
+    end
 
     syms = Any[]
     assertions = Dict{Symbol, Any}()
-    resolveLHSsymbol(ex.args[1], syms, ctx, assertions)
+    resolveLHSsymbol(lhs, syms, ctx, assertions)
     tuplelen = length(syms)
-    lhsIsTuple = Meta.isexpr(ex.args[1], :tuple)
-    rhstype = guesstype(ex.args[2], ctx)
+    lhsIsTuple = Meta.isexpr(lhs, :tuple)
+    if rhstype == Any
+        rhstype = guesstype(ex.args[2], ctx)
+    end
 
-    if isForLoop && isa(rhstype, Type)
+    if rhstype == Union{}
+        msg(ctx, :E539, lhs, "assigning an error to a variable")
+    elseif isForLoop && isa(rhstype, Type)
         if rhstype <: Number
             msg(ctx, :I672, "iteration works for a number but it may be a typo")
         end
@@ -189,20 +204,25 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             rhstype = Tuple{keytype(rhstype), valuetype(rhstype)}
         end
 
+        # TODO: only when LHS is tuple
         if rhstype <: Tuple
             computedlength = StaticTypeAnalysis.length(rhstype)
             if !isnull(computedlength) && get(computedlength) ≠ tuplelen
                 msg(ctx, :I474, rhstype, "iteration generates tuples, " *
-                    "$tuplelen of $(length(rhstype.parameters)) variables used")
+                    "$tuplelen of $(get(computedlength)) variables used")
             end
         end
-    end
-
-    if !isa(rhstype, Symbol) && rhstype <: Tuple
+    elseif isa(rhstype, Type) && lhsIsTuple
         computedlength = StaticTypeAnalysis.length(rhstype)
-        if !isnull(computedlength) && get(computedlength) ≠ tuplelen > 1
-            msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
-                "$(length(rhstype.parameters)) variables used")
+        if !isnull(computedlength)
+            if get(computedlength) < tuplelen
+                msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
+                    "$(get(computedlength)) variables used")
+            elseif get(computedlength) > tuplelen
+                msg(ctx, :W546, rhstype, string(
+                    "implicitly discarding values, $tuplelen of ",
+                    get(computedlength), " used"))
+            end
         end
     end
 
@@ -243,12 +263,8 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         # @lintpragma("Ignore incompatible type comparison")
         if isa(rhstype, Type) && !lhsIsTuple
             rhst = rhstype
-        elseif isa(rhstype, Type) && rhstype <: Tuple && lhsIsTuple
-            if length(rhstype.parameters) <= symidx
-                rhst = Any
-            else
-                rhst = rhstype.parameters[ symidx ]
-            end
+        elseif isa(rhstype, Type)
+            rhst = StaticTypeAnalysis.typeof_nth(rhstype, symidx)
         else
             rhst = Any
         end
@@ -325,7 +341,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
             register_global(
                 ctx,
                 s,
-                @compat(Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line))
+                Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
            )
         end
     end

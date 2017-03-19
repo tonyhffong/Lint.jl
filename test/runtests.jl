@@ -1,67 +1,64 @@
 using Lint
+using Compat
 using Base.Test
 
 messageset(msgs) = Set(x.code for x in msgs)
 
-println("Test basic printing and sorting of lint messages")
+include("exprutils.jl")
+include("statictype.jl")
 
-if basename(pwd()) == "Lint"
-    path =  "test/DEMOFILE.jl"
-elseif basename(pwd()) == "src"
-    path = "../test/DEMOFILE.jl"
-elseif basename(pwd()) == "test"
-    path = "DEMOFILE.jl"
-else
-    throw("doesn't know where I am")
+@testset "Lint File" begin
+    path = joinpath(@__DIR__, "DEMOFILE.jl")
+    @test !isempty(lintfile(path))
 end
 
-lintfile(path)
+@testset "AST Linting" begin
+    include("messages.jl")
+    include("basics.jl")
+    include("array.jl")
+    include("badvars.jl")
+    include("bitopbool.jl")
+    include("comprehensions.jl")
+    include("curly.jl")
+    include("deadcode.jl")
+    include("deprecate.jl")
+    include("dictkey.jl")
+    include("doc.jl")
+    include("dupexport.jl")
+    include("forloop.jl")
+    include("funcall.jl")
+    include("globals.jl")
+    include("ifstmt.jl")
+    include("import.jl")
+    include("lambda.jl")
+    include("linthelper.jl")
+    include("macro.jl")
+    include("mathconst.jl")
+    include("module.jl")
+    include("meta.jl")
+    include("pragma.jl")
+    include("range.jl")
+    include("ref.jl")
+    include("similarity.jl")
+    include("strings.jl")
+    include("style.jl")
+    include("symbol.jl")
+    include("throw.jl")
+    include("tuple.jl")
+    include("type.jl")
+    include("typecheck.jl")
+    include("undeclare.jl")
+    include("unusedvar.jl")
+    include("using.jl")
+    include("versions.jl")
+    include("stagedfuncs.jl")
+    include("incomplete.jl")
+    include("misuse.jl")
+end
 
-println("...OK\n\nTest core lint functionalities...")
-include("messages.jl")
-include("basics.jl")
-include("array.jl")
-include("badvars.jl")
-include("bitopbool.jl")
-include("comprehensions.jl")
-include("curly.jl")
-include("deadcode.jl")
-include("deprecate.jl")
-include("dictkey.jl")
-include("doc.jl")
-include("dupexport.jl")
-include("forloop.jl")
-include("funcall.jl")
-include("globals.jl")
-include("ifstmt.jl")
-include("import.jl")
-include("lambda.jl")
-include("linthelper.jl")
-include("macro.jl")
-include("mathconst.jl")
-include("module.jl")
-include("meta.jl")
-include("pragma.jl")
-include("range.jl")
-include("ref.jl")
-include("similarity.jl")
-include("strings.jl")
-include("style.jl")
-include("symbol.jl")
-include("throw.jl")
-include("tuple.jl")
-include("type.jl")
-include("typecheck.jl")
-include("undeclare.jl")
-include("unusedvar.jl")
-include("using.jl")
-include("versions.jl")
-include("server.jl")
-include("stagedfuncs.jl")
-include("incomplete.jl")
-include("misuse.jl")
 include("bugs.jl")
-
-println("...OK\n")
 include("lintself.jl")
-println("...OK")
+
+@testset "Server" begin
+    include("server.jl")
+end

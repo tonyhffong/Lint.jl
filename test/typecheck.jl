@@ -56,7 +56,7 @@ msgs = lintstr(s)
 
 s = """
 function f(x)
-    d = @compat Dict{Symbol,Int}(:a=>1, :b=>2)
+    d = Dict{Symbol,Int}(:a=>1, :b=>2)
     for i in d
     end
     return x
@@ -67,8 +67,8 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "iteration generates tuples, 1 of 2 variables used")
 
 s = """
-function f(x)
-    d = @compat Dict{Symbol,Int}(:a=>1, :b=>2)
+function f()
+    d = Dict{Symbol,Int}(:a=>1, :b=>2)
     x = d[:a]
     x = 1.0
     return x
@@ -78,19 +78,6 @@ msgs = lintstr(s)
 @test msgs[1].code == :W545
 @test contains(msgs[1].message, "previously used variable has apparent type Int64, but " *
     "now assigned Float64")
-
-s = """
-function f()
-    a = 1
-    d = @compat Dict{Symbol,Int}(:a=>1, :b=>2)
-    x = d[a]
-    return x
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E518
-@test msgs[1].variable == "a"
-@test contains(msgs[1].message, "key type expects Symbol, provided Int64")
 
 s = """
 function f(arr::Array{Any,1})
@@ -142,6 +129,7 @@ msgs = lintstr(s)
 @test msgs[1].variable == "z"
 @test contains(msgs[1].message, "is of an immutable type Complex")
 
+#= TODO: the warning here should be on a = Array{Int32, n}, not the E521
 s = """
 n = 32
 a = Array{Int32, n} # bug is here
@@ -153,6 +141,9 @@ msgs = lintstr(s)
 @test msgs[1].code == :E521
 @test msgs[1].variable == "a"
 @test contains(msgs[1].message, "apparent type Type")
+=#
+
+include("E522.jl")
 
 s = """
 function f()
@@ -257,3 +248,26 @@ end
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+
+@testset "E539" begin
+    # assigning error to a variable
+    @test messageset(lintstr("""
+    x = throw(ArgumentError("error!"))
+    """)) == Set([:E539])
+
+    @test messageset(lintstr("""
+    x = 1 + "x"
+    """)) == Set([:E422, :E539])
+
+    @test isempty(lintstr("""
+    x = 1 + 1 == 2 ? "OK" : error("problem")
+    """))
+
+    @test messageset(lintstr("""
+    x, y = error()
+    """)) == Set([:E539])
+
+    @test messageset(lintstr("""
+    κ = sqrt("x")
+    """)) == Set([:E539])
+end

@@ -87,3 +87,8 @@ end
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+
+@testset "E437" begin
+    @test messageset(lintstr("@compat()")) == Set([:E437])
+    @test messageset(lintstr("@compat(1, 2)")) == Set([:E437])
+end
