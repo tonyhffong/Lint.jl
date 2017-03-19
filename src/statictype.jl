@@ -13,7 +13,7 @@ Given types `S` and `T`, return `Nullable(false)` if it is not possible for
 `s::S == t::T`. Return `Nullable(true)` if it is possible, and
 `Nullable{Bool}()` if it cannot be determined.
 
-``jldoctest
+```jldoctest
 julia> StaticTypeAnalysis.canequal(Int, Float64)
 Nullable(true)
 

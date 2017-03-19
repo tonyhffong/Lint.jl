@@ -55,18 +55,6 @@ msgs = lintstr(s)
 @test contains(msgs[2].message, "typeof(y) == Array{Bool,2}")
 
 s = """
-function f(x)
-    d = Dict{Symbol,Int}(:a=>1, :b=>2)
-    for i in d
-    end
-    return x
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :I474
-@test contains(msgs[1].message, "iteration generates tuples, 1 of 2 variables used")
-
-s = """
 function f()
     d = Dict{Symbol,Int}(:a=>1, :b=>2)
     x = d[:a]

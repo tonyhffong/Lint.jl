@@ -152,6 +152,8 @@ function expand_trivial_calls(ex)
         Expr(:call, :transpose, ex.args...)
     elseif isexpr(ex, :(=>))
         Expr(:call, :(=>), ex.args...)
+    elseif isexpr(ex, :vect)
+        Expr(:call, :(Base.vect), ex.args...)
     else
         ex
     end

@@ -1,14 +1,4 @@
-s = """
-function f(x)
-    d = Dict{Symbol,Int}(:a=>1, :b=>2)
-    for i in d
-    end
-    return x
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :I474
-@test contains(msgs[1].message, "iteration generates tuples, 1 of 2 variables used")
+include("I474.jl")
 
 s = """
 function f(x)
@@ -59,14 +49,3 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "typeof(x) == Int")
 @test msgs[2].code == :I672
 @test contains(msgs[2].message, "iteration works for a number but it may be a typo")
-
-s = """
-function f(a::Array{Int,1})
-    for i in enumerate(a)
-        println(i)
-    end
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :I474
-@test contains(msgs[1].message, "iteration generates tuples, 1 of 2 variables used")

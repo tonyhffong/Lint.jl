@@ -1,14 +1,5 @@
 using Base: isexported
 
-function arraytype_dims(elt, dimst)
-    tuplen = StaticTypeAnalysis.length(dimst)
-    if isnull(tuplen)
-        return Array{elt}
-    else
-        return Array{elt, get(tuplen)}
-    end
-end
-
 """
     stdlibobject(name::Symbol)
 
@@ -32,6 +23,10 @@ If the given expression is curly, and each component of the curly is a standard
 library object, construct the object `x` as would have been done in the program
 itself, and return `Nullable{Any}(x)`.
 
+Otherwise, if the given expression is `foo.bar`, and `foo` is a standard
+library object with attribute `bar`, then construct `foo.bar` as would be done
+in the program itself and return it.
+
 Otherwise, return `Nullable{Any}()`.
 """
 function stdlibobject(ex::Expr)
@@ -40,6 +35,19 @@ function stdlibobject(ex::Expr)
         if all(!isnull, objs)
             try
                 Nullable{Any}(Core.apply_type(get.(objs)...))
+            catch
+                Nullable{Any}()
+            end
+        else
+            Nullable{Any}()
+        end
+    elseif isexpr(ex, :(.))
+        head = ex.args[1]
+        tail = ex.args[2].value
+        obj = stdlibobject(head)
+        if !isnull(obj)
+            try
+                Nullable{Any}(getfield(get(obj), tail))
             catch
                 Nullable{Any}()
             end
@@ -56,7 +64,7 @@ end
 
 Return the literal embedded within a `Nullable{Any}`.
 """
-stdlibobject(ex) = Nullable{Any}(ex)
+stdlibobject(ex) = lexicalvalue(ex)
 
 """
     parsetype(ex::Expr)

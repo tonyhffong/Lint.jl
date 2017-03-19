@@ -200,8 +200,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
 
         rhstype = StaticTypeAnalysis.eltype(rhstype)
 
-        # TODO: only when LHS is tuple
-        if rhstype <: Union{Pair, Tuple}
+        if lhsIsTuple
             computedlength = StaticTypeAnalysis.length(rhstype)
             if !isnull(computedlength) && get(computedlength) ≠ tuplelen
                 msg(ctx, :I474, rhstype, "iteration generates tuples, " *
