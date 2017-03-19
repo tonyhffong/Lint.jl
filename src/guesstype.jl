@@ -288,7 +288,6 @@ function guesstype(ex::Expr, ctx::LintContext)
             end
             return inferred
         end
-        return Any
     end
 
     if isexpr(ex, :comparison)
@@ -296,11 +295,18 @@ function guesstype(ex::Expr, ctx::LintContext)
     end
 
     # simple if statement e.g. test ? 0 : 1
-    if isexpr(ex, :if) && length(ex.args) == 3
+    if isexpr(ex, :if) && 2 ≤ length(ex.args) ≤ 3
         tt = guesstype(ex.args[2], ctx)
-        ft = guesstype(ex.args[3], ctx)
+        ft = if length(ex.args) == 3
+            guesstype(ex.args[3], ctx)
+        else
+            Void
+        end
         if tt == ft
+            # we need this case because tt and ft might be symbols
             return tt
+        elseif isa(tt, Type) && isa(ft, Type)
+            return Union{tt, ft}
         else
             return Any
         end

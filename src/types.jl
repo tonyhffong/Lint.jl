@@ -59,6 +59,7 @@ function linttype(ex::Expr, ctx::LintContext)
     if isa(ex.args[2], Symbol)
         tname = ex.args[2]
     elseif isexpr(ex.args[2], :($)) && isa(ex.args[2].args[1], Symbol)
+        # TODO: very silly to special case things this way
         registersymboluse(ex.args[2].args[1], ctx)
     elseif isexpr(ex.args[2], :curly)
         tname = ex.args[2].args[1]
@@ -70,6 +71,9 @@ function linttype(ex::Expr, ctx::LintContext)
             tname = ex.args[2].args[1].args[1]
             processCurly(ex.args[2].args[1])
         end
+    end
+    if ctx.quoteLvl > 0
+        return  # do not lint types in quotes, see issue 166
     end
     if tname != Symbol("")
         if islower(string(tname)[1])
