@@ -124,7 +124,6 @@ type MyType{T<:SomeAbsType}
 end
 """
 msgs = lintstr(s)
-@show msgs
 @test isempty(msgs)
 
 s = """

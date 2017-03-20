@@ -192,7 +192,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
     end
 
     if rhstype == Union{}
-        msg(ctx, :E539, rhstype, "assigning an error to a variable")
+        msg(ctx, :E539, lhs, "assigning an error to a variable")
     elseif isForLoop && isa(rhstype, Type)
         if rhstype <: Number
             msg(ctx, :I672, "iteration works for a number but it may be a typo")

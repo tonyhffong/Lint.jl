@@ -4,6 +4,7 @@ using Base.Test
 
 messageset(msgs) = Set(x.code for x in msgs)
 
+include("exprutils.jl")
 include("statictype.jl")
 
 @testset "Lint File" begin

@@ -7,22 +7,6 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "LHS in assignment not understood by Lint")
 
 s = """
-d = Dict()
-x = d[]
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E121
-@test contains(msgs[1].message, "Lint does not understand the expression")
-
-s = """
-a = ""
-a[]
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E121
-@test contains(msgs[1].message, "Lint does not understand the expression")
-
-s = """
 local 5
 """
 msgs = lintstr(s)

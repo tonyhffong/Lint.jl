@@ -2,6 +2,14 @@ using Lint: StaticTypeAnalysis
 
 @testset "Static Type" begin
 
+@test get(StaticTypeAnalysis.canequal(Int, Int))
+@test get(StaticTypeAnalysis.canequal(Int, Float64))
+@test get(StaticTypeAnalysis.canequal(Int, Real))
+@test get(StaticTypeAnalysis.canequal(Symbol, Symbol))
+@test !get(StaticTypeAnalysis.canequal(Int, Symbol))
+@test !get(StaticTypeAnalysis.canequal(Int, String))
+@test !get(StaticTypeAnalysis.canequal(Vector{Char}, String))
+
 @test StaticTypeAnalysis.eltype(Tuple{Int,Int}) == Int
 @test StaticTypeAnalysis.eltype(Tuple{Int,String}) == Any
 @test StaticTypeAnalysis.eltype(Tuple{}) == Union{}

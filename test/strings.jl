@@ -43,17 +43,6 @@ msgs = lintstr(s)
 @test msgs[1].code == :I271
 @test contains(msgs[1].message, "typeof(b) == $(Compat.ASCIIString)")
 
-s = """
-function f()
-    b = repeat(" ", 10)
-    b[:start]
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E519
-@test msgs[1].variable == ":start"
-@test contains(msgs[1].message, "string[] expects Integer, provided Symbol")
-
 u = """
 안녕하세요 = "Hello World"
 

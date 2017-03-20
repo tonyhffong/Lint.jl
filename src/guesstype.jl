@@ -141,8 +141,11 @@ function guesstype(ex, ctx::LintContext)
         return Any
     end
 
+    ex = ExpressionUtils.expand_trivial_calls(ex)
+
+
     if isexpr(ex, :tuple)
-        ts = Any[]
+        ts = Type[]
         for a in ex.args
             push!(ts, guesstype(a, ctx))
         end
@@ -224,17 +227,8 @@ function guesstype(ex, ctx::LintContext)
         end
     end
 
-    if isexpr(ex, :(:))
-        return Range
-    end
-
     if isexpr(ex, :curly)
         return Type
-    end
-
-    if isexpr(ex, Symbol("'"))
-        fst = guesstype(ex.args[1], ctx)
-        return fst
     end
 
     if isexpr(ex, :ref) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
@@ -263,24 +257,11 @@ function guesstype(ex, ctx::LintContext)
         end
         # not symbol, or symbol but it refers to a variable
         partyp = guesstype(ex.args[1], ctx)
-        if typeof(partyp) == Symbol # we are in a context of a constructor of a new type, so it's difficult to figure out the content
+        if isa(partyp, Symbol)
+            # we are in a context of a constructor of a new type, so it's
+            # difficult to figure out the content
             return Any
-        elseif partyp <: UnitRange
-            if length(ex.args) < 2
-                msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
-                return Any
-            end
-            ktypeactual = guesstype(ex.args[2], ctx)
-            if ktypeactual <: Integer
-                return StaticTypeAnalysis.eltype(partyp)
-            elseif isexpr(ex.args[2], :(:)) # range too
-                return partyp
-            elseif isexpr(ex.args[2], :call) && ex.args[2].args[1] == :Colon
-                return partyp
-            else
-                return Any
-            end
-        elseif partyp <: AbstractArray
+        elseif partyp <: AbstractArray && !(partyp <: Range)
             eletyp = StaticTypeAnalysis.eltype(partyp)
             try
                 nd = ndims(partyp) # This may throw if we couldn't infer the dimension
@@ -307,48 +288,24 @@ function guesstype(ex, ctx::LintContext)
                 end
             end
             return Any
-        elseif partyp <: Associative
-            ktypeexpect = keytype(partyp)
-            vtypeexpect = valuetype(partyp)
-            if length(ex.args) < 2
-                msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
-                return Any
+        else
+            argtypes = [guesstype(x, ctx) for x in ex.args]
+            type_argtypes = [isa(t, Type) ? t : Any for t in argtypes]
+            inferred = StaticTypeAnalysis.infertype(getindex, type_argtypes)
+            if ctx.versionreachable(VERSION) && inferred == Union{}
+                indtypes = if length(type_argtypes) == 1
+                    "no indices"
+                else
+                    string("index types ", join(type_argtypes[2:end], ", "))
+                end
+                msg(ctx, :E522, ex,
+                    string("indexing $(type_argtypes[1]) with ",
+                           indtypes,
+                           " is not supported"))
             end
-            ktypeactual = guesstype(ex.args[2], ctx)
-            if ktypeactual != Any && !(ktypeactual <: ktypeexpect)
-                msg(ctx, :E518, ex.args[2], "key type expects $(ktypeexpect), " *
-                    "provided $(ktypeactual)")
-            end
-            return vtypeexpect
-        elseif partyp <: AbstractString
-            if length(ex.args) < 2
-                msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
-                return Any
-            end
-            ktypeactual = guesstype(ex.args[2], ctx)
-            if ktypeactual != Any && !(ktypeactual <: Integer) && !(ktypeactual <: Range)
-                msg(ctx, :E519, ex.args[2], "string[] expects Integer, provided $(ktypeactual)")
-            end
-            if ktypeactual <: Integer
-                return Char
-            end
-            if ktypeactual <: Range
-                return partyp
-            end
-        elseif partyp <: Tuple
-            return StaticTypeAnalysis.eltype(partyp)
-        elseif partyp != Any
-            if ctx.versionreachable(VERSION) && !pragmaexists("$(partyp) is a container type", ctx)
-                msg(ctx, :E521, ex.args[1], "apparent type $(partyp) is not a container type")
-            end
+            return inferred
         end
         return Any
-    end
-
-    if isexpr(ex, :(=>))
-        t1 = guesstype(ex.args[1], ctx)
-        t2 = guesstype(ex.args[2], ctx)
-        return Pair{t1,t2}
     end
 
     if isexpr(ex, :comparison)
