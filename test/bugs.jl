@@ -56,4 +56,14 @@ println(A[1][1])
 x, y = error()
 """)) == Set([:E539])
 
+# bug 166
+@test isempty(messageset(lintstr("""
+let x = :(type X end); x; end
+""")))
+
+# bug 164
+@test messageset(lintstr("""
+undefined()
+""")) == Set([:E321])
+
 end

@@ -31,7 +31,6 @@ end
     include("ifstmt.jl")
     include("import.jl")
     include("lambda.jl")
-    include("linthelper.jl")
     include("macro.jl")
     include("mathconst.jl")
     include("module.jl")
@@ -42,7 +41,7 @@ end
     include("similarity.jl")
     include("strings.jl")
     include("style.jl")
-    include("symbol.jl")
+    include("I481.jl")
     include("throw.jl")
     include("tuple.jl")
     include("type.jl")
@@ -56,6 +55,7 @@ end
     include("misuse.jl")
 end
 
+try include("linthelper.jl") end
 include("bugs.jl")
 include("lintself.jl")
 

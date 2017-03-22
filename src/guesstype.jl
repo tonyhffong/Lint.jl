@@ -1,23 +1,5 @@
 using Base: isexported
 
-keytype(::Type{Any}) = Any
-valuetype(::Type{Any}) = Any
-
-keytype{K,V}(::Type{Associative{K,V}}) = K
-valuetype{K,V}(::Type{Associative{K,V}}) = V
-
-keytype{T<:Associative}(::Type{T}) = keytype(supertype(T))
-valuetype{T<:Associative}(::Type{T}) = valuetype(supertype(T))
-
-function arraytype_dims(elt, dimst)
-    tuplen = StaticTypeAnalysis.length(dimst)
-    if isnull(tuplen)
-        return Array{elt}
-    else
-        return Array{elt, get(tuplen)}
-    end
-end
-
 """
     stdlibobject(name::Symbol)
 
@@ -41,6 +23,10 @@ If the given expression is curly, and each component of the curly is a standard
 library object, construct the object `x` as would have been done in the program
 itself, and return `Nullable{Any}(x)`.
 
+Otherwise, if the given expression is `foo.bar`, and `foo` is a standard
+library object with attribute `bar`, then construct `foo.bar` as would be done
+in the program itself and return it.
+
 Otherwise, return `Nullable{Any}()`.
 """
 function stdlibobject(ex::Expr)
@@ -49,6 +35,19 @@ function stdlibobject(ex::Expr)
         if all(!isnull, objs)
             try
                 Nullable{Any}(Core.apply_type(get.(objs)...))
+            catch
+                Nullable{Any}()
+            end
+        else
+            Nullable{Any}()
+        end
+    elseif isexpr(ex, :(.))
+        head = ex.args[1]
+        tail = ex.args[2].value
+        obj = stdlibobject(head)
+        if !isnull(obj)
+            try
+                Nullable{Any}(getfield(get(obj), tail))
             catch
                 Nullable{Any}()
             end
@@ -65,7 +64,7 @@ end
 
 Return the literal embedded within a `Nullable{Any}`.
 """
-stdlibobject(ex) = Nullable{Any}(ex)
+stdlibobject(ex) = lexicalvalue(ex)
 
 """
     parsetype(ex::Expr)
@@ -88,61 +87,45 @@ function parsetype(ex)
     end
 end
 
-function guesstype(ex, ctx::LintContext)
-    t = typeof(ex)
-    if t <: Number
-        return t
+function guesstype(ex::Symbol, ctx::LintContext)
+    stacktop = ctx.callstack[end]
+    sym = ex
+    for i in length(stacktop.localvars):-1:1
+        if haskey(stacktop.localvars[i], sym)
+            ret = stacktop.localvars[i][sym].typeactual
+            return ret
+        end
     end
-    if t <: AbstractString
-        return t
+    for i in length(stacktop.localarguments):-1:1
+        if haskey(stacktop.localarguments[i], sym)
+            ret = stacktop.localarguments[i][sym].typeactual
+            return ret
+        end
     end
-    if t == Symbol # check if we have seen it
-        stacktop = ctx.callstack[end]
-        sym = ex
-        for i in length(stacktop.localvars):-1:1
-            if haskey(stacktop.localvars[i], sym)
-                ret = stacktop.localvars[i][sym].typeactual
-                return ret
-            end
+    for i in length(ctx.callstack):-1:1
+        if sym in ctx.callstack[i].types
+            return Type
         end
-        for i in length(stacktop.localarguments):-1:1
-            if haskey(stacktop.localarguments[i], sym)
-                ret = stacktop.localarguments[i][sym].typeactual
-                return ret
-            end
+        if sym in ctx.callstack[i].functions
+            return Function
         end
-        for i in length(ctx.callstack):-1:1
-            if in(sym, ctx.callstack[i].types)
-                return Type
-            end
-            if in(sym, ctx.callstack[i].functions)
-                return Function
-            end
-            if in(sym, ctx.callstack[i].modules)
-                return Module
-            end
+        if sym in ctx.callstack[i].modules
+            return Module
         end
-        val = stdlibobject(ex)
-        if !isnull(val)
-            if isa(get(val), Type)
-                return Type{get(val)}
-            else
-                return typeof(get(val))
-            end
-        end
-        return Any
     end
+    val = stdlibobject(ex)
+    if !isnull(val)
+        if isa(get(val), Type)
+            return Type{get(val)}
+        else
+            return typeof(get(val))
+        end
+    end
+    return Any
+end
 
-    if t == QuoteNode
-        return typeof(ex.value)
-    end
-
-    if t != Expr
-        return Any
-    end
-
+function guesstype(ex::Expr, ctx::LintContext)
     ex = ExpressionUtils.expand_trivial_calls(ex)
-
 
     if isexpr(ex, :tuple)
         ts = Type[]
@@ -305,7 +288,6 @@ function guesstype(ex, ctx::LintContext)
             end
             return inferred
         end
-        return Any
     end
 
     if isexpr(ex, :comparison)
@@ -313,11 +295,18 @@ function guesstype(ex, ctx::LintContext)
     end
 
     # simple if statement e.g. test ? 0 : 1
-    if isexpr(ex, :if) && length(ex.args) == 3
+    if isexpr(ex, :if) && 2 ≤ length(ex.args) ≤ 3
         tt = guesstype(ex.args[2], ctx)
-        ft = guesstype(ex.args[3], ctx)
+        ft = if length(ex.args) == 3
+            guesstype(ex.args[3], ctx)
+        else
+            Void
+        end
         if tt == ft
+            # we need this case because tt and ft might be symbols
             return tt
+        elseif isa(tt, Type) && isa(ft, Type)
+            return Union{tt, ft}
         else
             return Any
         end
@@ -329,3 +318,5 @@ function guesstype(ex, ctx::LintContext)
 
     return Any
 end
+
+guesstype(ex, ctx::LintContext) = lexicaltypeof(ex)

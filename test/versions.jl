@@ -15,6 +15,7 @@ msgs = lintstr(s)
 @test contains(msgs[4].message, "Reachable by 0.4")
 
 s = """
+test() = true
 if VERSION < v"0.4-" && test()
     @lintpragma("Info version 0.3")
     @lintpragma("Info version 0.4.0-dev+1833")
@@ -32,6 +33,7 @@ msgs = lintstr(s)
 @test contains(msgs[4].message, "Reachable by 0.4") # we cannot prove unreachable
 
 s = """
+test() = true
 if VERSION < v"0.4-" || test()
     @lintpragma("Info version 0.3")
     @lintpragma("Info version 0.4.0-dev+1833")

@@ -7,6 +7,7 @@ msgs = lintstr(s)
 @test isempty(msgs)
 
 s = """
+localize_vars(foo, bar) = (foo, bar)
 macro schedule(expr)
     expr = localize_vars(:(()->(\$expr)), false)
     :(enq_work(Task(\$(esc(expr)))))

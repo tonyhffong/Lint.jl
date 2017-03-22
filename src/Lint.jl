@@ -36,7 +36,6 @@ include("statictype.jl")
 
 include("linttypes.jl")
 include("messages.jl")
-include("knownsyms.jl")
 include("guesstype.jl")
 include("variables.jl")
 include("pragma.jl")

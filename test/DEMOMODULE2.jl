@@ -7,7 +7,7 @@ subfoo(x) = println(x)
 end
 
 module LintExSubMod2
-import .LintExSubMod1
+using ..LintExSubMod1
 subfar(x) = subfoo(x)
 end
 

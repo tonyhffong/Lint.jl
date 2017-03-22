@@ -6,11 +6,12 @@ function linttype(ex::Expr, ctx::LintContext)
     end
     typeparams = Symbol[]
 
+    # TODO: this duplicates the code in functions.jl
     processCurly = (sube)->begin
         for i in 2:length(sube.args)
             adt= sube.args[i]
             if isa(adt, Symbol)
-                typefound = in(adt, knowntypes)
+                typefound = isstandardtype(adt)
                 if !typefound
                     for j in 1:length(ctx.callstack)
                         if in(adt, ctx.callstack[j].types)
@@ -29,7 +30,7 @@ function linttype(ex::Expr, ctx::LintContext)
                 typeconstraint = adt.args[2]
 
                 if temptype != :T
-                    typefound = in(temptype, knowntypes)
+                    typefound = isstandardtype(temptype)
                     if !typefound
                         for j in 1:length(ctx.callstack)
                             if in(temptype, ctx.callstack[j].types)
@@ -43,7 +44,7 @@ function linttype(ex::Expr, ctx::LintContext)
                             "use {T<:...}")
                     end
                 end
-                if in(typeconstraint, knowntypes)
+                if isstandardtype(typeconstraint)
                     dt = parsetype(typeconstraint)
                     if isa(dt, Type) && isleaftype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
@@ -59,6 +60,7 @@ function linttype(ex::Expr, ctx::LintContext)
     if isa(ex.args[2], Symbol)
         tname = ex.args[2]
     elseif isexpr(ex.args[2], :($)) && isa(ex.args[2].args[1], Symbol)
+        # TODO: very silly to special case things this way
         registersymboluse(ex.args[2].args[1], ctx)
     elseif isexpr(ex.args[2], :curly)
         tname = ex.args[2].args[1]
@@ -70,6 +72,9 @@ function linttype(ex::Expr, ctx::LintContext)
             tname = ex.args[2].args[1].args[1]
             processCurly(ex.args[2].args[1])
         end
+    end
+    if ctx.quoteLvl > 0
+        return  # do not lint types in quotes, see issue 166
     end
     if tname != Symbol("")
         if islower(string(tname)[1])
