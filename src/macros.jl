@@ -68,7 +68,8 @@ function lintcompat(ex::Expr, ctx::LintContext)
 end
 
 function lintmacrocall(ex::Expr, ctx::LintContext)
-    if istopmacro(ex.args[1], Base, Symbol("@deprecate"))
+    if istopmacro(ex.args[1], Base, Symbol("@deprecate")) ||
+       ex.args[1] == Symbol("@recipe")
         return
     end
 
@@ -135,18 +136,8 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
     end
 
     ctx.macrocallLvl = ctx.macrocallLvl + 1
-
-    # AST for things like
-    # @windows ? x : y
-    # is very weird. This handles that.
-    if length(ex.args) == 3 && ex.args[2] == :(?) && isexpr(ex.args[3], :(:))
-        for a in ex.args[3].args
-            lintexpr(a, ctx)
-        end
-    else
-        for i = 2:length(ex.args)
-            lintexpr(ex.args[i], ctx)
-        end
+    for i = 2:length(ex.args)
+        lintexpr(ex.args[i], ctx)
     end
     ctx.macrocallLvl = ctx.macrocallLvl - 1
 end

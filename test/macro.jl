@@ -1,5 +1,4 @@
-# give the macro linter a workout
-
+@testset "Macros" begin
 s = """
 macro r_str(pattern, flags...) Regex(pattern, flags...) end
 """
@@ -12,12 +11,6 @@ macro schedule(expr)
     expr = localize_vars(:(()->(\$expr)), false)
     :(enq_work(Task(\$(esc(expr)))))
 end
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
-
-s = """
-@windows ? 1 : 2
 """
 msgs = lintstr(s)
 @test isempty(msgs)
@@ -92,4 +85,5 @@ msgs = lintstr(s)
 @testset "E437" begin
     @test messageset(lintstr("@compat()")) == Set([:E437])
     @test messageset(lintstr("@compat(1, 2)")) == Set([:E437])
+end
 end
