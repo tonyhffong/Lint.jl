@@ -38,6 +38,11 @@ end
 # if strict == false, it won't generate lint warnings, just return :Any
 
 function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
+    if sym == :end
+        # TODO: handle this special case elsewhere
+        return :var
+    end
+
     lookupresult = lookup(ctx, sym, register=true)
 
     result = if isnull(lookupresult)

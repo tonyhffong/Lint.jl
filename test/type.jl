@@ -48,8 +48,8 @@ end
     type MyType{SomeType<:Real}
     end
     """)
-    @test_broken messageset(msgs) == Set([:E538])
-    @test_broken contains(msgs[1].message, "known type in parametric data type, use {T<:...}")
+    @test messageset(msgs) == Set([:E538])
+    @test contains(msgs[1].message, "known type in parametric data type, use {T<:...}")
 end
 
 # TODO: this inner constructor syntax is deprecated

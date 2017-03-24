@@ -84,8 +84,8 @@ type LintStack
     end
 end
 
-function addtype!(s::LintStack, t::Symbol)
-    s.localvars[end][t] = VarInfo(-1, Type)
+function addtype!(s::LintStack, t::Symbol, loc::Location=UNKNOWN_LOCATION)
+    s.declglobs[t] = VarInfo(loc, Type)
 end
 
 function LintStack(t::Bool)
@@ -132,6 +132,7 @@ type LintContext
             0, Any[LintStack(true)], LintMessage[], _ -> true,
             copy(LINT_IGNORE_DEFAULT), 0)
 end
+location(ctx::LintContext) = Location(ctx.file, ctx.line)
 
 function LintContext(file::AbstractString; ignore::Array{LintIgnore, 1} = LintIgnore[])
     ctx = LintContext()
