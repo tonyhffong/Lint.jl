@@ -154,24 +154,26 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     typeRHShints = Dict{Symbol, Any}() # x = 1
     assertions = Dict{Symbol, Any}() # e.g. x::Int
 
-    resolveArguments = (sube, position) -> begin # zero position means it's not called at the top level
-        if isa(sube, Symbol)
-            if sube in argsSeen
-                msg(ctx, :E331, sube, "duplicate argument")
-            elseif sube in keys(stacktop.localarguments[end])
-                msg(ctx, :E331, sube,
-                    "function argument duplicates static parameter name")
-            end
-            if position != 0 && optionalposition != 0
-                msg(ctx, :E411, sube, "non-default argument following default arguments")
-            end
-            push!(argsSeen, sube)
-            stacktop.localarguments[end][sube] = VarInfo(ctx.line)
-            if isstaged
-                assertions[sube] = Type
-            end
-            return sube
-        elseif sube.head == :parameters
+    function resolveArguments(sube::Symbol, position)
+        if sube in argsSeen
+            msg(ctx, :E331, sube, "duplicate argument")
+        elseif sube in keys(stacktop.localarguments[end])
+            msg(ctx, :E331, sube,
+                "function argument duplicates static parameter name")
+        end
+        if position != 0 && optionalposition != 0
+            msg(ctx, :E411, sube, "non-default argument following default arguments")
+        end
+        push!(argsSeen, sube)
+        stacktop.localarguments[end][sube] = VarInfo(ctx.line)
+        if isstaged
+            assertions[sube] = Type
+        end
+        return sube
+    end
+    function resolveArguments(sube, position)
+        # zero position means it's not called at the top level
+        if isexpr(sube, :parameters)
             for (j,kw) in enumerate(sube.args)
                 if isexpr(kw, :(...))
                     if j != length(sube.args)
@@ -195,7 +197,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     resolveArguments(kw, 0)
                 end
             end
-        elseif sube.head == :(=) || sube.head == :kw
+        elseif isexpr(sube, [:(=), :kw])
             if position != 0
                 optionalposition = position
             end
@@ -207,7 +209,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     typeRHShints[sym] = rhstype
                 end
             end
-        elseif sube.head == :(::)
+        elseif isexpr(sube, :(::))
             if length(sube.args) > 1
                 sym = resolveArguments(sube.args[1], 0)
                 if !isstaged
@@ -226,7 +228,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             else
                 lintfuncargtype(sube.args[1], ctx)
             end
-        elseif sube.head == :(...)
+        elseif isexpr(sube, :(...))
             if position != 0 && position != length(ex.args[1].args)
                 msg(ctx, :E413, sube, "positional ellipsis ... can only be the last argument")
             end
@@ -240,12 +242,12 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     assertions[sym] = Tuple{Vararg{Any}}
                 end
             end
-        elseif sube.head == :($)
+        elseif isexpr(sube, :($))
             lintexpr(sube.args[1], ctx)
         else
             msg(ctx, :E131, sube, "Lint does not understand argument #$(position)")
         end
-        return nothing
+        return
     end
 
     params = nothing

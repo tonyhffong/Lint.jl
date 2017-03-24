@@ -89,41 +89,10 @@ function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
     end
     problem = false
     m = nothing
-    lastpart = nothing
-    try
-        if ex.args[1] == :(.)
-            path = string(ctx.callstack[end-1].moduleName)
-            for i in 2:length(ex.args)
-                path = path * "." * string(ex.args[i])
-            end
-            m = eval(Main, parse(path))
-            lastpart = ex.args[end]
-        else
-            register_global(
-                ctx,
-                ex.args[1],
-                VarInfo(Location(ctx.file, ctx.line))
-            )
-            eval(Main, ex)
-            lastpart = ex.args[end]
-            if length(ex.args) == 2
-                m = eval(Main, :($(ex.args[1]).$(ex.args[2])))
-            else
-                m = eval(Main, ex.args[1])
-            end
-        end
-    catch # er
-        problem = true
-        # println(er)
-        # println(ex)
-    end
-    if !problem
-        t = typeof(m)
-        if t == Module
-            union!(ctx.callstack[end].imports, names(m, all))
-        elseif typeof(lastpart) == Symbol
-            push!(ctx.callstack[end].imports, lastpart)
-            #push!(ctx.callstack[end].declglobs, lastport)
-        end
-    end
+    register_global(
+        ctx,
+        ex.args[end],
+        VarInfo(Location(ctx.file, ctx.line))
+    )
+    push!(ctx.callstack[end].imports, ex.args[end])
 end
