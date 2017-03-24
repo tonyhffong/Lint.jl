@@ -10,8 +10,7 @@ function lintmodule(ex::Expr, ctx::LintContext)
 
     lintexpr(ex.args[3], ctx)
 
-    undefs = setdiff(stacktop.exports, stacktop.types)
-    undefs = setdiff(undefs, stacktop.functions)
+    undefs = setdiff(stacktop.exports, stacktop.functions)
     undefs = setdiff(undefs, stacktop.macros)
     undefs = setdiff(undefs, keys(stacktop.declglobs))
     undefs = setdiff(undefs, keys(stacktop.localvars[1]))
@@ -35,7 +34,7 @@ function lintusing(ex::Expr, ctx::LintContext)
             register_global(
                 ctx,
                 s,
-                Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
+                VarInfo(Location(ctx.file, ctx.line))
            )
         end
     end
@@ -53,7 +52,7 @@ function lintusing(ex::Expr, ctx::LintContext)
                     register_global(
                         ctx,
                         n,
-                        Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
+                        VarInfo(Location(ctx.file, ctx.line))
                    )
                 end
             end
@@ -103,7 +102,7 @@ function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
             register_global(
                 ctx,
                 ex.args[1],
-                Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
+                VarInfo(Location(ctx.file, ctx.line))
             )
             eval(Main, ex)
             lastpart = ex.args[end]

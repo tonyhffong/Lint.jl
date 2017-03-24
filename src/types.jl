@@ -9,21 +9,14 @@ function linttype(ex::Expr, ctx::LintContext)
     # TODO: this duplicates the code in functions.jl
     processCurly = (sube)->begin
         for i in 2:length(sube.args)
-            adt= sube.args[i]
+            adt = sube.args[i]
             if isa(adt, Symbol)
                 typefound = isstandardtype(adt)
-                if !typefound
-                    for j in 1:length(ctx.callstack)
-                        if in(adt, ctx.callstack[j].types)
-                            typefound = true
-                            break
-                        end
-                    end
-                end
                 if typefound && adt != :T
                     msg(ctx, :I393, adt, "using an existing type as type parameter name is probably a typo")
                 end
-                push!(ctx.callstack[end].types, adt)
+                # TODO: review all uses of this function
+                addtype!(ctx.callstack[end], adt)
                 push!(typeparams, adt)
             elseif isexpr(adt, :(<:))
                 temptype = adt.args[1]
@@ -31,14 +24,6 @@ function linttype(ex::Expr, ctx::LintContext)
 
                 if temptype != :T
                     typefound = isstandardtype(temptype)
-                    if !typefound
-                        for j in 1:length(ctx.callstack)
-                            if in(temptype, ctx.callstack[j].types)
-                                typefound = true
-                                break
-                            end
-                        end
-                    end
                     if typefound
                         msg(ctx, :E538, temptype, "known type in parametric data type, " *
                             "use {T<:...}")
@@ -50,7 +35,7 @@ function linttype(ex::Expr, ctx::LintContext)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
                 end
-                push!(ctx.callstack[end].types, temptype)
+                addtype!(ctx.callstack[end], temptype)
                 push!(typeparams, temptype)
             end
         end
@@ -80,7 +65,7 @@ function linttype(ex::Expr, ctx::LintContext)
         if islower(string(tname)[1])
             msg(ctx, :I771, tname, "type names should start with an upper case")
         end
-        push!(ctx.callstack[end-1].types, tname)
+        addtype!(ctx.callstack[end-1], tname)
     end
 
     fields = Any[]
@@ -144,20 +129,20 @@ end
 function linttypealias(ex::Expr, ctx::LintContext)
     # TODO: make this just part of lintassignment
     if isa(ex.args[1], Symbol)
-        push!(ctx.callstack[end].types, withincurly(ex.args[1]))
+        addtype!(ctx.callstack[end], withincurly(ex.args[1]))
     end
 end
 
 function lintabstract(ex::Expr, ctx::LintContext)
     if isa(ex.args[1], Symbol)
-        push!(ctx.callstack[end].types, ex.args[1])
+        addtype!(ctx.callstack[end], ex.args[1])
     elseif isexpr(ex.args[1], :curly)
-        push!(ctx.callstack[end].types, ex.args[1].args[1])
+        addtype!(ctx.callstack[end], ex.args[1].args[1])
     elseif isexpr(ex.args[1], :(<:))
         if isa(ex.args[1].args[1], Symbol)
-            push!(ctx.callstack[end].types, ex.args[1].args[1])
+            addtype!(ctx.callstack[end], ex.args[1].args[1])
         elseif isexpr(ex.args[1].args[1], :curly)
-            push!(ctx.callstack[end].types, ex.args[1].args[1].args[1])
+            addtype!(ctx.callstack[end], ex.args[1].args[1].args[1])
         end
     end
 end
@@ -166,6 +151,6 @@ function lintbitstype(ex::Expr, ctx::LintContext)
     if !isa(ex.args[2], Symbol)
         msg(ctx, :E524, "bitstype needs its 2nd argument to be a new type symbol")
     else
-        push!(ctx.callstack[end].types, ex.args[2])
+        addtype!(ctx.callstack[end], ex.args[2])
     end
 end

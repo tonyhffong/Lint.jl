@@ -1,14 +1,13 @@
-module TmpTestBase
-export foobar
-foobar(x) = x
-end
+@testset "using" begin
+    @test_broken isempty(lintstr("""
+    module TmpTestBase
+        export foobar
+        foobar(x) = x
+    end
 
-
-s = """
-module Test
-using TmpTestBase
-g(x) = foobar(x)
+    module Test
+        using ..TmpTestBase
+        g(x) = foobar(x)
+    end
+    """))
 end
-"""
-msgs = lintstr(s)
-@test isempty(msgs)

@@ -1,3 +1,4 @@
+@testset "Globals" begin
 s = """
 y=1
 function f(x)
@@ -94,3 +95,4 @@ msgs = lintfile("FakeJulia/base/file2.jl")
 
 msgs = lintfile("filename","something")
 @test msgs[1].code == :E321
+end

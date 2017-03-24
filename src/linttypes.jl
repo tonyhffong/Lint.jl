@@ -1,22 +1,41 @@
+immutable Location
+    file::String
+    line::Int
+end
+file(loc::Location) = loc.file
+line(loc::Location) = loc.line
+
+const UNKNOWN_LOCATION = Location("unknown", -1)
+
+# TODO: Replace with Location(file, line)
 type LintMessage
-    file    :: Compat.UTF8String
+    file    :: String
     code    :: Symbol #[E|W|I][1-9][1-9][1-9]
-    scope   :: Compat.UTF8String
+    scope   :: String
     line    :: Int
-    variable:: Compat.UTF8String
-    message :: Compat.UTF8String
+    variable:: String
+    message :: String
 end
 
 type VarInfo
-    line::Int
+    location::Location
     typeactual::Type
-    typeexpr::Union{Expr, Symbol} # We may know that it is Array{T, 1}, though we do not know T, for example
-    VarInfo() = new(-1, Any, :())
-    VarInfo(l::Int) = new(l, Any, :())
-    VarInfo(l::Int, t::Type) = new(l, t, :())
-    VarInfo(l::Int, ex::Expr) = new(l, Any, ex)
-    VarInfo(ex::Expr) = new(-1, Any, ex)
+    # We may know that it is Array{T, 1}, though we do not know T, for example
+    typeexpr::Union{Expr, Symbol}
+
+    # how many times the variable is used
+    usages::Int
+
+    VarInfo() = new(UNKNOWN_LOCATION, Any, :(), 0)
+    VarInfo(loc::Location, t::Type = Any) = new(loc, t, :(), 0)
+    VarInfo(l::Int) = new(Location("unknown", l), Any, :(), 0)
+    VarInfo(l::Int, t::Type) = new(Location("unknown", l), t, :(), 0)
+    VarInfo(l::Int, ex::Expr) = new(Location("unknown", l), Any, ex, 0)
+    VarInfo(ex::Expr) = new(UNKNOWN_LOCATION, Any, ex, 0)
 end
+file(vi::VarInfo) = file(vi.location)
+line(vi::VarInfo) = line(vi.location)
+registeruse!(vi::VarInfo) = (vi.usages += 1; vi)
 
 type PragmaInfo
     line :: Int
@@ -24,53 +43,49 @@ type PragmaInfo
 end
 
 type LintStack
-    declglobs     :: Dict{Symbol, Any}
-    localarguments:: Array{Dict{Symbol, Any}, 1}
-    localusedargs :: Array{Set{Symbol}, 1}
-    localvars     :: Array{Dict{Symbol, Any}, 1}
-    localusedvars :: Array{Set{Symbol}, 1}
-    usedvars      :: Set{Symbol}
+    declglobs     :: Dict{Symbol, VarInfo}
+    localarguments:: Array{Dict{Symbol, VarInfo}, 1}
+    localvars     :: Array{Dict{Symbol, VarInfo}, 1}
     oosvars       :: Set{Symbol}
-    pragmas       :: Dict{Compat.UTF8String, PragmaInfo} # the boolean denotes if the pragma has been used
+    pragmas       :: Dict{String, PragmaInfo} # the boolean denotes if the pragma has been used
     calledfuncs   :: Set{Symbol}
     inModule      :: Bool
     moduleName    :: Any
-    types         :: Set{Any}
     typefields    :: Dict{Any, Any}
     exports       :: Set{Any}
     imports       :: Set{Any}
     functions     :: Set{Any}
     modules       :: Set{Any}
     macros        :: Set{Any}
-    linthelpers   :: Dict{Compat.UTF8String, Any}
+    linthelpers   :: Dict{String, Any}
     data          :: Dict{Symbol, Any}
     isTop         :: Bool
     LintStack() = begin
         x = new(
             Dict{Symbol,Any}(),
             [Dict{Symbol, Any}()],
-            [Set{Symbol}()],
             [Dict{Symbol, Any}()],
-            [Set{Symbol}()],
             Set{Symbol}(),
-            Set{Symbol}(),
-            Dict{Compat.UTF8String, Bool}(), #pragmas
+            Dict{String, Bool}(), #pragmas
             Set{Symbol}(),
             false,
             Symbol(""),
-            Set{Any}(),
             Dict{Any,Any}(),
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),
-            Dict{Compat.UTF8String, Any}(),
+            Dict{String, Any}(),
             Dict{Symbol, Any}(),
             false,
            )
         x
     end
+end
+
+function addtype!(s::LintStack, t::Symbol)
+    s.localvars[end][t] = VarInfo(-1, Type)
 end
 
 function LintStack(t::Bool)
@@ -94,15 +109,14 @@ end
 const LINT_IGNORE_DEFAULT = LintIgnore[LintIgnore(:W651, "")]
 
 type LintContext
-    file         :: Compat.UTF8String
+    file         :: String
     line         :: Int
     lineabs      :: Int
-    scope        :: Compat.UTF8String # usually the function name
+    scope        :: String # usually the function name
     isstaged     :: Bool
-    path         :: Compat.UTF8String
+    path         :: String
     included     :: Array{AbstractString,1} # list of files included
     globals      :: Dict{Symbol,Any}
-    types        :: Dict{Symbol,Any}
     functions    :: Dict{Symbol,Any}
     functionLvl  :: Int
     macroLvl     :: Int
@@ -114,7 +128,7 @@ type LintContext
     ignore       :: Array{LintIgnore, 1}
     ifdepth      :: Int
     LintContext() = new("none", 0, 1, "", false, ".", AbstractString[],
-            Dict{Symbol,Any}(), Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0,
+            Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0,
             0, Any[LintStack(true)], LintMessage[], _ -> true,
             copy(LINT_IGNORE_DEFAULT), 0)
 end
@@ -146,7 +160,8 @@ function popcallstack(ctx::LintContext)
     pop!(ctx.callstack)
 end
 
-function register_global(ctx::LintContext, glob, info, callstackindex=length(ctx.callstack))
+function register_global(ctx::LintContext, glob, info::VarInfo,
+                         callstackindex=length(ctx.callstack))
     ctx.callstack[callstackindex].declglobs[glob] = info
     filter!(message -> begin
                 return !(message.code == :E321 && message.variable == string(glob) &&
@@ -154,4 +169,43 @@ function register_global(ctx::LintContext, glob, info, callstackindex=length(ctx
             end,
         ctx.messages
     )
+end
+
+function lookup(ctx::LintContext, sym::Symbol;
+                register=false)::Nullable{VarInfo}
+    use!(x) = register ? registeruse!(x) : x
+    stacktop = ctx.callstack[end]
+
+    for varframe in @view(stacktop.localvars[end:-1:1])
+        if sym in keys(varframe)
+            return use!(varframe[sym])
+        end
+    end
+    for argframe in @view(stacktop.localarguments[end:-1:1])
+        if sym in keys(argframe)
+            return use!(argframe[sym])
+        end
+    end
+    for stackframe in @view(ctx.callstack[end:-1:1])
+        if sym in stackframe.functions
+            return VarInfo(-1, Function)
+        elseif sym in stackframe.modules
+            return VarInfo(-1, Module)
+        elseif sym in stackframe.imports
+            return VarInfo(-1, Any)
+        elseif sym in keys(stackframe.declglobs)
+            return stackframe.declglobs[sym]
+        end
+    end
+
+    # check standard library
+    val = stdlibobject(sym)
+    if !isnull(val)
+        if isa(get(val), Type)
+            return VarInfo(-1, Type{get(val)})
+        else
+            return VarInfo(-1, typeof(get(val)))
+        end
+    end
+    return Nullable{VarInfo}()
 end

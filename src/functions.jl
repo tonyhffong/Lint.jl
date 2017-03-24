@@ -40,6 +40,7 @@ function initcommoncollfuncs()
 end
 
 function lintfuncargtype(ex, ctx::LintContext)
+    lintexpr(ex, ctx)
     if isexpr(ex, :curly)
         st = 2
         en = 1
@@ -137,13 +138,16 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         pushcallstack(ctx)
     else
         push!(ctx.callstack[end].localarguments, Dict{Symbol,Any}())
-        push!(ctx.callstack[end].localusedargs, Set{Symbol}())
     end
     ctx.functionLvl = ctx.functionLvl + 1
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
     stacktop = ctx.callstack[end]
-    # temporaryTypes are the type parameters in curly brackets, make them legal in the current scope
-    union!(stacktop.types, temporaryTypes)
+    # temporaryTypes are the type parameters in curly brackets, make them legal
+    # in the current scope
+    for t in temporaryTypes
+        # TODO: infer when t is a type
+        stacktop.localarguments[end][t] = VarInfo(ctx.line)
+    end
 
     argsSeen = Set{Symbol}()
     optionalposition = 0
@@ -152,8 +156,11 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
 
     resolveArguments = (sube, position) -> begin # zero position means it's not called at the top level
         if isa(sube, Symbol)
-            if in(sube, argsSeen)
+            if sube in argsSeen
                 msg(ctx, :E331, sube, "duplicate argument")
+            elseif sube in keys(stacktop.localarguments[end])
+                msg(ctx, :E331, sube,
+                    "function argument duplicates static parameter name")
             end
             if position != 0 && optionalposition != 0
                 msg(ctx, :E411, sube, "non-default argument following default arguments")
@@ -296,7 +303,6 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         popcallstack(ctx)
     else
         pop!(ctx.callstack[end].localarguments)
-        pop!(ctx.callstack[end].localusedargs)
     end
     ctx.scope = ""
     ctx.isstaged = prev_isstaged
@@ -305,7 +311,6 @@ end
 function lintlambda(ex::Expr, ctx::LintContext)
     stacktop = ctx.callstack[end]
     push!(stacktop.localarguments, Dict{Symbol, Any}())
-    push!(stacktop.localusedargs, Set{Symbol}())
     pushVarScope(ctx)
     # check for conflicts on lambda arguments
     checklambdaarg = (sym)->begin
@@ -368,7 +373,6 @@ function lintlambda(ex::Expr, ctx::LintContext)
 
     popVarScope(ctx, checkargs=true)
     pop!(stacktop.localarguments)
-    pop!(stacktop.localusedargs)
 end
 
 function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
