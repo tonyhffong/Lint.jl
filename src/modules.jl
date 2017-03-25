@@ -11,8 +11,7 @@ function lintmodule(ex::Expr, ctx::LintContext)
 
     lintexpr(ex.args[3], ctx)
 
-    undefs = setdiff(stacktop.exports, stacktop.macros)
-    undefs = setdiff(undefs, keys(stacktop.declglobs))
+    undefs = setdiff(stacktop.exports, keys(stacktop.declglobs))
     undefs = setdiff(undefs, keys(stacktop.localvars[1]))
     undefs = setdiff(undefs, stacktop.imports)
 

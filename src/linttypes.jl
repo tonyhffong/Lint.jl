@@ -52,9 +52,8 @@ type LintStack
     inModule      :: Bool
     moduleName    :: Any
     typefields    :: Dict{Any, Any}
-    exports       :: Set{Any}
-    imports       :: Set{Any}
-    macros        :: Set{Any}
+    exports       :: Set{Symbol}
+    imports       :: Set{Symbol}
     linthelpers   :: Dict{String, Any}
     data          :: Dict{Symbol, Any}
     isTop         :: Bool
@@ -69,7 +68,6 @@ type LintStack
             false,
             Symbol(""),
             Dict{Any,Any}(),
-            Set{Any}(),
             Set{Any}(),
             Set{Any}(),
             Dict{String, Any}(),

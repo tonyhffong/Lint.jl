@@ -4,14 +4,15 @@ function lintmacro(ex::Expr, ctx::LintContext)
         return
     end
     fname = ex.args[1].args[1]
-    push!(ctx.callstack[end].macros, Symbol("@" * string(fname)))
+    # TODO: use the same technique as for functions
+    addconst!(ctx.callstack[end], Symbol("@", fname), Function, location(ctx))
     push!(ctx.callstack[end].localarguments, Dict{Symbol, Any}())
 
+    # TODO: reuse the code of functions
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
     stacktop = ctx.callstack[end]
-    resolveArguments = (sube) -> begin
-        if typeof(sube) == Symbol
-            stacktop.localarguments[end][sube]=VarInfo(ctx.line)
+    function resolveArguments(sube::Symbol)
+        stacktop.localarguments[end][sube]=VarInfo(ctx.line)
         #= # I don't think macro arguments use any of these
         elseif sube.head == :parameters
             for kw in sube.args
@@ -26,7 +27,9 @@ function lintmacro(ex::Expr, ctx::LintContext)
             end
             resolveArguments(sube.args[1])
         =#
-        elseif sube.head == :(...) || sube.head == :(::)
+    end
+    function resolveArguments(sube)
+        if isexpr(sube, :(...)) || isexpr(sube, :(::))
             resolveArguments(sube.args[1])
         #= # macro definition inside another macro? highly unlikely
         elseif sube.head == :($)
