@@ -54,7 +54,6 @@ type LintStack
     typefields    :: Dict{Any, Any}
     exports       :: Set{Any}
     imports       :: Set{Any}
-    functions     :: Set{Any}
     macros        :: Set{Any}
     linthelpers   :: Dict{String, Any}
     data          :: Dict{Symbol, Any}
@@ -73,7 +72,6 @@ type LintStack
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),
-            Set{Any}(),
             Dict{String, Any}(),
             Dict{Symbol, Any}(),
             false,
@@ -82,8 +80,10 @@ type LintStack
     end
 end
 
-function addtype!(s::LintStack, t::Symbol, loc::Location=UNKNOWN_LOCATION)
-    s.declglobs[t] = VarInfo(loc, Type)
+function addconst!(s::LintStack, name::Symbol, typ::Type,
+                   loc::Location=UNKNOWN_LOCATION)
+    # TODO: check if symbol already found
+    s.declglobs[name] = VarInfo(loc, typ)
 end
 
 function LintStack(t::Bool)
@@ -115,7 +115,6 @@ type LintContext
     path         :: String
     included     :: Array{AbstractString,1} # list of files included
     globals      :: Dict{Symbol,Any}
-    functions    :: Dict{Symbol,Any}
     functionLvl  :: Int
     macroLvl     :: Int
     macrocallLvl :: Int
@@ -126,7 +125,7 @@ type LintContext
     ignore       :: Array{LintIgnore, 1}
     ifdepth      :: Int
     LintContext() = new("none", 0, 1, "", false, ".", AbstractString[],
-            Dict{Symbol,Any}(), Dict{Symbol,Any}(), 0, 0, 0,
+            Dict{Symbol,Any}(), 0, 0, 0,
             0, Any[LintStack(true)], LintMessage[], _ -> true,
             copy(LINT_IGNORE_DEFAULT), 0)
 end
@@ -186,9 +185,7 @@ function lookup(ctx::LintContext, sym::Symbol;
         end
     end
     for stackframe in @view(ctx.callstack[end:-1:1])
-        if sym in stackframe.functions
-            return VarInfo(-1, Function)
-        elseif sym in stackframe.imports
+        if sym in stackframe.imports
             return VarInfo(-1, Any)
         elseif sym in keys(stackframe.declglobs)
             return stackframe.declglobs[sym]

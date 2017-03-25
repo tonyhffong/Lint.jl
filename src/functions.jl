@@ -87,16 +87,21 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         # do nothing
     elseif isexpr(ex.args[1].args[1], :(.))
         fname = ex.args[1].args[1]
-        push!(ctx.callstack[end].functions, fname.args[end])
+        # TODO: this isn't quite right; find a counterexample
+        # addconst!(ctx.callstack[end], fname.args[end], Function, location(ctx))
     elseif isa(ex.args[1].args[1], Symbol)
         fname = ex.args[1].args[1]
-        push!(ctx.callstack[end].functions, fname)
+        # TODO: check if we might be extending an existing function
+        addconst!(ctx.callstack[end], fname, Function, location(ctx))
     elseif !isa(ex.args[1].args[1], Expr)
         msg(ctx, :E121, ex.args[1].args[1], "Lint does not understand the expression")
         return
     elseif ex.args[1].args[1].head == :curly
         fname = ex.args[1].args[1].args[1]
-        push!(ctx.callstack[end].functions, fname)
+        if isa(fname, Symbol)
+            # TODO: check if we might be extending an existing function
+            addconst!(ctx.callstack[end], fname, Function, location(ctx))
+        end
         for i in 2:length(ex.args[1].args[1].args)
             adt = ex.args[1].args[1].args[i]
             if isa(adt, Symbol)

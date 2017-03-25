@@ -1,10 +1,8 @@
 # module, using, import, export
 
 function lintmodule(ex::Expr, ctx::LintContext)
-    # TODO: check duplicate module symbol
-    # TODO: make constness clear
-    ctx.callstack[end].declglobs[ex.args[2]] =
-        VarInfo(Location(ctx.file, ctx.line), Module)
+    addconst!(ctx.callstack[end], ex.args[2], Module,
+              Location(ctx.file, ctx.line))
     pushcallstack(ctx)
     stacktop = ctx.callstack[end]
     stacktop.inModule = true
@@ -13,8 +11,7 @@ function lintmodule(ex::Expr, ctx::LintContext)
 
     lintexpr(ex.args[3], ctx)
 
-    undefs = setdiff(stacktop.exports, stacktop.functions)
-    undefs = setdiff(undefs, stacktop.macros)
+    undefs = setdiff(stacktop.exports, stacktop.macros)
     undefs = setdiff(undefs, keys(stacktop.declglobs))
     undefs = setdiff(undefs, keys(stacktop.localvars[1]))
     undefs = setdiff(undefs, stacktop.imports)

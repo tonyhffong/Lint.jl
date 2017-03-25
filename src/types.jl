@@ -16,7 +16,7 @@ function linttype(ex::Expr, ctx::LintContext)
                     msg(ctx, :I393, adt, "using an existing type as type parameter name is probably a typo")
                 end
                 # TODO: review all uses of this function
-                # addtype!(ctx.callstack[end], adt, location(ctx))
+                # addconst!(ctx.callstack[end], adt, location(ctx))
                 push!(typeparams, adt)
             elseif isexpr(adt, :(<:))
                 temptype = adt.args[1]
@@ -35,7 +35,7 @@ function linttype(ex::Expr, ctx::LintContext)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
                 end
-                # addtype!(ctx.callstack[end], temptype, location(ctx))
+                # addconst!(ctx.callstack[end], temptype, location(ctx))
                 push!(typeparams, temptype)
             end
         end
@@ -65,7 +65,7 @@ function linttype(ex::Expr, ctx::LintContext)
         if islower(string(tname)[1])
             msg(ctx, :I771, tname, "type names should start with an upper case")
         end
-        addtype!(ctx.callstack[end-1], tname, location(ctx))
+        addconst!(ctx.callstack[end-1], tname, Type, location(ctx))
     end
 
     fields = Any[]
@@ -118,21 +118,21 @@ end
 function linttypealias(ex::Expr, ctx::LintContext)
     # TODO: make this just part of lintassignment
     if isa(ex.args[1], Symbol)
-        addtype!(ctx.callstack[end], withincurly(ex.args[1]),
+        addconst!(ctx.callstack[end], withincurly(ex.args[1]), Type,
                  location(ctx))
     end
 end
 
 function lintabstract(ex::Expr, ctx::LintContext)
     if isa(ex.args[1], Symbol)
-        addtype!(ctx.callstack[end], ex.args[1], location(ctx))
+        addconst!(ctx.callstack[end], ex.args[1], Type, location(ctx))
     elseif isexpr(ex.args[1], :curly)
-        addtype!(ctx.callstack[end], ex.args[1].args[1], location(ctx))
+        addconst!(ctx.callstack[end], ex.args[1].args[1], Type, location(ctx))
     elseif isexpr(ex.args[1], :(<:))
         if isa(ex.args[1].args[1], Symbol)
-            addtype!(ctx.callstack[end], ex.args[1].args[1], location(ctx))
+            addconst!(ctx.callstack[end], ex.args[1].args[1], Type, location(ctx))
         elseif isexpr(ex.args[1].args[1], :curly)
-            addtype!(ctx.callstack[end], ex.args[1].args[1].args[1], location(ctx))
+            addconst!(ctx.callstack[end], ex.args[1].args[1].args[1], Type, location(ctx))
         end
     end
 end
@@ -141,6 +141,6 @@ function lintbitstype(ex::Expr, ctx::LintContext)
     if !isa(ex.args[2], Symbol)
         msg(ctx, :E524, "bitstype needs its 2nd argument to be a new type symbol")
     else
-        addtype!(ctx.callstack[end], ex.args[2], location(ctx))
+        addconst!(ctx.callstack[end], ex.args[2], Type, location(ctx))
     end
 end
