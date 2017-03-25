@@ -76,7 +76,7 @@ function versionconstraint(ex)
         arr = Any[]
         if vc1[1] != nothing
             if vc2[1] != nothing
-                push!(arr, _->vc1[1](_) && vc2[1](_))
+                push!(arr, x->vc1[1](x) && vc2[1](x))
             else
                 push!(arr, vc1[1])
             end
@@ -86,7 +86,7 @@ function versionconstraint(ex)
             push!(arr, nothing)
         end
         if vc1[2] != nothing && vc2[2] != nothing
-            push!(arr, _->vc1[2](_) || vc2[2](_))
+            push!(arr, x->vc1[2](x) || vc2[2](x))
         else
             push!(arr, nothing)
         end
@@ -96,14 +96,14 @@ function versionconstraint(ex)
         vc2 = versionconstraint(ex.args[2])
         arr = Any[]
         if vc1[1] != nothing && vc2[1] != nothing
-                push!(arr, _->vc1[1](_) || vc2[1](_))
+                push!(arr, x->vc1[1](x) || vc2[1](x))
         else
             push!(arr, nothing)
         end
 
         if vc1[2] != nothing
             if vc2[2] != nothing
-                push!(arr, _->vc1[2](_) && vc2[2](_))
+                push!(arr, x->vc1[2](x) && vc2[2](x))
             else
                 push!(arr, vc1[2])
             end
