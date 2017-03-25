@@ -96,17 +96,6 @@ function linttype(ex::Expr, ctx::LintContext)
             if def.args[1].head == :tuple
                 # if julia supports anonymous constructor syntactic sugar, remove this, and make sure ctx.scope is type name
                 msg(ctx, :E417, "anonymous function inside type definition")
-            elseif isexpr(def.args[1].args[1], :curly)
-                for i in 2:length(def.args[1].args[1].args)
-                    fp = def.args[1].args[1].args[i]
-                    if isa(fp, Symbol) && in(fp, typeparams)
-                        msg(ctx, :E523, fp, "constructor parameter collides with a type parameter")
-                    end
-                    if isexpr(fp, :(<:)) && in(fp.args[1], typeparams)
-                        tmp = fp.args[1]
-                        msg(ctx, :E523, tmp, "constructor parameter collides with a type parameter")
-                    end
-                end
             end
             push!(funcs, (def, ctx.line))
         end

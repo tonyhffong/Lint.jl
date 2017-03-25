@@ -256,27 +256,21 @@ msgs = lintstr(s)
 @test msgs[1].code == :I671
 @test contains(msgs[1].message, "new is provided with fewer arguments than fields")
 
-s = """
-type MyType{T}
-    b::T
-    MyType{T}(x::T) = new(x)
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E523
-@test msgs[1].variable == "T"
-@test contains(msgs[1].message, "constructor parameter collides with a type parameter")
+@testset "Inner Constructors" begin
+    @test isempty(lintstr("""
+    type MyType{T}
+        b::T
+        (::Type{MyType}){T}(x::T) = new{T}(x)
+    end
+    """))
 
-s = """
-type MyType{T}
-    b::T
-    MyType{T<:Integer}(x::T) = new(x)
+    @test isempty(lintstr("""
+    type MyType{T}
+        b::T
+        (::Type{MyType}){T<:Integer}(x::T) = new{T}(x)
+    end
+    """))
 end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E523
-@test msgs[1].variable == "T"
-@test contains(msgs[1].message, "constructor parameter collides with a type parameter")
 
 s = """
 type MyType

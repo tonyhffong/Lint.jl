@@ -98,7 +98,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E519   | (merged into E522)
 | E521   | (merged into E522)
 | E522   | indexing T with index types [S, U] is not supported
-| E523   | constructor parameter collides with a type parameter
+| E523   | (no longer used)
 | E524   | bitstype needs its 2nd argument to be a new type symbol
 | E525   | is of an immutable type
 | E531   | multiple key types detected. Use Dict{Any,V}() for mixed type dict
