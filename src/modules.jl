@@ -1,7 +1,10 @@
 # module, using, import, export
 
 function lintmodule(ex::Expr, ctx::LintContext)
-    push!(ctx.callstack[end].modules, ex.args[2])
+    # TODO: check duplicate module symbol
+    # TODO: make constness clear
+    ctx.callstack[end].declglobs[ex.args[2]] =
+        VarInfo(Location(ctx.file, ctx.line), Module)
     pushcallstack(ctx)
     stacktop = ctx.callstack[end]
     stacktop.inModule = true

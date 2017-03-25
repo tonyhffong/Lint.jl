@@ -55,7 +55,6 @@ type LintStack
     exports       :: Set{Any}
     imports       :: Set{Any}
     functions     :: Set{Any}
-    modules       :: Set{Any}
     macros        :: Set{Any}
     linthelpers   :: Dict{String, Any}
     data          :: Dict{Symbol, Any}
@@ -71,7 +70,6 @@ type LintStack
             false,
             Symbol(""),
             Dict{Any,Any}(),
-            Set{Any}(),
             Set{Any}(),
             Set{Any}(),
             Set{Any}(),
@@ -190,8 +188,6 @@ function lookup(ctx::LintContext, sym::Symbol;
     for stackframe in @view(ctx.callstack[end:-1:1])
         if sym in stackframe.functions
             return VarInfo(-1, Function)
-        elseif sym in stackframe.modules
-            return VarInfo(-1, Module)
         elseif sym in stackframe.imports
             return VarInfo(-1, Any)
         elseif sym in keys(stackframe.declglobs)
