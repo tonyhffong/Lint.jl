@@ -4,7 +4,7 @@ function popVarScope(ctx::LintContext; checkargs::Bool=false)
     unused = setdiff(keys(stacktop.localvars[end]), stacktop.localusedvars[end])
     if ctx.quoteLvl == 0
         for v in unused
-            if !pragmaexists("Ignore unused $v", ctx) && v != :_
+            if !pragmaexists("Ignore unused $v", ctx) && !startswith(string(v), '_')
                 ctx.line = stacktop.localvars[end][v].line
                 msg(ctx, :W341, v, "local variable declared but not used")
             end
@@ -12,7 +12,7 @@ function popVarScope(ctx::LintContext; checkargs::Bool=false)
         if checkargs
             unusedargs = setdiff(keys(stacktop.localarguments[end]), stacktop.localusedargs[end])
             for v in unusedargs
-                if !pragmaexists("Ignore unused $v", ctx) && v != :_
+                if !pragmaexists("Ignore unused $v", ctx) && !startswith(string(v), '_')
                     ctx.line = stacktop.localarguments[end][v].line
                     msg(ctx, :I382, v, "argument declared but not used")
                 end
