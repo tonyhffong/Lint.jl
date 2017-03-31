@@ -54,13 +54,7 @@ include("init.jl")
 include("result.jl")
 include("dynamic.jl")
 
-function lintpkg{T<:AbstractString}(pkg::T; returnMsgs=nothing)
-    # FIXME: deprecated summer 2016, remove after reasonable amount of time
-    if returnMsgs ≢ nothing
-        Base.depwarn(
-            "returnMsgs keyword argument is deprecated; remove it",
-            :lintfile)
-    end
+function lintpkg(pkg::AbstractString)
     p = joinpath(Pkg.dir(pkg), "src", basename(pkg) * ".jl")
     if !ispath(p)
         throw("cannot find path: " * p)
@@ -75,7 +69,7 @@ If file is in src, lint Package.jl and its includes.
 If file is in test, lint runtests.jl and its includes.
 If file is in base lint all files in base dir.
 """
-function lintpkgforfile{T<:AbstractString}(path::T, ctx::LintContext=LintContext())
+function lintpkgforfile(path::AbstractString, ctx::LintContext=LintContext())
     path = abspath(path)
     if ispath(ctx.path)
         if is_windows()
@@ -106,13 +100,7 @@ function lintpkgforfile{T<:AbstractString}(path::T, ctx::LintContext=LintContext
     ctx.messages
 end
 
-function lintfile{T<:AbstractString}(file::T; returnMsgs=nothing)
-    # FIXME: deprecated summer 2016, remove after reasonable amount of time
-    if returnMsgs ≢ nothing
-        Base.depwarn(
-            "returnMsgs keyword argument is deprecated; remove it",
-            :lintfile)
-    end
+function lintfile(file::AbstractString)
     if !ispath(file)
         throw("no such file exists")
     end
@@ -139,7 +127,7 @@ function lintfile(file::AbstractString, code::AbstractString)
     LintResult(msgs)
 end
 
-function lintstr{T<:AbstractString}(str::T, ctx::LintContext = LintContext(), lineoffset = 0)
+function lintstr(str::AbstractString, ctx::LintContext = LintContext(), lineoffset = 0)
     linecharc = cumsum(map(x->endof(x)+1, split(str, "\n", keep=true)))
     numlines = length(linecharc)
     i = start(str)
@@ -348,7 +336,7 @@ end
 Lint all .jl ending files at a given directory.
 Will ignore LintContext file and already included files.
 """
-function lintdir{T<:AbstractString}(dir::T, ctx::LintContext=LintContext())
+function lintdir(dir::AbstractString, ctx::LintContext=LintContext())
     for file in readdir(dir)
         if endswith(file, ".jl")
             file = joinpath(dir, file)
