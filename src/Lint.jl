@@ -54,13 +54,7 @@ include("init.jl")
 include("result.jl")
 include("dynamic.jl")
 
-function lintpkg{T<:AbstractString}(pkg::T; returnMsgs=nothing)
-    # FIXME: deprecated summer 2016, remove after reasonable amount of time
-    if returnMsgs ≢ nothing
-        Base.depwarn(
-            "returnMsgs keyword argument is deprecated; remove it",
-            :lintfile)
-    end
+function lintpkg{T<:AbstractString}(pkg::T)
     p = joinpath(Pkg.dir(pkg), "src", basename(pkg) * ".jl")
     if !ispath(p)
         throw("cannot find path: " * p)
@@ -106,13 +100,7 @@ function lintpkgforfile{T<:AbstractString}(path::T, ctx::LintContext=LintContext
     ctx.messages
 end
 
-function lintfile{T<:AbstractString}(file::T; returnMsgs=nothing)
-    # FIXME: deprecated summer 2016, remove after reasonable amount of time
-    if returnMsgs ≢ nothing
-        Base.depwarn(
-            "returnMsgs keyword argument is deprecated; remove it",
-            :lintfile)
-    end
+function lintfile{T<:AbstractString}(file::T)
     if !ispath(file)
         throw("no such file exists")
     end
