@@ -112,9 +112,7 @@ type LintContext
     isstaged     :: Bool
     path         :: String
     included     :: Array{AbstractString,1} # list of files included
-    globals      :: Dict{Symbol,Any}
     functionLvl  :: Int
-    macroLvl     :: Int
     macrocallLvl :: Int
     quoteLvl     :: Int
     callstack    :: Array{Any, 1}
@@ -123,8 +121,7 @@ type LintContext
     ignore       :: Array{LintIgnore, 1}
     ifdepth      :: Int
     LintContext() = new("none", 0, 1, "", false, ".", AbstractString[],
-            Dict{Symbol,Any}(), 0, 0, 0,
-            0, Any[LintStack(true)], LintMessage[], _ -> true,
+            0, 0, 0, Any[LintStack(true)], LintMessage[], _ -> true,
             copy(LINT_IGNORE_DEFAULT), 0)
 end
 location(ctx::LintContext) = Location(ctx.file, ctx.line)

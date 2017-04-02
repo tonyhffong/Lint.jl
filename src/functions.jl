@@ -139,7 +139,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         end
     end
 
-    if ctx.macroLvl == 0 && ctx.functionLvl == 0
+    if ctx.functionLvl == 0
         pushcallstack(ctx)
     else
         push!(ctx.callstack[end].localarguments, Dict{Symbol,Any}())
@@ -219,13 +219,8 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                 sym = resolveArguments(sube.args[1], 0)
                 if !isstaged
                     if isa(sym, Symbol)
-                        dt = Any
-                        try
-                            dt = parsetype(sube.args[2])
-                            assertions[sym] = dt
-                        catch er
-                            msg(ctx, :E139, sube.args[2], "Lint fails to parse type: $(er)")
-                        end
+                        dt = parsetype(sube.args[2])
+                        assertions[sym] = dt
                     end
                 end
                 lintfuncargtype(sube.args[2], ctx)
@@ -306,7 +301,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
 
     ctx.functionLvl = ctx.functionLvl - 1
     # TODO check cyclomatic complexity?
-    if ctx.macroLvl == 0 && ctx.functionLvl == 0
+    if ctx.functionLvl == 0
         popcallstack(ctx)
     else
         pop!(ctx.callstack[end].localarguments)

@@ -49,10 +49,12 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E133   | unknown keyword pattern
 | E134   | unknown global pattern
 | E135   | local declaration not understood by Lint
-| E136   | Lint does not understand macro
+| E136   | (no longer used)
 | E137   | lintpragma must be called using only string literals
 | E138   | incomplete pragma expression
-| E139   | Lint fails to parse type: error
+| E139   | (no longer used)
+| E140   | macro not allowed in local scope
+| E141   | invalid macro syntax
 |        |
 | **E2** | *Miscellaneous Error*
 | E211   | deprecated message
@@ -81,7 +83,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E424   | (no longer used)
 | E425   | use lintpragma macro inside type declaration
 | E431   | use of length() in a Boolean context, use isempty()
-| E432   | though valid in 0.4, use x() instead of y()
+| E432   | (no longer used)
 | E433   | for a decreasing range, use a negative step e.g. 10:-1:1
 | E434   | value at position #i is the referenced x. Possible typo?
 | E435   | new is provided with more arguments than fields

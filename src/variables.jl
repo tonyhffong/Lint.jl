@@ -298,7 +298,7 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
                 ctx.callstack[end].localvars[1][s] = vi
             end
         end
-        if isGlobal || isConst || (ctx.functionLvl + ctx.macroLvl == 0 && ctx.callstack[end].isTop)
+        if isGlobal || isConst || (ctx.functionLvl == 0 && ctx.callstack[end].isTop)
             # TODO: guess type and use that type information
             register_global(
                 ctx,

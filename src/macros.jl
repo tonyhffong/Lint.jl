@@ -1,6 +1,10 @@
 function lintmacro(ex::Expr, ctx::LintContext)
-    if !isa(ex.args[1], Expr) || isempty(ex.args[1].args)
-        msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
+    if ctx.functionLvl > 0
+        msg(ctx, :E140, ex.args[1], "macro not allowed in local scope.")
+        return
+    end
+    if !isexpr(ex.args[1], :call)
+        msg(ctx, :E141, ex.args[1], "invalid macro syntax")
         return
     end
     fname = ex.args[1].args[1]
@@ -44,9 +48,9 @@ function lintmacro(ex::Expr, ctx::LintContext)
         resolveArguments(ex.args[1].args[i])
     end
 
-    ctx.macroLvl += 1
+    ctx.functionLvl += 1
     lintexpr(ex.args[2], ctx)
-    ctx.macroLvl -= 1
+    ctx.functionLvl -= 1
     pop!(ctx.callstack[end].localarguments)
 end
 

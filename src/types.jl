@@ -1,7 +1,7 @@
 # type definition lint code
 
 function linttype(ex::Expr, ctx::LintContext)
-    if ctx.macroLvl ==0 && ctx.functionLvl == 0
+    if ctx.functionLvl == 0
         pushcallstack(ctx)
     end
     typeparams = Symbol[]
@@ -110,7 +110,7 @@ function linttype(ex::Expr, ctx::LintContext)
         lintfunction(f[1], ctx; ctorType = tname)
     end
 
-    if ctx.macroLvl ==0 && ctx.functionLvl == 0
+    if ctx.functionLvl == 0
         popcallstack(ctx)
     end
 end
