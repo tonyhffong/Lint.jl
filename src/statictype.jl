@@ -121,7 +121,7 @@ length(::Type) = Nullable{Int}()
 length{T<:Pair}(::Type{T}) = Nullable(2)
 
 if VERSION < v"0.6.0-dev.2123" # where syntax introduced by julia PR #18457
-    length{T<:Tuple}(::Type{T}) = if !(T <: DataType) || Core.Inference.isvatuple(T)
+    length{T<:Tuple}(::Type{T}) = if !isa(T, DataType) || Core.Inference.isvatuple(T)
         Nullable{Int}()
     else
         Nullable{Int}(Base.length(T.types))
