@@ -160,7 +160,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 |        |
 | **I2** | *Miscellaneous Info*
 | I271   | custom info
-| I281   | error; Signature: ...
+| I281   | (no longer used)
 |        |
 | **I3** | *Existence Info*
 | I371   | use of undeclared symbol

@@ -1,43 +1,8 @@
-const commoncollections = [
-    Array, AbstractArray, BitArray, Set, Associative]
-const commoncollmethods = Dict{Symbol, Set{Type}}()
-
 # deprecation of specialized version of constructors
 const deprecated_constructors =
     Dict(:symbol => :Symbol)
 
 const not_constructible = Set([:Union, :Tuple, :Type])
-
-function initcommoncollfuncs()
-    global commoncollmethods
-    for t in commoncollections
-        ms = methodswith(t)
-        for m in ms
-            str = string(m)
-            mtch = match(r"^[a-zA-Z_][a-zA-Z0-9_]*(!)?", str)
-            if mtch != nothing
-                if in(mtch.match, [
-                        "hash", "show", "rand", "isequal", "convert", "serialize", "isless",
-                        "writemime", "write", "Dict", "eltype", "push!"
-                    ])
-                    continue
-                end
-                s = Symbol(mtch.match)
-                if !haskey(commoncollmethods, s)
-                    commoncollmethods[s] = Set{Type}()
-                end
-                push!(commoncollmethods[s], t)
-            end
-        end
-    end
-    for (k,v) in commoncollmethods
-        if length(v) < 2
-            delete!(commoncollmethods, k)
-        end
-    end
-    # ADD COMMON FUNCTIONS WITH EASILY-MISTAKEN SIGNATURES HERE
-    commoncollmethods[:(append!)] = Set{Type}()
-end
 
 function lintfuncargtype(ex, ctx::LintContext)
     lintexpr(ex, ctx)
@@ -439,23 +404,6 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         end
 
         skiplist = Int[]
-
-        if isa(ex.args[1], Symbol) && haskey(commoncollmethods, ex.args[1])
-            s = ex.args[1]
-            typesig = Any[]
-            for i in 2:length(ex.args)
-                if !isexpr(ex.args[i], :kw) && !isexpr(ex.args[i], :parameters)
-                    push!(typesig, guesstype(ex.args[i], ctx))
-                end
-            end
-            if all(x->isa(x,Tuple) && all(y->y!=Any, x) || x != Any, typesig)
-                try
-                    which(getfield(Main, s), tuple(typesig...))
-                catch er
-                    msg(ctx, :I281, s, "$(er); Signature: $(tuple(typesig...))")
-                end
-            end
-        end
 
         #splice! allows empty range such as 3:2, it means inserting an array
         # between position 2 and 3, without taking out any value.

@@ -49,33 +49,24 @@ type LintStack
     oosvars       :: Set{Symbol}
     pragmas       :: Dict{String, PragmaInfo} # the boolean denotes if the pragma has been used
     calledfuncs   :: Set{Symbol}
-    inModule      :: Bool
     moduleName    :: Any
     typefields    :: Dict{Any, Any}
     exports       :: Set{Symbol}
     imports       :: Set{Symbol}
     linthelpers   :: Dict{String, Any}
-    data          :: Dict{Symbol, Any}
     isTop         :: Bool
-    LintStack() = begin
-        x = new(
-            Dict{Symbol,Any}(),
-            [Dict{Symbol, Any}()],
-            [Dict{Symbol, Any}()],
-            Set{Symbol}(),
-            Dict{String, Bool}(), #pragmas
-            Set{Symbol}(),
-            false,
-            Symbol(""),
-            Dict{Any,Any}(),
-            Set{Any}(),
-            Set{Any}(),
-            Dict{String, Any}(),
-            Dict{Symbol, Any}(),
-            false,
-           )
-        x
-    end
+    LintStack() = new(Dict{Symbol,Any}(),
+                      [Dict{Symbol, Any}()],
+                      [Dict{Symbol, Any}()],
+                      Set{Symbol}(),
+                      Dict{String, Bool}(), #pragmas
+                      Set{Symbol}(),
+                      Symbol(""),
+                      Dict{Any,Any}(),
+                      Set{Any}(),
+                      Set{Any}(),
+                      Dict{String, Any}(),
+                      false)
 end
 
 function addconst!(s::LintStack, name::Symbol, typ::Type,

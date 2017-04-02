@@ -5,7 +5,6 @@ function lintmodule(ex::Expr, ctx::LintContext)
               Location(ctx.file, ctx.line))
     pushcallstack(ctx)
     stacktop = ctx.callstack[end]
-    stacktop.inModule = true
     stacktop.moduleName = ex.args[2]
     stacktop.isTop = true
 
