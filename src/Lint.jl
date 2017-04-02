@@ -397,8 +397,8 @@ function convertmsgtojson(msgs, style, dict_data)
             push!(output, Dict("severity" => etype,
                                "location" => Dict("file" => file,
                                                    "position" => errorrange),
-                               "excerpt" => code,
-                               "description" => "$evar: $txt"))
+                               "excerpt" => "$evar: $txt",
+                               "description" => code))
 
         end
     end

@@ -140,11 +140,11 @@ end
     @test results_array[1]["source"] == "Lint.jl"
 
     results_array = writeandreadserver(pipe_slv2, json_input1)
-    @test results_array[1]["description"] == "something: use of undeclared symbol"
+    @test results_array[1]["description"] == "E321"
     @test results_array[1]["location"]["file"] == "none"
     @test results_array[1]["location"]["position"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["severity"] == "error"
-    @test results_array[1]["excerpt"] == "E321"
+    @test results_array[1]["excerpt"] == "something: use of undeclared symbol"
 
 
     json_input4 = Dict("file" => "none", "code_str" => "function a(b)\nend",
