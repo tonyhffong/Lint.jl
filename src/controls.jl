@@ -226,28 +226,3 @@ function lintwhile(ex::Expr, ctx::LintContext)
     lintexpr(ex.args[2], ctx)
     popVarScope(ctx)
 end
-
-function lintcomprehension(ex::Expr, ctx::LintContext; typed::Bool = false)
-    pushVarScope(ctx)
-    st = typed ? 3 : 2
-    fn = typed ? 2 : 1
-
-    if typed
-        if ex.head == :typed_dict_comprehension
-            if isexpr(ex.args[1], :(=>))
-                declktype = ex.args[1].args[1]
-                declvtype = ex.args[1].args[2]
-            end
-        else
-            declvtype = ex.args[1]
-        end
-    end
-
-    for i in st:length(ex.args)
-        if isexpr(ex.args[i], :(=))
-            lintassignment(ex.args[i], :(=), ctx; islocal=true, isForLoop=true) # note contrast with for loop
-        end
-    end
-    lintexpr(ex.args[fn], ctx)
-    popVarScope(ctx)
-end
