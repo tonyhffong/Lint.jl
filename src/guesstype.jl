@@ -88,43 +88,15 @@ function parsetype(ex)
 end
 
 function guesstype(ex::Symbol, ctx::LintContext)
-    stacktop = ctx.callstack[end]
-    sym = ex
-    for i in length(stacktop.localvars):-1:1
-        if haskey(stacktop.localvars[i], sym)
-            ret = stacktop.localvars[i][sym].typeactual
-            return ret
-        end
+    result = lookup(ctx, ex)
+    if isnull(result)
+        Any  # conservative guess
+    else
+        get(result).typeactual
     end
-    for i in length(stacktop.localarguments):-1:1
-        if haskey(stacktop.localarguments[i], sym)
-            ret = stacktop.localarguments[i][sym].typeactual
-            return ret
-        end
-    end
-    for i in length(ctx.callstack):-1:1
-        if sym in ctx.callstack[i].types
-            return Type
-        end
-        if sym in ctx.callstack[i].functions
-            return Function
-        end
-        if sym in ctx.callstack[i].modules
-            return Module
-        end
-    end
-    val = stdlibobject(ex)
-    if !isnull(val)
-        if isa(get(val), Type)
-            return Type{get(val)}
-        else
-            return typeof(get(val))
-        end
-    end
-    return Any
 end
 
-function guesstype(ex::Expr, ctx::LintContext)
+function guesstype(ex::Expr, ctx::LintContext)::Type
     ex = ExpressionUtils.expand_trivial_calls(ex)
 
     if isexpr(ex, :tuple)
@@ -155,36 +127,6 @@ function guesstype(ex::Expr, ctx::LintContext)
             return Any
         end
         argtypes = map(x -> guesstype(x, ctx), ex.args[2:end])
-
-        # check if it's a constructor for user-defined type, and figure
-        # out what type
-        # this is hackish because the return type is a Symbol, not a Type
-        if fn == :new
-            return Symbol(ctx.scope)
-        end
-
-        # another detection for constructor calling another constructor
-        # A() = A(default)
-        if Symbol(ctx.scope) == fn
-            found = false
-            for i = length(ctx.callstack):-1:1
-                found = in(fn, ctx.callstack[i].types)
-                if found
-                    return fn
-                end
-            end
-        end
-        # A() = A{T}(default)
-        if isexpr(fn, :curly) &&
-                Symbol(ctx.scope) == fn.args[1]
-            found = false
-            for i = length(ctx.callstack):-1:1
-                found = in(fn.args[1], ctx.callstack[i].types)
-                if found
-                    return fn.args[1]
-                end
-            end
-        end
 
         # infer return types of Base functions
         obj = stdlibobject(fn)

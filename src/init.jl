@@ -1,4 +1,1 @@
-#function __init__()
-    initDeprecateInfo()
-    initcommoncollfuncs()
-#end
+initDeprecateInfo()

@@ -159,10 +159,7 @@ function linttry(ex::Expr, ctx::LintContext)
 end
 
 function lintlet(ex::Expr, ctx::LintContext)
-    if ctx.macroLvl == 0
-        pushVarScope(ctx)
-    end
-
+    pushVarScope(ctx)
     ctx.functionLvl += 1
     for j = 2:length(ex.args)
         # it's always assignment, or the parser would have thrown at the very start
@@ -179,10 +176,7 @@ function lintlet(ex::Expr, ctx::LintContext)
             lintexpr(blk.args[i], ctx)
         end
     end
+    popVarScope(ctx)
     ctx.functionLvl -= 1
-
-    if ctx.macroLvl == 0
-        popVarScope(ctx)
-    end
 end
 

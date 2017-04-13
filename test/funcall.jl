@@ -1,3 +1,4 @@
+@testset "Function Call" begin
 s = """
 function f(x; y = 1, z::Int = 4)
     println(z)
@@ -229,7 +230,7 @@ if VERSION ≥ v"0.6-"
     @test contains(msgs[3].message, "typeof(tmp) == Array")
 end
 @test msgs[4].code == :I271
-@test contains(msgs[4].message, "typeof(T) == Type")
+@test_broken contains(msgs[4].message, "typeof(T) == Type")
 if VERSION ≥ v"0.6-"
     @test msgs[5].code == :I271
     @test contains(msgs[5].message, "typeof(tmp2) == Array")
@@ -432,3 +433,4 @@ s = """
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+end

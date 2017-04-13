@@ -74,4 +74,33 @@ for (i,) in x
 end
 """))
 
+# bug 192
+@test isempty(lintstr("""
+type MyType end
+@recipe function f(t::MyType)
+    markersize --> 10
+    seriestype := :scatter
+    randn(10)
+end
+"""))
+
+# bug 209
+@test isempty(lintstr("""
+function f{N}(::Array{Int,N})
+    s = 0
+    for j in 1:N
+        s += j
+    end
+    s
+end
+"""))
+
+# bug 187
+@test isempty(lintstr("""
+module Test
+import Base.Iterators: flatten
+export flatten
+end
+"""))
+
 end

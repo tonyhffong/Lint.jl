@@ -1,3 +1,4 @@
+@testset "If" begin
 s = """
 wrap(pos::Int, len::Int) = true ? 1 : (pos > len ? len : pos)
 """
@@ -64,7 +65,7 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "use of length() in a Boolean context, use isempty()")
 
 s = """
-function f(b::Boolean, x::Int, y::Int)
+function f(b::Bool, x::Int, y::Int)
     a = b ? x : y
     @lintpragma("Info type a")
     a
@@ -75,7 +76,7 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "typeof(a) == Int")
 
 s = """
-function f(b::Boolean, x::Int, y::Any)
+function f(b::Bool, x::Int, y::Any)
     a = b ? x : y
     @lintpragma("Info type a")
     a
@@ -172,3 +173,4 @@ end
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+end

@@ -1,7 +1,7 @@
 # type definition lint code
 
 function linttype(ex::Expr, ctx::LintContext)
-    if ctx.macroLvl ==0 && ctx.functionLvl == 0
+    if ctx.functionLvl == 0
         pushcallstack(ctx)
     end
     typeparams = Symbol[]
@@ -9,37 +9,22 @@ function linttype(ex::Expr, ctx::LintContext)
     # TODO: this duplicates the code in functions.jl
     processCurly = (sube)->begin
         for i in 2:length(sube.args)
-            adt= sube.args[i]
+            adt = sube.args[i]
             if isa(adt, Symbol)
-                typefound = isstandardtype(adt)
-                if !typefound
-                    for j in 1:length(ctx.callstack)
-                        if in(adt, ctx.callstack[j].types)
-                            typefound = true
-                            break
-                        end
-                    end
-                end
-                if typefound && adt != :T
+                foundobj = lookup(ctx, adt)
+                if !isnull(foundobj) && get(foundobj).typeactual <: Type
                     msg(ctx, :I393, adt, "using an existing type as type parameter name is probably a typo")
                 end
-                push!(ctx.callstack[end].types, adt)
+                # TODO: review all uses of this function
+                # addconst!(ctx.callstack[end], adt, location(ctx))
                 push!(typeparams, adt)
             elseif isexpr(adt, :(<:))
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
 
                 if temptype != :T
-                    typefound = isstandardtype(temptype)
-                    if !typefound
-                        for j in 1:length(ctx.callstack)
-                            if in(temptype, ctx.callstack[j].types)
-                                typefound = true
-                                break
-                            end
-                        end
-                    end
-                    if typefound
+                    foundobj = lookup(ctx, temptype)
+                    if !isnull(foundobj) && get(foundobj).typeactual <: Type
                         msg(ctx, :E538, temptype, "known type in parametric data type, " *
                             "use {T<:...}")
                     end
@@ -50,7 +35,7 @@ function linttype(ex::Expr, ctx::LintContext)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
                 end
-                push!(ctx.callstack[end].types, temptype)
+                # addconst!(ctx.callstack[end], temptype, location(ctx))
                 push!(typeparams, temptype)
             end
         end
@@ -80,7 +65,7 @@ function linttype(ex::Expr, ctx::LintContext)
         if islower(string(tname)[1])
             msg(ctx, :I771, tname, "type names should start with an upper case")
         end
-        push!(ctx.callstack[end-1].types, tname)
+        addconst!(ctx.callstack[end-1], tname, Type, location(ctx))
     end
 
     fields = Any[]
@@ -111,17 +96,6 @@ function linttype(ex::Expr, ctx::LintContext)
             if def.args[1].head == :tuple
                 # if julia supports anonymous constructor syntactic sugar, remove this, and make sure ctx.scope is type name
                 msg(ctx, :E417, "anonymous function inside type definition")
-            elseif isexpr(def.args[1].args[1], :curly)
-                for i in 2:length(def.args[1].args[1].args)
-                    fp = def.args[1].args[1].args[i]
-                    if isa(fp, Symbol) && in(fp, typeparams)
-                        msg(ctx, :E523, fp, "constructor parameter collides with a type parameter")
-                    end
-                    if isexpr(fp, :(<:)) && in(fp.args[1], typeparams)
-                        tmp = fp.args[1]
-                        msg(ctx, :E523, tmp, "constructor parameter collides with a type parameter")
-                    end
-                end
             end
             push!(funcs, (def, ctx.line))
         end
@@ -136,7 +110,7 @@ function linttype(ex::Expr, ctx::LintContext)
         lintfunction(f[1], ctx; ctorType = tname)
     end
 
-    if ctx.macroLvl ==0 && ctx.functionLvl == 0
+    if ctx.functionLvl == 0
         popcallstack(ctx)
     end
 end
@@ -144,20 +118,21 @@ end
 function linttypealias(ex::Expr, ctx::LintContext)
     # TODO: make this just part of lintassignment
     if isa(ex.args[1], Symbol)
-        push!(ctx.callstack[end].types, withincurly(ex.args[1]))
+        addconst!(ctx.callstack[end], withincurly(ex.args[1]), Type,
+                 location(ctx))
     end
 end
 
 function lintabstract(ex::Expr, ctx::LintContext)
     if isa(ex.args[1], Symbol)
-        push!(ctx.callstack[end].types, ex.args[1])
+        addconst!(ctx.callstack[end], ex.args[1], Type, location(ctx))
     elseif isexpr(ex.args[1], :curly)
-        push!(ctx.callstack[end].types, ex.args[1].args[1])
+        addconst!(ctx.callstack[end], ex.args[1].args[1], Type, location(ctx))
     elseif isexpr(ex.args[1], :(<:))
         if isa(ex.args[1].args[1], Symbol)
-            push!(ctx.callstack[end].types, ex.args[1].args[1])
+            addconst!(ctx.callstack[end], ex.args[1].args[1], Type, location(ctx))
         elseif isexpr(ex.args[1].args[1], :curly)
-            push!(ctx.callstack[end].types, ex.args[1].args[1].args[1])
+            addconst!(ctx.callstack[end], ex.args[1].args[1].args[1], Type, location(ctx))
         end
     end
 end
@@ -166,6 +141,6 @@ function lintbitstype(ex::Expr, ctx::LintContext)
     if !isa(ex.args[2], Symbol)
         msg(ctx, :E524, "bitstype needs its 2nd argument to be a new type symbol")
     else
-        push!(ctx.callstack[end].types, ex.args[2])
+        addconst!(ctx.callstack[end], ex.args[2], Type, location(ctx))
     end
 end

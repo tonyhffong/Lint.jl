@@ -53,6 +53,7 @@ include("misc.jl")
 include("init.jl")
 include("result.jl")
 include("dynamic.jl")
+include("generator.jl")
 
 function lintpkg(pkg::AbstractString)
     p = joinpath(Pkg.dir(pkg), "src", basename(pkg) * ".jl")
@@ -281,9 +282,9 @@ function lintexpr(ex::Expr, ctx::LintContext)
     elseif ex.head == :let
         lintlet(ex, ctx)
     elseif ex.head in (:comprehension, :dict_comprehension, :generator)
-        lintcomprehension(ex, ctx; typed = false)
+        lintgenerator(ex, ctx; typed = false)
     elseif ex.head in (:typed_comprehension, :typed_dict_comprehension)
-        lintcomprehension(ex, ctx; typed = true)
+        lintgenerator(ex, ctx; typed = true)
     elseif ex.head == :try
         linttry(ex, ctx)
     elseif ex.head == :curly # e.g. Ptr{T}

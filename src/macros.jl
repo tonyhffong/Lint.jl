@@ -1,18 +1,22 @@
 function lintmacro(ex::Expr, ctx::LintContext)
-    if !isa(ex.args[1], Expr) || isempty(ex.args[1].args)
-        msg(ctx, :E121, ex.args[1], "Lint does not understand the expression")
+    if ctx.functionLvl > 0
+        msg(ctx, :E140, ex.args[1], "macro not allowed in local scope.")
+        return
+    end
+    if !isexpr(ex.args[1], :call)
+        msg(ctx, :E141, ex.args[1], "invalid macro syntax")
         return
     end
     fname = ex.args[1].args[1]
-    push!(ctx.callstack[end].macros, Symbol("@" * string(fname)))
+    # TODO: use the same technique as for functions
+    addconst!(ctx.callstack[end], Symbol("@", fname), Function, location(ctx))
     push!(ctx.callstack[end].localarguments, Dict{Symbol, Any}())
-    push!(ctx.callstack[end].localusedargs, Set{Symbol}())
 
+    # TODO: reuse the code of functions
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
     stacktop = ctx.callstack[end]
-    resolveArguments = (sube) -> begin
-        if typeof(sube) == Symbol
-            stacktop.localarguments[end][sube]=VarInfo(ctx.line)
+    function resolveArguments(sube::Symbol)
+        stacktop.localarguments[end][sube]=VarInfo(ctx.line)
         #= # I don't think macro arguments use any of these
         elseif sube.head == :parameters
             for kw in sube.args
@@ -27,7 +31,9 @@ function lintmacro(ex::Expr, ctx::LintContext)
             end
             resolveArguments(sube.args[1])
         =#
-        elseif sube.head == :(...) || sube.head == :(::)
+    end
+    function resolveArguments(sube)
+        if isexpr(sube, :(...)) || isexpr(sube, :(::))
             resolveArguments(sube.args[1])
         #= # macro definition inside another macro? highly unlikely
         elseif sube.head == :($)
@@ -42,11 +48,10 @@ function lintmacro(ex::Expr, ctx::LintContext)
         resolveArguments(ex.args[1].args[i])
     end
 
-    ctx.macroLvl += 1
+    ctx.functionLvl += 1
     lintexpr(ex.args[2], ctx)
-    ctx.macroLvl -= 1
+    ctx.functionLvl -= 1
     pop!(ctx.callstack[end].localarguments)
-    pop!(ctx.callstack[end].localusedargs)
 end
 
 istopmacro(ex, mod, mac) = ex in (
@@ -70,7 +75,8 @@ function lintcompat(ex::Expr, ctx::LintContext)
 end
 
 function lintmacrocall(ex::Expr, ctx::LintContext)
-    if istopmacro(ex.args[1], Base, Symbol("@deprecate"))
+    if istopmacro(ex.args[1], Base, Symbol("@deprecate")) ||
+       ex.args[1] == Symbol("@recipe")
         return
     end
 
@@ -137,18 +143,8 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
     end
 
     ctx.macrocallLvl = ctx.macrocallLvl + 1
-
-    # AST for things like
-    # @windows ? x : y
-    # is very weird. This handles that.
-    if length(ex.args) == 3 && ex.args[2] == :(?) && isexpr(ex.args[3], :(:))
-        for a in ex.args[3].args
-            lintexpr(a, ctx)
-        end
-    else
-        for i = 2:length(ex.args)
-            lintexpr(ex.args[i], ctx)
-        end
+    for i = 2:length(ex.args)
+        lintexpr(ex.args[i], ctx)
     end
     ctx.macrocallLvl = ctx.macrocallLvl - 1
 end

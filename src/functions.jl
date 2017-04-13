@@ -1,45 +1,11 @@
-const commoncollections = [
-    Array, AbstractArray, BitArray, Set, Associative]
-const commoncollmethods = Dict{Symbol, Set{Type}}()
-
 # deprecation of specialized version of constructors
 const deprecated_constructors =
     Dict(:symbol => :Symbol)
 
 const not_constructible = Set([:Union, :Tuple, :Type])
 
-function initcommoncollfuncs()
-    global commoncollmethods
-    for t in commoncollections
-        ms = methodswith(t)
-        for m in ms
-            str = string(m)
-            mtch = match(r"^[a-zA-Z_][a-zA-Z0-9_]*(!)?", str)
-            if mtch != nothing
-                if in(mtch.match, [
-                        "hash", "show", "rand", "isequal", "convert", "serialize", "isless",
-                        "writemime", "write", "Dict", "eltype", "push!"
-                    ])
-                    continue
-                end
-                s = Symbol(mtch.match)
-                if !haskey(commoncollmethods, s)
-                    commoncollmethods[s] = Set{Type}()
-                end
-                push!(commoncollmethods[s], t)
-            end
-        end
-    end
-    for (k,v) in commoncollmethods
-        if length(v) < 2
-            delete!(commoncollmethods, k)
-        end
-    end
-    # ADD COMMON FUNCTIONS WITH EASILY-MISTAKEN SIGNATURES HERE
-    commoncollmethods[:(append!)] = Set{Type}()
-end
-
 function lintfuncargtype(ex, ctx::LintContext)
+    lintexpr(ex, ctx)
     if isexpr(ex, :curly)
         st = 2
         en = 1
@@ -86,16 +52,21 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         # do nothing
     elseif isexpr(ex.args[1].args[1], :(.))
         fname = ex.args[1].args[1]
-        push!(ctx.callstack[end].functions, fname.args[end])
+        # TODO: this isn't quite right; find a counterexample
+        # addconst!(ctx.callstack[end], fname.args[end], Function, location(ctx))
     elseif isa(ex.args[1].args[1], Symbol)
         fname = ex.args[1].args[1]
-        push!(ctx.callstack[end].functions, fname)
+        # TODO: check if we might be extending an existing function
+        addconst!(ctx.callstack[end], fname, Function, location(ctx))
     elseif !isa(ex.args[1].args[1], Expr)
         msg(ctx, :E121, ex.args[1].args[1], "Lint does not understand the expression")
         return
     elseif ex.args[1].args[1].head == :curly
         fname = ex.args[1].args[1].args[1]
-        push!(ctx.callstack[end].functions, fname)
+        if isa(fname, Symbol)
+            # TODO: check if we might be extending an existing function
+            addconst!(ctx.callstack[end], fname, Function, location(ctx))
+        end
         for i in 2:length(ex.args[1].args[1].args)
             adt = ex.args[1].args[1].args[i]
             if isa(adt, Symbol)
@@ -133,38 +104,46 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         end
     end
 
-    if ctx.macroLvl == 0 && ctx.functionLvl == 0
+    if ctx.functionLvl == 0
         pushcallstack(ctx)
     else
         push!(ctx.callstack[end].localarguments, Dict{Symbol,Any}())
-        push!(ctx.callstack[end].localusedargs, Set{Symbol}())
     end
     ctx.functionLvl = ctx.functionLvl + 1
     # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
     stacktop = ctx.callstack[end]
-    # temporaryTypes are the type parameters in curly brackets, make them legal in the current scope
-    union!(stacktop.types, temporaryTypes)
+    # temporaryTypes are the type parameters in curly brackets, make them legal
+    # in the current scope
+    for t in temporaryTypes
+        # TODO: infer when t is a type
+        stacktop.localarguments[end][t] = VarInfo(ctx.line)
+    end
 
     argsSeen = Set{Symbol}()
     optionalposition = 0
     typeRHShints = Dict{Symbol, Any}() # x = 1
     assertions = Dict{Symbol, Any}() # e.g. x::Int
 
-    resolveArguments = (sube, position) -> begin # zero position means it's not called at the top level
-        if isa(sube, Symbol)
-            if in(sube, argsSeen)
-                msg(ctx, :E331, sube, "duplicate argument")
-            end
-            if position != 0 && optionalposition != 0
-                msg(ctx, :E411, sube, "non-default argument following default arguments")
-            end
-            push!(argsSeen, sube)
-            stacktop.localarguments[end][sube] = VarInfo(ctx.line)
-            if isstaged
-                assertions[sube] = Type
-            end
-            return sube
-        elseif sube.head == :parameters
+    function resolveArguments(sube::Symbol, position)
+        if sube in argsSeen
+            msg(ctx, :E331, sube, "duplicate argument")
+        elseif sube in keys(stacktop.localarguments[end])
+            msg(ctx, :E331, sube,
+                "function argument duplicates static parameter name")
+        end
+        if position != 0 && optionalposition != 0
+            msg(ctx, :E411, sube, "non-default argument following default arguments")
+        end
+        push!(argsSeen, sube)
+        stacktop.localarguments[end][sube] = VarInfo(ctx.line)
+        if isstaged
+            assertions[sube] = Type
+        end
+        return sube
+    end
+    function resolveArguments(sube, position)
+        # zero position means it's not called at the top level
+        if isexpr(sube, :parameters)
             for (j,kw) in enumerate(sube.args)
                 if isexpr(kw, :(...))
                     if j != length(sube.args)
@@ -188,7 +167,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     resolveArguments(kw, 0)
                 end
             end
-        elseif sube.head == :(=) || sube.head == :kw
+        elseif isexpr(sube, [:(=), :kw])
             if position != 0
                 optionalposition = position
             end
@@ -200,18 +179,13 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     typeRHShints[sym] = rhstype
                 end
             end
-        elseif sube.head == :(::)
+        elseif isexpr(sube, :(::))
             if length(sube.args) > 1
                 sym = resolveArguments(sube.args[1], 0)
                 if !isstaged
                     if isa(sym, Symbol)
-                        dt = Any
-                        try
-                            dt = parsetype(sube.args[2])
-                            assertions[sym] = dt
-                        catch er
-                            msg(ctx, :E139, sube.args[2], "Lint fails to parse type: $(er)")
-                        end
+                        dt = parsetype(sube.args[2])
+                        assertions[sym] = dt
                     end
                 end
                 lintfuncargtype(sube.args[2], ctx)
@@ -219,7 +193,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
             else
                 lintfuncargtype(sube.args[1], ctx)
             end
-        elseif sube.head == :(...)
+        elseif isexpr(sube, :(...))
             if position != 0 && position != length(ex.args[1].args)
                 msg(ctx, :E413, sube, "positional ellipsis ... can only be the last argument")
             end
@@ -233,12 +207,12 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                     assertions[sym] = Tuple{Vararg{Any}}
                 end
             end
-        elseif sube.head == :($)
+        elseif isexpr(sube, :($))
             lintexpr(sube.args[1], ctx)
         else
             msg(ctx, :E131, sube, "Lint does not understand argument #$(position)")
         end
-        return nothing
+        return
     end
 
     params = nothing
@@ -292,11 +266,10 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
 
     ctx.functionLvl = ctx.functionLvl - 1
     # TODO check cyclomatic complexity?
-    if ctx.macroLvl == 0 && ctx.functionLvl == 0
+    if ctx.functionLvl == 0
         popcallstack(ctx)
     else
         pop!(ctx.callstack[end].localarguments)
-        pop!(ctx.callstack[end].localusedargs)
     end
     ctx.scope = ""
     ctx.isstaged = prev_isstaged
@@ -305,7 +278,6 @@ end
 function lintlambda(ex::Expr, ctx::LintContext)
     stacktop = ctx.callstack[end]
     push!(stacktop.localarguments, Dict{Symbol, Any}())
-    push!(stacktop.localusedargs, Set{Symbol}())
     pushVarScope(ctx)
     # check for conflicts on lambda arguments
     checklambdaarg = (sym)->begin
@@ -368,7 +340,6 @@ function lintlambda(ex::Expr, ctx::LintContext)
 
     popVarScope(ctx, checkargs=true)
     pop!(stacktop.localarguments)
-    pop!(stacktop.localusedargs)
 end
 
 function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
@@ -433,23 +404,6 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         end
 
         skiplist = Int[]
-
-        if isa(ex.args[1], Symbol) && haskey(commoncollmethods, ex.args[1])
-            s = ex.args[1]
-            typesig = Any[]
-            for i in 2:length(ex.args)
-                if !isexpr(ex.args[i], :kw) && !isexpr(ex.args[i], :parameters)
-                    push!(typesig, guesstype(ex.args[i], ctx))
-                end
-            end
-            if all(x->isa(x,Tuple) && all(y->y!=Any, x) || x != Any, typesig)
-                try
-                    which(getfield(Main, s), tuple(typesig...))
-                catch er
-                    msg(ctx, :I281, s, "$(er); Signature: $(tuple(typesig...))")
-                end
-            end
-        end
 
         #splice! allows empty range such as 3:2, it means inserting an array
         # between position 2 and 3, without taking out any value.

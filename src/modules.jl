@@ -1,19 +1,16 @@
 # module, using, import, export
 
 function lintmodule(ex::Expr, ctx::LintContext)
-    push!(ctx.callstack[end].modules, ex.args[2])
+    addconst!(ctx.callstack[end], ex.args[2], Module,
+              Location(ctx.file, ctx.line))
     pushcallstack(ctx)
     stacktop = ctx.callstack[end]
-    stacktop.inModule = true
     stacktop.moduleName = ex.args[2]
     stacktop.isTop = true
 
     lintexpr(ex.args[3], ctx)
 
-    undefs = setdiff(stacktop.exports, stacktop.types)
-    undefs = setdiff(undefs, stacktop.functions)
-    undefs = setdiff(undefs, stacktop.macros)
-    undefs = setdiff(undefs, keys(stacktop.declglobs))
+    undefs = setdiff(stacktop.exports, keys(stacktop.declglobs))
     undefs = setdiff(undefs, keys(stacktop.localvars[1]))
     undefs = setdiff(undefs, stacktop.imports)
 
@@ -35,7 +32,7 @@ function lintusing(ex::Expr, ctx::LintContext)
             register_global(
                 ctx,
                 s,
-                Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
+                VarInfo(Location(ctx.file, ctx.line))
            )
         end
     end
@@ -53,7 +50,7 @@ function lintusing(ex::Expr, ctx::LintContext)
                     register_global(
                         ctx,
                         n,
-                        Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
+                        VarInfo(Location(ctx.file, ctx.line))
                    )
                 end
             end
@@ -90,41 +87,10 @@ function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
     end
     problem = false
     m = nothing
-    lastpart = nothing
-    try
-        if ex.args[1] == :(.)
-            path = string(ctx.callstack[end-1].moduleName)
-            for i in 2:length(ex.args)
-                path = path * "." * string(ex.args[i])
-            end
-            m = eval(Main, parse(path))
-            lastpart = ex.args[end]
-        else
-            register_global(
-                ctx,
-                ex.args[1],
-                Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
-            )
-            eval(Main, ex)
-            lastpart = ex.args[end]
-            if length(ex.args) == 2
-                m = eval(Main, :($(ex.args[1]).$(ex.args[2])))
-            else
-                m = eval(Main, ex.args[1])
-            end
-        end
-    catch # er
-        problem = true
-        # println(er)
-        # println(ex)
-    end
-    if !problem
-        t = typeof(m)
-        if t == Module
-            union!(ctx.callstack[end].imports, names(m, all))
-        elseif typeof(lastpart) == Symbol
-            push!(ctx.callstack[end].imports, lastpart)
-            #push!(ctx.callstack[end].declglobs, lastport)
-        end
-    end
+    register_global(
+        ctx,
+        ex.args[end],
+        VarInfo(Location(ctx.file, ctx.line))
+    )
+    push!(ctx.callstack[end].imports, ex.args[end])
 end

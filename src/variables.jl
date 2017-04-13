@@ -1,19 +1,20 @@
 function popVarScope(ctx::LintContext; checkargs::Bool=false)
     tmpline = ctx.line
     stacktop = ctx.callstack[end]
-    unused = setdiff(keys(stacktop.localvars[end]), stacktop.localusedvars[end])
+    unused = [v for (v, vi) in stacktop.localvars[end] if vi.usages == 0]
     if ctx.quoteLvl == 0
         for v in unused
             if !pragmaexists("Ignore unused $v", ctx) && !startswith(string(v), '_')
-                ctx.line = stacktop.localvars[end][v].line
+                ctx.line = line(stacktop.localvars[end][v])
                 msg(ctx, :W341, v, "local variable declared but not used")
             end
         end
         if checkargs
-            unusedargs = setdiff(keys(stacktop.localarguments[end]), stacktop.localusedargs[end])
+            unusedargs = [v for (v, vi) in stacktop.localarguments[end] if
+                          vi.usages == 0]
             for v in unusedargs
                 if !pragmaexists("Ignore unused $v", ctx) && !startswith(string(v), '_')
-                    ctx.line = stacktop.localarguments[end][v].line
+                    ctx.line = line(stacktop.localarguments[end][v])
                     msg(ctx, :I382, v, "argument declared but not used")
                 end
             end
@@ -22,13 +23,11 @@ function popVarScope(ctx::LintContext; checkargs::Bool=false)
 
     union!(stacktop.oosvars, setdiff(keys(stacktop.localvars[end]), keys(stacktop.localvars[1])))
     pop!(stacktop.localvars)
-    pop!(stacktop.localusedvars)
     ctx.line = tmpline
 end
 
 function pushVarScope(ctx::LintContext)
     push!(ctx.callstack[end].localvars, Dict{Symbol, Any}())
-    push!(ctx.callstack[end].localusedvars, Set{Symbol}())
 end
 
 # returns
@@ -39,58 +38,19 @@ end
 # if strict == false, it won't generate lint warnings, just return :Any
 
 function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
-    stacktop = ctx.callstack[end]
-
-    #println(sym)
-    #println(stacktop.localvars)
-    for i in length(stacktop.localvars):-1:1
-        if haskey(stacktop.localvars[i], sym)
-            push!(stacktop.localusedvars[i], sym)
-            # TODO: This is not quite right. We need to check type
-            # on the sym. If it's Type, return :Type
-            # if Any, return :Any
-            # otherwise, :var
-            return :var
-        end
-    end
-
-    for i in length(stacktop.localarguments):-1:1
-        if haskey(stacktop.localarguments[i], sym)
-            push!(stacktop.localusedargs[i], sym)
-            # TODO: we need to check type
-            return :var
-        end
-    end
-
-    # a bunch of whitelist to just grandfather-in
-    obj = stdlibobject(sym)
-    if !isnull(obj)
-        if isa(get(obj), Type)
-            return :Type
-        else
-            return :var
-        end
-    end
-    # TODO: deal with end correctly instead of this hack
     if sym == :end
+        # TODO: handle this special case elsewhere
         return :var
     end
 
-    # Move up call stack, looking at global declarations
-    for i in length(ctx.callstack):-1:1
-        if in(sym, ctx.callstack[i].types)
-            return :Type
-        elseif haskey(ctx.callstack[i].declglobs, sym) ||
-               in(sym, ctx.callstack[i].functions) ||
-               in(sym, ctx.callstack[i].modules) ||
-               in(sym, ctx.callstack[i].imports)
-            return :var
-        end
+    lookupresult = lookup(ctx, sym, register=true)
+
+    result = if isnull(lookupresult)
+        # Fall back to dynamic evaluation in Main
+        result = dynamic_imported_binding_type(sym)
+    else
+        get(lookupresult).typeactual <: Type ? :Type : :var
     end
-
-    # Fall back to dynamic evaluation in Main
-    result = dynamic_imported_binding_type(sym)
-
     if strict && result === :Any &&
        !pragmaexists("Ignore use of undeclared variable $sym", ctx)
         if ctx.quoteLvl == 0
@@ -109,7 +69,7 @@ function lintglobal(ex::Expr, ctx::LintContext)
                 register_global(
                     ctx,
                     sym,
-                    Dict{Symbol,Any}(:file=>ctx.file, :line=>ctx.line)
+                    VarInfo(Location(ctx.file, ctx.line))
                )
             end
         elseif isexpr(sym, ASSIGN_OPS)
@@ -338,11 +298,12 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
                 ctx.callstack[end].localvars[1][s] = vi
             end
         end
-        if isGlobal || isConst || (ctx.functionLvl + ctx.macroLvl == 0 && ctx.callstack[end].isTop)
+        if isGlobal || isConst || (ctx.functionLvl == 0 && ctx.callstack[end].isTop)
+            # TODO: guess type and use that type information
             register_global(
                 ctx,
                 s,
-                Dict{Symbol,Any}(:file => ctx.file, :line => ctx.line)
+                VarInfo(Location(ctx.file, ctx.line))
            )
         end
     end

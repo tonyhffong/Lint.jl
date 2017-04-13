@@ -1,3 +1,4 @@
+@testset "Deprecation" begin
 Lint.addDummyDeprecates()
 
 s = """
@@ -78,3 +79,4 @@ end
 """
 msgs = lintstr(s)
 @test isempty(msgs)
+end

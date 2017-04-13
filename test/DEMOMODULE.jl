@@ -18,7 +18,7 @@ function lint_helper(ex::Expr, ctx::LintContext)
             if typeof(ex.args[2]) != Symbol
                 Lint.msg(ctx, 2, "@fancyfuncgen must use a symbol argument")
             else
-                push!(ctx.callstack[end].functions, ex.args[2])
+                Lint.addconst!(ctx.callstack[end], ex.args[2], Function, Lint.location(ctx))
             end
             return true
         end
