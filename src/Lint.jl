@@ -6,6 +6,7 @@ using Base.Meta
 using Compat
 using Compat.TypeUtils
 using JSON
+using AutoHashEquals
 import Compat: readline
 
 if isdefined(Base, :unwrap_unionall)
@@ -71,6 +72,7 @@ include("dict.jl")
 include("ref.jl")
 include("curly.jl")
 include("misc.jl")
+include("include.jl")
 include("init.jl")
 include("result.jl")
 include("dynamic.jl")
@@ -123,28 +125,29 @@ function lintpkgforfile(path::AbstractString, ctx::LintContext=LintContext())
     ctx.messages
 end
 
-function lintfile(file::AbstractString)
-    if !ispath(file)
+function lintfile(f::AbstractString)
+    if !ispath(f)
         throw("no such file exists")
     end
-    str = open(readstring, file)
-    lintfile(file, str)
+    str = open(readstring, f)
+    lintfile(f, str)
 end
 
-function lintfile(file::AbstractString, code::AbstractString)
-    ctx = LintContext(file)
+function lintfile(f::AbstractString, code::AbstractString)
+    ctx = LintContext(f)
 
     msgs = lintstr(code, ctx)
 
     # If we have an undeclared symbol, lint the package to try and resolve
     for message in msgs
         if message.code == :E321 # undeclared symbol
-            message = lintpkgforfile(ctx.file, ctx)
+            ctx = LintContext(f)
+            message = lintpkgforfile(file(ctx), ctx)
             break
         end
     end
 
-    filter!(msg -> msg.file == file, msgs)
+    filter!(msg -> file(msg) == f, msgs)
     clean_messages!(msgs)
 
     LintResult(msgs)
@@ -324,34 +327,6 @@ end
 lintexpr(::Any, ::LintContext) = return
 
 """
-Include a file to your lintContext.
-Does nothing if file does not exist or has already been included.
-"""
-function lintinclude(ctx::LintContext, file::AbstractString)
-    if ispath(file) && !(file in ctx.included) && file != ctx.file
-        if !(ctx.file in ctx.included) # We don't want to lint the file again
-            push!(ctx.included, ctx.file)
-        end
-        #println("including: $file")
-        push!(ctx.included, file)
-
-        oldpath = ctx.path
-        oldfile = ctx.file
-        oldlineabs = ctx.lineabs
-
-        str = open(readstring, file)
-        ctx.file = file
-        ctx.path = dirname(file)
-        ctx.lineabs = 1
-        lintstr(str, ctx)
-
-        ctx.file = oldfile
-        ctx.path = oldpath
-        ctx.lineabs = oldlineabs
-    end
-end
-
-"""
 Lint all .jl ending files at a given directory.
 Will ignore LintContext file and already included files.
 """
@@ -376,8 +351,8 @@ function convertmsgtojson(msgs, style, dict_data)
     for msg in msgs
         evar = msg.variable
         txt = msg.message
-        file = msg.file
-        linenumber = msg.line
+        f = file(msg)
+        linenumber = line(msg)
         # Atom index starts from zero thus minus one
         errorrange = Array[[linenumber-1, 0], [linenumber-1, 80]]
         code = string(msg.code)
@@ -405,18 +380,18 @@ function convertmsgtojson(msgs, style, dict_data)
             push!(output, Dict("type" => etype,
                                "text" => msgtext,
                                "range" => errorrange,
-                               "filePath" => file))
+                               "filePath" => f))
         elseif style == "vscode"
             push!(output, Dict("severity" => etypenumber,
                                "message" => "$evar: $txt",
                                "range" => errorrange,
-                               "filePath" => file,
+                               "filePath" => f,
                                "code" => code,
                                "source" => "Lint.jl"))
         elseif style == "standard-linter-v2"
             push!(output, Dict("severity" => etype,
-                               "location" => Dict("file" => file,
-                                                   "position" => errorrange),
+                               "location" => Dict("file" => f,
+                                                  "position" => errorrange),
                                "excerpt" => "$evar: $txt",
                                "description" => code))
 

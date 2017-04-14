@@ -1,4 +1,4 @@
-immutable Location
+@auto_hash_equals immutable Location
     file::String
     line::Int
 end
@@ -6,18 +6,24 @@ file(loc::Location) = loc.file
 line(loc::Location) = loc.line
 file(x) = file(location(x))
 line(x) = line(location(x))
+function Base.show(io::IO, loc::Location)
+    if loc == UNKNOWN_LOCATION
+        print(io, "unknown")
+    else
+        print(io, file(loc), ":", line(loc))
+    end
+end
 
 const UNKNOWN_LOCATION = Location("unknown", -1)
 
-# TODO: Replace with Location(file, line)
-type LintMessage
-    file    :: String
+@auto_hash_equals immutable LintMessage
+    location:: Location
     code    :: Symbol #[E|W|I][1-9][1-9][1-9]
     scope   :: String
-    line    :: Int
     variable:: String
     message :: String
 end
+location(msg::LintMessage) = msg.location
 
 @compat abstract type AdditionalVarInfo end
 
@@ -85,7 +91,7 @@ pragmas(ctx::_LintContext) = Dict{String, PragmaInfo}()
 function pragma!(ctx::_LintContext, pragma, location::Location)
     pragmas(ctx)[pragma] = PragmaInfo(location, false)
 end
-atfinish(ctx::_LintContext, _) = nothing
+finish(ctx::_LintContext, _) = nothing
 
 # A special context for linting a `module` keyword
 immutable ModuleContext <: _LintContext
@@ -107,7 +113,7 @@ globalset!(mctx::ModuleContext, sym::Symbol, info::VarInfo) =
 export!(mctx::ModuleContext, sym::Symbol) = export!(mctx.data, sym)
 exports(mctx::ModuleContext) = exports(mctx.data)
 istoplevel(mctx::ModuleContext) = true
-function atfinish(ctx::ModuleContext, cursor)
+function finish(ctx::ModuleContext, cursor)
     for x in keys(ctx.data.globals)
         vi = ctx.data.globals[x]
         if source(vi) !== :imported  # allow imported bindings
@@ -129,7 +135,7 @@ type LocalContext <: _LintContext
 end
 parent(ctx::LocalContext) = ctx.parent
 pragmas(ctx::LocalContext) = ctx.pragmas
-function atfinish(ctx::LocalContext, cursor)
+function finish(ctx::LocalContext, cursor)
     tl = toplevel(ctx)
     for x in keys(ctx.localvars)
         loc = location(ctx.localvars[x])
@@ -202,8 +208,8 @@ type LintContext
             copy(LINT_IGNORE_DEFAULT), 0, mctx)
     end
 end
-location(ctx::LintContext) = Location(ctx.file, ctx.line)
-finish(cur::LintContext) = atfinish(cur.current, cur)
+location(ctx::LintContext) = Location(ctx.file, ctx.line + ctx.lineabs)
+finish(cur::LintContext) = finish(cur.current, cur)
 
 function LintContext(file::AbstractString; ignore::Array{LintIgnore, 1} = LintIgnore[])
     ctx = LintContext()
@@ -219,7 +225,7 @@ function withcontext(f, ctx::LintContext, temp::_LintContext)
     old = ctx.current
     ctx.current = temp
     f()
-    atfinish(ctx.current, ctx)
+    finish(ctx.current, ctx)
     ctx.current = old
 end
 

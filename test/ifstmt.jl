@@ -18,7 +18,7 @@ msgs = lintstr(s)
 @test length(msgs) == 1
 @test msgs[1].code == :W642
 @test contains(msgs[1].message, "true branch is unreachable")
-@test msgs[1].line == 1
+@test Lint.line(msgs[1]) == 1
 
 s = """
 f(x) = (x=1) ? 1 : 2 # clearly not what we want

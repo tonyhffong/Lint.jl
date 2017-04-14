@@ -1,8 +1,8 @@
-import Lint: level
+import Lint: level, Location
 
-msg1 = LintMessage("none", :W001, "", 1, "foo", "message")
-msg2 = LintMessage("none", :E002, "", 2, "", "message\nmessage")
-msg3 = LintMessage("none", :W001, "", 1, "foo", "message")
+msg1 = LintMessage(Location("none", 1), :W001, "", "foo", "message")
+msg2 = LintMessage(Location("none", 2), :E002, "", "", "message\nmessage")
+msg3 = LintMessage(Location("none", 1), :W001, "", "foo", "message")
 
 @test string(msg1) == "none:1 W001 foo: message"
 @test string(msg2) == "none:2 E002 : message\n              message"
@@ -14,12 +14,12 @@ msg3 = LintMessage("none", :W001, "", 1, "foo", "message")
 @test !isless(msg1, msg3)
 @test !isless(msg3, msg1)
 
-@test isless(msg1, LintMessage("none2", :W001, "", 1, "foo", "message"))
-@test isless(msg1, LintMessage("none", :I001, "", 1, "foo", "message"))
-@test !isless(msg1, LintMessage("none", :E001, "", 1, "foo", "message"))
-@test isless(msg1, LintMessage("none", :W001, "", 2, "foo", "message"))
-@test isless(msg1, LintMessage("none", :W001, "", 1, "foo2", "message"))
-@test isless(msg1, LintMessage("none", :W001, "", 1, "foo", "message2"))
+@test isless(msg1, LintMessage(Location("none2", 1), :W001, "", "foo", "message"))
+@test isless(msg1, LintMessage(Location("none", 1), :I001, "", "foo", "message"))
+@test !isless(msg1, LintMessage(Location("none", 1), :E001, "", "foo", "message"))
+@test isless(msg1, LintMessage(Location("none", 2), :W001, "", "foo", "message"))
+@test isless(msg1, LintMessage(Location("none", 1), :W001, "", "foo2", "message"))
+@test isless(msg1, LintMessage(Location("none", 1), :W001, "", "foo", "message2"))
 
 @test !iserror(msg1)
 @test iswarning(msg1)

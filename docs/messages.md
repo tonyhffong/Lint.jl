@@ -132,6 +132,8 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W353   | (merged into W352)
 | W354   | lambda argument conflicts with an declared global
 | W355   | conflicts with function name
+| W356   | file included more than once
+| W357   | including file that doesn't exist
 | W361   | exporting undefined symbol
 |        |
 | **W4** | *Usage Warning*

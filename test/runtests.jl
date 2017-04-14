@@ -7,9 +7,12 @@ messageset(msgs) = Set(x.code for x in msgs)
 include("exprutils.jl")
 include("statictype.jl")
 
+@testset "Lint Messages" begin
+    include("messages.jl")
+end
+
 try
     @testset "AST Linting" begin
-        include("messages.jl")
         include("basics.jl")
         include("array.jl")
         include("badvars.jl")
