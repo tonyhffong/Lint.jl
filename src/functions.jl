@@ -105,7 +105,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         # in the current scope
         for t in temporaryTypes
             # TODO: infer when t is a type
-            set!(ctx.current, t, VarInfo(location(ctx)))
+            localset!(ctx.current, t, VarInfo(location(ctx)))
         end
 
         argsSeen = Set{Symbol}()
@@ -124,7 +124,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                 msg(ctx, :E411, sube, "non-default argument following default arguments")
             end
             push!(argsSeen, sube)
-            set!(ctx.current, sube, VarInfo(location(ctx)))
+            localset!(ctx.current, sube, VarInfo(location(ctx)))
             if isstaged
                 assertions[sube] = Type
             end
@@ -234,59 +234,21 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
 
         # TODO: deal with staged functions
         lintexpr(ex.args[2], ctx)
-
-        #= TODO: reenable
-        if ctorType != Symbol("") && fname != ctorType &&
-        in(:new, ctx.callstack[end].calledfuncs)
-        msg(ctx, :E517, fname, "constructor-like function name doesn't match type $(ctorType)")
-            end
-            if ctorType != Symbol("") && fname == ctorType
-                t = guesstype(ex.args[2], ctx)
-                if isa(t, Type)
-                    if t ≠ Any && t.name.name != ctorType
-                        msg(ctx, :E611, "constructor doesn't seem to return the constructed object")
-                    end
-                elseif t != ctorType
-                    msg(ctx, :E611, "constructor doesn't seem to return the constructed object")
-                end
-            end
-        end =#
     end
 
     # TODO check cyclomatic complexity?
 end
 
 function lintlambda(ex::Expr, ctx::LintContext)
-    # check for conflicts on lambda arguments
-    #= TODO: reenable after better lookup
-    checklambdaarg = (sym)->begin
-        for i in length(stacktop.localvars):-1:1
-            if haskey(stacktop.localvars[i], sym)
-                msg(ctx, :W352, sym, "lambda argument conflicts with a local variable")
-                break
-            end
-        end
-        for i in length(ctx.callstack):-1:1
-            if haskey(ctx.callstack[i].declglobs, sym)
-                msg(ctx, :W354, sym, "lambda argument conflicts with an declared " *
-                    "global from $(ctx.callstack[i].declglobs[sym])")
-            end
-        end
-        stacktop.localarguments[end][sym] = VarInfo(ctx.line)
-    end =#
-
     # TODO: do not duplicate this code in function
     withcontext(ctx, LocalContext(ctx.current)) do
         function resolveArguments(sube)
             if isa(sube, Symbol)
-                # checklambdaarg(sube)
-                set!(ctx.current, sube, VarInfo(location(ctx)))
-            #= # until lambda supports named args, keep this commented
+                localset!(ctx.current, sube, VarInfo(location(ctx)))
             elseif sube.head == :parameters
                 for kw in sube.args
                     resolveArguments(kw)
                 end
-            =#
             elseif isexpr(sube, Symbol[:(=), :(kw), :(::), :(...)])
                 if sube.head == :(=) || sube.head == :kw
                     resolveArguments(sube.args[1])
@@ -343,22 +305,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         end
     else
         if withincurly(ex.args[1]) == :new
-            #= TODO: reenable when there's better lookup
-            tname = Symbol(ctx.scope)
-            for i = length(ctx.callstack):-1:1
-                if haskey(ctx.callstack[i].typefields, tname)
-                    fields = ctx.callstack[i].typefields[tname]
-                    if 0 < length(ex.args) - 1 < length(fields)
-                        if !pragmaexists("Ignore short new argument", ctx, deep=false)
-                            msg(ctx, :I671, "new is provided with fewer arguments than fields")
-                        end
-                    elseif length(fields) < length(ex.args) - 1
-                        msg(ctx, :E435, "new is provided with more arguments than fields")
-                    end
-                    break
-                end
-            end
-            =#
+            # TODO: lint uses of new?
         else
             lintexpr(ex.args[1], ctx)
         end

@@ -174,6 +174,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I341   | local variable shadows global variable
 | I342   | local variable shadows export from base
 | I343   | global variable with same name as export from base
+| I344   | local variable shadows other local variable
 | I371   | use of undeclared symbol
 | I372   | unable to follow non-literal include file
 | I381   | unused lintpragma

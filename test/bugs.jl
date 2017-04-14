@@ -85,7 +85,7 @@ end
 """))
 
 # bug 209
-@test_broken isempty(lintstr("""
+@test isempty(lintstr("""
 function f{N}(::Array{Int,N})
     s = 0
     for j in 1:N

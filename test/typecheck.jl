@@ -26,7 +26,7 @@ msgs = lintstr(s)
 @test_broken msgs[1].code == :W545
 @test_broken contains(msgs[1].message, "previously used variable has apparent type")
 @test msgs[end].code == :I271
-@test contains(msgs[end].message, "typeof(x) == Complex")
+@test_broken contains(msgs[end].message, "typeof(x) == Complex")
 
 s = """
 function f()

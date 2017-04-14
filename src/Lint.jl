@@ -21,8 +21,6 @@ export iserror, iswarning, isinfo
 export test_similarity_string
 
 const SIMILARITY_THRESHOLD = 10.0
-const ASSIGN_OPS = [:(=), :(+=), :(-=), :(*=), :(/=), :(&=), :(|=)]
-const COMPARISON_OPS = [:(==), :(<), :(>), :(<=), :(>=), :(!=) ]
 
 # no-op. We have to use macro inside type declaration as it disallows actual function calls
 macro lintpragma(s)
@@ -217,15 +215,16 @@ function lintexpr(ex::Expr, ctx::LintContext)
         lintifexpr(ex, ctx)
     elseif ex.head == :(=) && typeof(ex.args[1])==Expr && ex.args[1].head == :call
         lintfunction(ex, ctx)
-    elseif in(ex.head, ASSIGN_OPS)
-        lintassignment(ex, ex.head, ctx)
+    elseif !isnull(expand_assignment(ex))
+        ea = get(expand_assignment(ex))
+        lintassignment(Expr(:(=), ea[1], ea[2]), ctx)
     elseif ex.head == :local
         lintlocal(ex, ctx)
     elseif ex.head == :global
         lintglobal(ex, ctx)
     elseif ex.head == :const
         if typeof(ex.args[1]) == Expr && ex.args[1].head == :(=)
-            lintassignment(ex.args[1], :(=), ctx; isConst = true)
+            lintassignment(ex.args[1], ctx; isConst = true)
         end
     elseif ex.head == :module
         lintmodule(ex, ctx)

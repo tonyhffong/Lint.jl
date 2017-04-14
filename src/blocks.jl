@@ -171,14 +171,14 @@ function lintlet(ex::Expr, ctx::LintContext)
         for arg in ex.args
             # it's always assignment, or the parser would have thrown at the very start
             if isexpr(arg, :(=)) && !isexpr(arg.args[1], :call)
-                lintassignment(arg, :(=), ctx; islocal = true)
+                lintassignment(arg, ctx; islocal = true)
             end
         end
         blk = ex.args[1]
         @assert isexpr(blk, :block)
         for arg in blk.args
             if isexpr(arg, :(=)) && !isexpr(arg.args[1], :call)
-                lintassignment(arg, :(=), ctx; islocal = true)
+                lintassignment(arg, ctx; islocal = true)
             else
                 lintexpr(arg, ctx)
             end

@@ -324,16 +324,14 @@ end
 msgs = lintstr(s)
 @test isempty(msgs)
 
-s="""
+@test_broken isempty(lintstr("""
 function f1(a::Float64, b::Float64)
   function f2(x::Float64, a=a)
     x + a^2
   end
   return f2(b)
 end
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
+"""))
 
 s="""
 function f1(a::Float64; b=string(a))

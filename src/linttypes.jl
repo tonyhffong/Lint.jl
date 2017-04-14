@@ -92,6 +92,10 @@ function pragma!(ctx::_LintContext, pragma, location::Location)
     pragmas(ctx)[pragma] = PragmaInfo(location, false)
 end
 finish(ctx::_LintContext, _) = nothing
+globalset!(ctx::_LintContext, sym::Symbol, info::VarInfo) =
+    set!(ctx, sym, info)
+localset!(ctx::_LintContext, sym::Symbol, info::VarInfo) =
+    set!(ctx, sym, info)
 
 # A special context for linting a `module` keyword
 immutable ModuleContext <: _LintContext
@@ -106,10 +110,9 @@ parent(mctx::ModuleContext) = get(mctx.parent)
 data(mctx::ModuleContext) = mctx.data
 lookup(mctx::ModuleContext, args...; kwargs...) =
     lookup(mctx.data, args...; kwargs...)
+locallookup(mctx::ModuleContext, name::Symbol) = Nullable()
 set!(mctx::ModuleContext, sym::Symbol, info::VarInfo) =
     set!(mctx.data, sym, info)
-globalset!(mctx::ModuleContext, sym::Symbol, info::VarInfo) =
-    set!(mctx, sym, info)
 export!(mctx::ModuleContext, sym::Symbol) = export!(mctx.data, sym)
 exports(mctx::ModuleContext) = exports(mctx.data)
 istoplevel(mctx::ModuleContext) = true
@@ -137,6 +140,7 @@ parent(ctx::LocalContext) = ctx.parent
 pragmas(ctx::LocalContext) = ctx.pragmas
 function finish(ctx::LocalContext, cursor)
     tl = toplevel(ctx)
+    nl = parent(ctx)
     for x in keys(ctx.localvars)
         loc = location(ctx.localvars[x])
         if usages(ctx.localvars[x]) == 0 && !startswith(string(x), "_")
@@ -146,12 +150,25 @@ function finish(ctx::LocalContext, cursor)
             msg(cursor, :I342, x, "local variable defined at $loc shadows export from Base")
         elseif !isnull(lookup(tl, x))
             msg(cursor, :I341, x, "local variable defined at $loc shadows global variable defined at $(location(get(lookup(tl, x))))")
+        elseif !isnull(lookup(nl, x))
+            msg(cursor, :I344, x, "local variable defined at $loc shadows local variable defined at $(location(get(lookup(nl, x))))")
         end
     end
 end
 
 function set!(s::LocalContext, name::Symbol, vi::VarInfo)
-    # TODO: check if symbol already found
+    # TODO: check if it's soft or hard local scope
+    var = locallookup(s, name)
+    if !isnull(var)
+        # TODO: warn about type instability?
+        get(var).typeactual = Union{get(var).typeactual, vi.typeactual}
+    else
+        localset!(s, name, vi)
+    end
+end
+
+function localset!(s::LocalContext, name::Symbol, vi::VarInfo)
+    # TODO: check if already set?
     s.localvars[name] = vi
 end
 
@@ -162,13 +179,22 @@ function globalset!(s::LocalContext, name::Symbol, vi::VarInfo)
     globalset!(parent(s), name, vi)
 end
 
-function lookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
+function locallookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
     if name in keys(ctx.localvars)
         return ctx.localvars[name]
     elseif name in ctx.declglobs
         return lookup(toplevel(ctx), name)
     else
-        return lookup(parent(ctx), name)
+        return locallookup(parent(ctx), name)
+    end
+end
+
+function lookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
+    var = locallookup(ctx, name)
+    if isnull(var)
+        lookup(toplevel(ctx), name)
+    else
+        var
     end
 end
 

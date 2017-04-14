@@ -5,7 +5,7 @@ using ..LintCompat
 
 export split_comparison, simplify_literal, ispairexpr, isliteral,
        lexicaltypeof, lexicalfirst, lexicallast, lexicalvalue,
-       withincurly, expand_trivial_calls
+       withincurly, expand_trivial_calls, expand_assignment, COMPARISON_OPS
 
 """
     withincurly(ex)
@@ -150,5 +150,37 @@ function expand_trivial_calls(ex)
         ex
     end
 end
+
+# TODO: deal with dot-calls
+"""
+    expand_assignment(x)
+
+Return a tuple `(LHS, RHS)` by expanding the expression as if it represents a
+single assignment. For example, `x += y` is expanded to `x = x + y`, which is
+returned as `(x, x + y)`. Return `Nullable()` if the argument could not be
+interpreted as an assignment.
+"""
+function expand_assignment(expr::Expr)::Nullable
+    op = expr.head
+    if op in COMPARISON_OPS
+        Nullable()
+    elseif op == :(=)
+        @assert length(expr.args) == 2
+        Nullable((expr.args[1], expr.args[2]))
+    else
+        str = string(op)
+        if str[end] == '='
+            fop = Symbol(str[1:end-1])
+            @assert length(expr.args) == 2
+            Nullable((expr.args[1], Expr(:call, fop, expr.args[1],
+                                         expr.args[2])))
+        else
+            Nullable()
+        end
+    end
+end
+expand_assignment(_) = Nullable()
+
+const COMPARISON_OPS = [:(==), :(<), :(>), :(<=), :(>=), :(!=)]
 
 end

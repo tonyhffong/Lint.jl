@@ -52,7 +52,7 @@
     @test messageset(msgs) == Set([:I340])
     @test contains(msgs[1].message, "unused local variable")
 
-    @test_broken isempty(lintstr("""
+    @test isempty(lintstr("""
     function f(x)
         x+=1
     end

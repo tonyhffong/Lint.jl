@@ -34,8 +34,9 @@ function lintglobal(ex::Expr, ctx::LintContext)
     for sym in ex.args
         if isa(sym, Symbol)
             globalset!(ctx.current, sym, VarInfo(location(ctx), Any))
-        elseif isexpr(sym, ASSIGN_OPS)
-            lintassignment(sym, sym.head, ctx; isGlobal=true)
+        elseif !isnull(expand_assignment(sym))
+            ea = get(expand_assignment(sym))
+            lintassignment(Expr(:(=), ea[1], ea[2]), ctx; isGlobal=true)
         else
             msg(ctx, :E134, sym, "unknown global pattern")
         end
@@ -49,7 +50,7 @@ function lintlocal(ex::Expr, ctx::LintContext)
             # choice for now.
             set!(ctx.current, sube, VarInfo(location(ctx), Any))
         elseif isexpr(sube, :(=))
-            lintassignment(sube, :(=), ctx; islocal = true)
+            lintassignment(sube, ctx; islocal = true)
         elseif isexpr(sube, :(::))
             sym = sube.args[1]
             @checkisa(ctx, sym, Symbol)
@@ -87,7 +88,7 @@ function resolveLHSsymbol(ex, syms::Array{Any,1}, ctx::LintContext, assertions::
     end
 end
 
-function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false) # is it a local decl & assignment?
+function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false) # is it a local decl & assignment?
     lhs = ex.args[1]
 
     # lower curly
@@ -191,6 +192,8 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         if isGlobal || isConst || istoplevel(ctx.current)
             globalset!(ctx.current, s, vi)
             # TODO: guess type and use that type information
+        elseif islocal
+            localset!(ctx.current, s, vi)
         else
             set!(ctx.current, s, vi)
         end
