@@ -1,19 +1,11 @@
 module ExpressionUtils
 
 using Base.Meta
+using ..LintCompat
 
 export split_comparison, simplify_literal, ispairexpr, isliteral,
        lexicaltypeof, lexicalfirst, lexicallast, lexicalvalue,
        withincurly, expand_trivial_calls
-
-# TODO: remove when 0.5 support dropped
-function BROADCAST(f, x::Nullable)
-    if isnull(x)
-        Nullable()
-    else
-        Nullable(f(get(x)))
-    end
-end
 
 """
     withincurly(ex)

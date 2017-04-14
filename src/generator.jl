@@ -1,5 +1,5 @@
 function lintgenerator(ex::Expr, ctx::LintContext; typed::Bool = false)
-    pushVarScope(ctx)
+    # TODO: use a new variable scope
     st = typed ? 3 : 2
     fn = typed ? 2 : 1
 
@@ -10,5 +10,4 @@ function lintgenerator(ex::Expr, ctx::LintContext; typed::Bool = false)
         end
     end
     lintexpr(ex.args[fn], ctx)
-    popVarScope(ctx)
 end

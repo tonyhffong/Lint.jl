@@ -21,8 +21,8 @@ s = """
 end
 """
 msgs = lintstr(s)
-@test msgs[1].code == :I371
-@test contains(msgs[1].message, "use of undeclared symbol")
+@test_broken msgs[1].code == :I371
+@test_broken contains(msgs[1].message, "use of undeclared symbol")
 
 s = """
 @generated function f(args::Int...)

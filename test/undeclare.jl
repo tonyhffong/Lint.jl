@@ -15,7 +15,7 @@
     """))
 
     # from @pao
-    @test isempty(lintstr("""
+    @test_broken isempty(lintstr("""
     function f()
         @lintpragma("Ignore use of undeclared variable aone")
         addOne() = @withOneVar aone (aone + 1)

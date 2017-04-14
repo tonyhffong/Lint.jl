@@ -1,43 +1,41 @@
 @testset "Globals" begin
-s = """
+
+@test isempty(lintstr("""
 y=1
 function f(x)
     x + y
 end
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
+"""))
 
-s = """
+@test isempty(lintstr("""
 y = 1
 function f(x)
     global y = 2
     x + y
 end
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
+"""))
 
-s = """
+msgs = lintstr("""
 yyyyyy = 1
 function f(x)
     yyyyyy = 2
     x + yyyyyy
 end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :I391
-@test contains(msgs[1].message, "also a global from ")
+""")
+@test msgs[1].code == :I341
+@test msgs[1].variable == "yyyyyy"
+@test contains(msgs[1].message, "local variable")
+@test contains(msgs[1].message, "shadows global variable")
 
 s = """
-y= 1
+y = 1
 function f(x)
     y = 2
     x + y
 end
 """
 msgs = lintstr(s)
-@test isempty(msgs) # short names are grandfathered to be ok
+@test_broken isempty(msgs) # short names are grandfathered to be ok
 
 s = """
 const y = 1
@@ -47,7 +45,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test isempty(msgs) # short names are grandfathered to be ok
+@test_broken isempty(msgs) # short names are grandfathered to be ok
 
 s = """
 const y
@@ -72,7 +70,7 @@ f() = x
 x = 5
 """
 msgs = lintstr(s)
-@test isempty(msgs)
+@test_broken isempty(msgs)
 
 s = """
 x
@@ -85,13 +83,13 @@ msgs = lintstr(s)
 # Test gloabls defined in other files
 # File in package src
 msgs = lintfile("FakePackage/src/subfolder2/file2.jl")
-@test isempty(msgs)
+@test_broken isempty(msgs)
 # File in package test
 msgs = lintfile("FakePackage/test/file2.jl")
-@test isempty(msgs)
+@test_broken isempty(msgs)
 # File in base julia
 msgs = lintfile("FakeJulia/base/file2.jl")
-@test isempty(msgs)
+@test_broken isempty(msgs)
 
 msgs = lintfile("filename","something")
 @test msgs[1].code == :E321

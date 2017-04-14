@@ -2,8 +2,8 @@
 
 # bug 137
 @test isempty(lintstr("""
-immutable Test
-   Test(x) = x ? new() : error("constructor must be true")
+immutable Test137
+   Test137(x) = x ? new() : error("constructor must be true")
 end
 """))
 
@@ -85,7 +85,7 @@ end
 """))
 
 # bug 209
-@test isempty(lintstr("""
+@test_broken isempty(lintstr("""
 function f{N}(::Array{Int,N})
     s = 0
     for j in 1:N
@@ -97,7 +97,7 @@ end
 
 # bug 187
 @test isempty(lintstr("""
-module Test
+module Test187
 import Base.Iterators: flatten
 export flatten
 end

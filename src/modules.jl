@@ -1,42 +1,40 @@
 # module, using, import, export
-
 function lintmodule(ex::Expr, ctx::LintContext)
-    addconst!(ctx.callstack[end], ex.args[2], Module,
-              Location(ctx.file, ctx.line))
-    pushcallstack(ctx)
-    stacktop = ctx.callstack[end]
-    stacktop.moduleName = ex.args[2]
-    stacktop.isTop = true
+    @checktoplevel(ctx, "module")
 
-    lintexpr(ex.args[3], ctx)
-
-    undefs = setdiff(stacktop.exports, keys(stacktop.declglobs))
-    undefs = setdiff(undefs, keys(stacktop.localvars[1]))
-    undefs = setdiff(undefs, stacktop.imports)
-
-    for sym in undefs
-        msg(ctx, :W361, sym, "exporting undefined symbol")
+    # TODO: do something about baremodules
+    bare = ex.args[1]::Bool
+    name = ex.args[2]
+    if !isa(name, Symbol)
+        msg(ctx, :E100, "module name must be a symbol")
+        return
     end
-    popcallstack(ctx)
+    set!(ctx.current, name, VarInfo(location(ctx), Module))
+    mctx = ModuleContext(ctx.current, ModuleInfo(name))
+    withcontext(ctx, mctx) do
+        lintexpr(ex.args[3], ctx)
+        for sym in exports(ctx.current)
+            if isnull(lookup(ctx.current, sym))
+                msg(ctx, :W361, sym, "exporting undefined symbol")
+            end
+        end
+    end
 end
 
 function lintusing(ex::Expr, ctx::LintContext)
+    @checktoplevel(ctx, "using")
+
     # Don't use modules protected by a guard (these can cause crashes!)
     # see issue #149
     ctx.ifdepth > 0 && return
-    if ctx.functionLvl > 0
-        msg(ctx, :E414, "using is not allowed inside function definitions")
-    end
+
+    # TODO: distinguish between using and import
     for s in ex.args
         if s != :(.)
-            register_global(
-                ctx,
-                s,
-                VarInfo(Location(ctx.file, ctx.line))
-           )
+            set!(ctx.current, s, VarInfo(location(ctx); source=:imported))
         end
     end
-    if ex.args[1] != :(.) && ctx.versionreachable(VERSION)
+    if ex.args[1] != :(.)
         m = nothing
         path = join(map(string, ex.args), ".")
         try
@@ -46,51 +44,27 @@ function lintusing(ex::Expr, ctx::LintContext)
         t = typeof(m)
         if t == Module
             for n in names(m)
-                if !haskey(ctx.callstack[end].declglobs, n)
-                    register_global(
-                        ctx,
-                        n,
-                        VarInfo(Location(ctx.file, ctx.line))
-                   )
-                end
+                # TODO: don't overwrite existing identifiers
+                set!(ctx.current, n, VarInfo(location(ctx); source=:imported))
             end
 
-            if in(:lint_helper, names(m, true))
-                if !haskey(ctx.callstack[end].linthelpers, path)
-                    println("found lint_helper in " * string(m))
-                end
-                ctx.callstack[end].linthelpers[path] = m.lint_helper
-            end
+            # TODO: restore lint helper
         end
     end
 end
 
 function lintexport(ex::Expr, ctx::LintContext)
-    if ctx.functionLvl > 0
-        msg(ctx, :E415, "export is not allowed inside function definitions")
-    end
+    @checktoplevel(ctx, "export")
     for sym in ex.args
-        if in(sym, ctx.callstack[end].exports)
+        if sym in exports(ctx.current)
             msg(ctx, :E333, sym, "duplicate exports of symbol")
         else
-            push!(ctx.callstack[end].exports, sym)
+            export!(ctx.current, sym)
         end
     end
 end
 
 function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
-    if ctx.functionLvl > 0
-        msg(ctx, :E416, "import is not allowed inside function definitions")
-    end
-    if !ctx.versionreachable(VERSION)
-        return
-    end
-    problem = false
-    m = nothing
-    register_global(
-        ctx,
-        ex.args[end],
-        VarInfo(Location(ctx.file, ctx.line))
-    )
-    push!(ctx.callstack[end].imports, ex.args[end])
+    @checktoplevel(ctx, "import")
+    set!(ctx.current, ex.args[end], VarInfo(location(ctx); source=:imported))
 end

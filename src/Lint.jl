@@ -14,7 +14,7 @@ else
     unwrap_unionall(x) = x
 end
 
-export LintMessage, LintContext, LintStack
+export LintMessage, LintContext
 export lintfile, lintstr, lintpkg, lintserver, @lintpragma
 export iserror, iswarning, isinfo
 export test_similarity_string
@@ -29,10 +29,31 @@ end
 
 import Base: ==
 
+# needed for BROADCAST
+include("compat.jl")
+using .LintCompat
 include("exprutils.jl")
 using .ExpressionUtils
 
 include("statictype.jl")
+
+macro checktoplevel(ctx, expr)
+    quote
+        if !istoplevel($(esc(ctx)).current)
+            msg($(esc(ctx)), :E100, "$($expr) expression must be at top level")
+            return
+        end
+    end
+end
+
+macro checkisa(ctx, var, typ)
+    quote
+        if !isa($(esc(var)), $(esc(typ)))
+            msg($(esc(ctx)), :E101, $(esc(var)), "this expression must be a $($(esc(typ)))")
+            return
+        end
+    end
+end
 
 include("linttypes.jl")
 include("messages.jl")
@@ -98,6 +119,7 @@ function lintpkgforfile(path::AbstractString, ctx::LintContext=LintContext())
             end
         end
     end
+    finish(ctx)
     ctx.messages
 end
 
@@ -161,6 +183,7 @@ function lintstr(str::AbstractString, ctx::LintContext = LintContext(), lineoffs
             break
         end
     end
+    finish(ctx)
     ctx.messages
 end
 
@@ -177,12 +200,7 @@ function lintexpr(ex::QuoteNode, ctx::LintContext)
 end
 
 function lintexpr(ex::Expr, ctx::LintContext)
-    for h in values(ctx.callstack[end].linthelpers)
-        if h(ex, ctx) == true
-            return
-        end
-    end
-
+    # TODO: reenable linthelpers
     if ex.head == :line
         # ignore line numer nodes
         return
@@ -346,6 +364,7 @@ function lintdir(dir::AbstractString, ctx::LintContext=LintContext())
             end
         end
     end
+    finish(ctx)
     ctx.messages
 end
 
