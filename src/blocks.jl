@@ -32,19 +32,9 @@ function lintblock(ex::Expr, ctx::LintContext)
     end
 
     for (i,sube) in enumerate(ex.args)
-        if typeof(sube) == Expr
+        if isa(sube, Expr)
             if sube.head == :line
                 ctx.line = sube.args[1]-1
-                #=
-                # We don't use the file argument since it is inaccurate
-                # as of 0.4.0-dev+1833
-                if length(sube.args)>1
-                    file= string(sube.args[2])
-                    if file != "none"
-                        ctx.file = file
-                    end
-                end
-                =#
                 continue
             elseif sube.head == :return && i != length(ex.args)
                 msg(ctx, :W641, "unreachable code after return")
@@ -69,12 +59,12 @@ function lintblock(ex::Expr, ctx::LintContext)
                 lintexpr(sube, ctx)
                 lastexpr = sube
             end
-        elseif typeof(sube) == QuoteNode
+        elseif isa(sube, QuoteNode)
             lintexpr(sube,ctx)
-        elseif typeof(sube) == LineNumberNode
+        elseif isa(sube, LineNumberNode)
             ctx.line = sube.line-1
             continue
-        elseif typeof(sube) == Symbol
+        elseif isa(sube, Symbol)
             registersymboluse(sube, ctx)
             if checksimilarityflag
                 checksimilarity()

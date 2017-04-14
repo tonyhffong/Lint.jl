@@ -64,7 +64,7 @@ function lintexport(ex::Expr, ctx::LintContext)
     end
 end
 
-function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
+function lintimport(ex::Expr, ctx::LintContext)
     @checktoplevel(ctx, "import")
     set!(ctx.current, ex.args[end], VarInfo(location(ctx); source=:imported))
 end

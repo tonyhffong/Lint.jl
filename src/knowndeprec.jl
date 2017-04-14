@@ -73,7 +73,6 @@ end
 
 function parseDeprecate(ex, lineabs)
     global deprecates
-    typeHints = Dict{Symbol, Any}()
 
     if Meta.isexpr(ex, :function) || Meta.isexpr(ex, :(=)) && Meta.isexpr(ex.args[1], :call)
         callex = ex.args[1]

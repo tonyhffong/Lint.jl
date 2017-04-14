@@ -21,4 +21,10 @@
     """)
     @test messageset(msgs) == Set([:I343])
     @test contains(msgs[1].message, "with same name as export from Base")
+
+    @test_broken isempty(lintstr("""
+    import Base: parent
+    @compat struct MyType end
+    parent(_::MyType) = MyType()
+    """))
 end

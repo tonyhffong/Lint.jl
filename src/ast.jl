@@ -63,7 +63,8 @@ function lintexpr(ex::Expr, ctx::LintContext)
     elseif ex.head == :import # single name import. e.g. import Base
         lintimport(ex, ctx)
     elseif ex.head == :importall
-        lintimport(ex, ctx; all=true)
+        # TODO: not quite same as using
+        lintusing(ex, ctx)
     elseif ex.head == :comparison # only the odd indices
         for i in 1:2:length(ex.args)
             # comparison like match != 0:-1 is allowed, and shouldn't trigger lint warnings

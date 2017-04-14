@@ -20,7 +20,7 @@ function lintpkgforfile(path::AbstractString, ctx::LintContext=LintContext())
         else
             len = count(x -> x == '/', path) - 1
         end
-        for i = 1:len
+        for _ = 1:len
             path, folder = splitdir(path)
             if folder == "src"
                 file = joinpath(path, folder, basename(path) * ".jl")

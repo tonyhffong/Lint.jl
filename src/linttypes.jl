@@ -1,6 +1,10 @@
 include("types/location.jl")
 include("types/lintmessage.jl")
 
+# in fact our parent and Base.parent have the same meaning: as if climbing a
+# tree toward the root
+import Base: parent
+
 @compat abstract type AdditionalVarInfo end
 
 """

@@ -49,7 +49,7 @@ signature `argtypes` will result in an error.
 Consumers of this package are advised to use `infertype` and check the result
 against `Union{}`, which covers more cases.
 """
-isknownerror(f, argtypes) = false
+isknownerror(_f, _argtypes) = false
 function isknownerror(::typeof(Base.getindex), argtypes)
     if isempty(argtypes)
         true
