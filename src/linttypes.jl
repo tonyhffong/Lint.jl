@@ -1,29 +1,5 @@
-@auto_hash_equals immutable Location
-    file::String
-    line::Int
-end
-file(loc::Location) = loc.file
-line(loc::Location) = loc.line
-file(x) = file(location(x))
-line(x) = line(location(x))
-function Base.show(io::IO, loc::Location)
-    if loc == UNKNOWN_LOCATION
-        print(io, "unknown")
-    else
-        print(io, file(loc), ":", line(loc))
-    end
-end
-
-const UNKNOWN_LOCATION = Location("unknown", -1)
-
-@auto_hash_equals immutable LintMessage
-    location:: Location
-    code    :: Symbol #[E|W|I][1-9][1-9][1-9]
-    scope   :: String
-    variable:: String
-    message :: String
-end
-location(msg::LintMessage) = msg.location
+include("types/location.jl")
+include("types/lintmessage.jl")
 
 @compat abstract type AdditionalVarInfo end
 
@@ -198,16 +174,10 @@ function lookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
     end
 end
 
-type LintIgnore
+@auto_hash_equals immutable LintIgnore
     errorcode::Symbol
     variable::AbstractString
-    messages::Array{LintMessage, 1} # messages that have been ignored
-    LintIgnore(e::Symbol, v::AbstractString) = new(e, v, LintMessage[])
-end
-
-function ==(m1::LintIgnore, m2::LintIgnore)
-    m1.errorcode == m2.errorcode &&
-    m1.variable == m2.variable
+    LintIgnore(e::Symbol, v::AbstractString) = new(e, v)
 end
 
 const LINT_IGNORE_DEFAULT = LintIgnore[LintIgnore(:W651, "")]
@@ -257,4 +227,20 @@ end
 
 function lookup(ctx::LintContext, sym::Symbol)::Nullable{VarInfo}
     lookup(ctx.current, sym)
+end
+
+function msg(ctx::LintContext, code::Symbol, variable, str::AbstractString)
+    variable = string(variable)
+    m = LintMessage(location(ctx), code, ctx.scope, variable, str)
+    # filter out messages to ignore
+    i = findfirst(ctx.ignore, LintIgnore(code, variable))
+    if i == 0
+        push!(ctx.messages, m)
+    else
+        push!(ctx.ignore[i].messages, m)
+    end
+end
+
+function msg(ctx::LintContext, code::Symbol, str::AbstractString)
+    msg(ctx, code, "", str)
 end

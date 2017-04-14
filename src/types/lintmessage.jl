@@ -1,3 +1,12 @@
+@auto_hash_equals immutable LintMessage
+    location:: Location
+    code    :: Symbol #[E|W|I][1-9][1-9][1-9]
+    scope   :: String
+    variable:: String
+    message :: String
+end
+location(msg::LintMessage) = msg.location
+
 function Base.show(io::IO, m::LintMessage)
     s = string(location(m), " ", m.code, " ", m.variable, ": ")
     print(io, s)
@@ -27,22 +36,6 @@ function Base.isless(m1::LintMessage, m2::LintMessage)
         return m1.variable < m2.variable
     end
     return m1.message < m2.message
-end
-
-function msg(ctx::LintContext, code::Symbol, variable, str::AbstractString)
-    variable = string(variable)
-    m = LintMessage(location(ctx), code, ctx.scope, variable, str)
-    # filter out messages to ignore
-    i = findfirst(ctx.ignore, LintIgnore(code, variable))
-    if i == 0
-        push!(ctx.messages, m)
-    else
-        push!(ctx.ignore[i].messages, m)
-    end
-end
-
-function msg(ctx::LintContext, code::Symbol, str::AbstractString)
-    msg(ctx, code, "", str)
 end
 
 iserror(m::LintMessage) = string(m.code)[1] == 'E'
