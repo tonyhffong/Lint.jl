@@ -42,6 +42,11 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         return
     end
 
+    # TODO: defer this until later
+    lintfunctionbody(ctx, ex, isstaged)
+end
+
+function lintfunctionbody(ctx::LintContext, ex, isstaged)
     temporaryTypes = Any[]
 
     fname = Symbol("")
@@ -99,7 +104,6 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
                 "deprecated.jl $(isDeprecated.line)")
         end
     end
-
     withcontext(ctx, LocalContext(ctx.current)) do
         # temporaryTypes are the type parameters in curly brackets, make them legal
         # in the current scope

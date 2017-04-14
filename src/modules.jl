@@ -19,6 +19,7 @@ function lintmodule(ex::Expr, ctx::LintContext)
             end
         end
     end
+    info!(get(lookup(ctx.current, name)), data(mctx))
 end
 
 function lintusing(ex::Expr, ctx::LintContext)

@@ -32,6 +32,9 @@ location(vi::VarInfo) = vi.location
 registeruse!(vi::VarInfo) = (vi.usages += 1; vi)
 usages(vi::VarInfo) = vi.usages
 source(vi::VarInfo) = vi.source
+function info!(vi::VarInfo, info::AdditionalVarInfo)
+    vi.extra = Nullable(info)
+end
 
 immutable ModuleInfo <: AdditionalVarInfo
     name          :: Symbol
@@ -59,6 +62,19 @@ function lookup(data::ModuleInfo, sym::Symbol)::Nullable{VarInfo}
     return Nullable{VarInfo}()
 end
 
+immutable MethodInfo <: AdditionalVarInfo
+    # signature :: ...
+    body :: Any
+end
+
+# TODO: currently, this is not actually used
+immutable FunctionInfo <: AdditionalVarInfo
+    name    :: Symbol
+    methods :: Vector{MethodInfo}
+end
+name(data::FunctionInfo) = data.name
+method!(data::FunctionInfo, mi::MethodInfo) = push!(data.methods, mi)
+
 type PragmaInfo
     location :: Location
     used     :: Bool
@@ -82,7 +98,14 @@ immutable ModuleContext <: _LintContext
     parent        :: Nullable{_LintContext}
     data          :: ModuleInfo
     pragmas       :: Dict{String, PragmaInfo}
-    ModuleContext(parent, data) = new(parent, data, Dict())
+
+    """
+    Methods whose linting has been deferred until the completion of this
+    context.
+    """
+    deferred      :: Vector{MethodInfo}
+
+    ModuleContext(parent, data) = new(parent, data, Dict(), [])
 end
 
 pragmas(mctx::ModuleContext) = mctx.pragmas
@@ -114,7 +137,13 @@ type LocalContext <: _LintContext
     localvars     :: Dict{Symbol, VarInfo}
     oosvars       :: Set{Symbol}
     pragmas       :: Dict{String, PragmaInfo}
-    LocalContext(parent) = new(parent, Set(), Dict(), Set(), Dict())
+
+    """
+    Methods whose linting has been deferred until the completion of this
+    context.
+    """
+    deferred      :: Vector{MethodInfo}
+    LocalContext(parent) = new(parent, Set(), Dict(), Set(), Dict(), [])
 end
 parent(ctx::LocalContext) = ctx.parent
 pragmas(ctx::LocalContext) = ctx.pragmas
