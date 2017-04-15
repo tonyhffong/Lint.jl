@@ -55,7 +55,9 @@ end
 function lintfile(f::AbstractString, code::AbstractString)
     ctx = LintContext(f)
 
-    msgs = lintstr(code, ctx)
+    _lintstr(code, ctx)
+    finish(ctx)
+    msgs = ctx.messages
 
     # If we have an undeclared symbol, lint the package to try and resolve
     for message in msgs
@@ -72,7 +74,7 @@ function lintfile(f::AbstractString, code::AbstractString)
     LintResult(msgs)
 end
 
-function lintstr(str::AbstractString, ctx::LintContext = LintContext(), lineoffset = 0)
+function _lintstr(str::AbstractString, ctx::LintContext, lineoffset = 0)
     linecharc = cumsum(map(x->endof(x)+1, split(str, "\n", keep=true)))
     numlines = length(linecharc)
     i = start(str)
@@ -105,6 +107,10 @@ function lintstr(str::AbstractString, ctx::LintContext = LintContext(), lineoffs
             break
         end
     end
+end
+
+function lintstr(str::AbstractString, ctx::LintContext = LintContext())
+    _lintstr(str, ctx)
     finish(ctx)
     ctx.messages
 end

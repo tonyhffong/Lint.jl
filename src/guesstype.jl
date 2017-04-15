@@ -167,17 +167,14 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
         end
 
         if isa(ex.args[1], Symbol)
-            what = registersymboluse(ex.args[1], ctx, false)
-            if what == :Type
+            what = registersymboluse(ex.args[1], ctx)
+            if what <: Type
                 elt = stdlibobject(ex.args[1])
                 if !isnull(elt) && isa(get(elt), Type)
                     return Vector{get(elt)}
                 else
                     return Vector
                 end
-            elseif what == :Any
-                msg(ctx, :W543, ex.args[1], "Lint cannot determine if Type or not")
-                return Any
             end
         end
         # not symbol, or symbol but it refers to a variable

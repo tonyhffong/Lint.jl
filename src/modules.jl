@@ -38,6 +38,7 @@ function lintusing(ex::Expr, ctx::LintContext)
     if ex.args[1] != :(.)
         m = nothing
         path = join(map(string, ex.args), ".")
+        # TODO: mark as dynamic
         try
             eval(Main, ex)
             m = eval(Main, parse(path))
@@ -46,7 +47,9 @@ function lintusing(ex::Expr, ctx::LintContext)
         if t == Module
             for n in names(m)
                 # TODO: don't overwrite existing identifiers
-                set!(ctx.current, n, VarInfo(location(ctx); source=:imported))
+                vi = VarInfo(location(ctx), typeof(getfield(m, n));
+                             source=:imported)
+                set!(ctx.current, n, vi)
             end
 
             # TODO: restore lint helper

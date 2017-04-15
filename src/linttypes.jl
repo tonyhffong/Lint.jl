@@ -64,8 +64,11 @@ end
 
 immutable MethodInfo <: AdditionalVarInfo
     # signature :: ...
-    body :: Any
+    location :: Location
+    body     :: Any
+    isstaged :: Bool
 end
+location(mi::MethodInfo) = mi.location
 
 # TODO: currently, this is not actually used
 immutable FunctionInfo <: AdditionalVarInfo
@@ -116,6 +119,9 @@ lookup(mctx::ModuleContext, args...; kwargs...) =
 locallookup(mctx::ModuleContext, name::Symbol) = Nullable()
 set!(mctx::ModuleContext, sym::Symbol, info::VarInfo) =
     set!(mctx.data, sym, info)
+function defer!(mctx::ModuleContext, mi::MethodInfo)
+    push!(mctx.deferred, mi)
+end
 export!(mctx::ModuleContext, sym::Symbol) = export!(mctx.data, sym)
 exports(mctx::ModuleContext) = exports(mctx.data)
 istoplevel(mctx::ModuleContext) = true
@@ -128,6 +134,9 @@ function finish(ctx::ModuleContext, cursor)
                 msg(cursor, :I343, x, "global variable defined at $loc with same name as export from Base")
             end
         end
+    end
+    for method in ctx.deferred
+        lintfunctionbody(cursor, method)
     end
 end
 
@@ -147,7 +156,13 @@ type LocalContext <: _LintContext
 end
 parent(ctx::LocalContext) = ctx.parent
 pragmas(ctx::LocalContext) = ctx.pragmas
+function defer!(ctx::LocalContext, mi::MethodInfo)
+    push!(ctx.deferred, mi)
+end
 function finish(ctx::LocalContext, cursor)
+    for method in ctx.deferred
+        lintfunctionbody(cursor, method)
+    end
     tl = toplevel(ctx)
     nl = parent(ctx)
     for x in keys(ctx.localvars)
@@ -238,6 +253,13 @@ type LintContext
     end
 end
 location(ctx::LintContext) = Location(ctx.file, ctx.line + ctx.lineabs)
+function location!(ctx::LintContext, loc::Location)
+    ctx.file = file(loc)
+    ctx.path = dirname(ctx.file)
+    ctx.lineabs = line(loc)
+    ctx.line = 0
+end
+
 finish(cur::LintContext) = finish(cur.current, cur)
 
 function LintContext(file::AbstractString; ignore::Array{LintIgnore, 1} = LintIgnore[])

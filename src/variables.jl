@@ -1,33 +1,20 @@
-# :var - a non-Type value
-# :Type
-# :Any - don't know, could be either (with lint warnings, if strict)
-
-# if strict == false, it won't generate lint warnings, just return :Any
-# TODO: investigate why the odd return type
-function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
+function registersymboluse(sym::Symbol, ctx::LintContext)
     if sym == :end
         # TODO: handle this special case elsewhere
-        return :var
+        return Any
     end
 
     lookupresult = BROADCAST(registeruse!, lookup(ctx, sym))
 
-    result = if isnull(lookupresult)
-        # Fall back to dynamic evaluation in Main
-        result = dynamic_imported_binding_type(sym)
-    else
-        get(lookupresult).typeactual <: Type ? :Type : :var
-    end
-    if strict && result === :Any &&
-       !pragmaexists("Ignore use of undeclared variable $sym", ctx.current)
-        if ctx.quoteLvl == 0
+    if isnull(lookupresult)
+        if !pragmaexists("Ignore use of undeclared variable $sym", ctx.current) &&
+           ctx.quoteLvl == 0
             msg(ctx, :E321, sym, "use of undeclared symbol")
-        # TODO: reenable
-        #elseif ctx.isstaged
-        #    msg(ctx, :I371, sym, "use of undeclared symbol")
         end
+        Any
+    else
+        return get(lookupresult).typeactual
     end
-    return result
 end
 
 function lintglobal(ex::Expr, ctx::LintContext)

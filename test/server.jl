@@ -167,7 +167,7 @@ end
                        "code_str" => "pi = 1\nfunction a(b)\nend",
                        "show_code" => false)
     results_array = writeandreadserver(pipe_slv1, json_input7)
-    @test_broken startswith(results_array[1]["text"], "I343 pi: global variable")
+    @test startswith(results_array[1]["text"], "pi: global variable")
     @test results_array[1]["filePath"] == "none"
     @test_broken results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test_broken results_array[1]["type"] == "warning"
@@ -176,7 +176,7 @@ end
                        "code_str" => "pi = 1\nfunction a(b)\nend",
                        "show_code" => true)
     results_array = writeandreadserver(pipe_slv1, json_input8)
-    @test_broken startswith(results_array[1]["text"], "I343 pi: global variable")
+    @test startswith(results_array[1]["text"], "I343 pi: global variable")
     @test results_array[1]["filePath"] == "none"
     @test_broken results_array[1]["range"] == Array[[0, 0], [0, 80]]
     @test results_array[1]["type"] == "info"

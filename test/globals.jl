@@ -70,7 +70,7 @@ f() = x
 x = 5
 """
 msgs = lintstr(s)
-@test_broken isempty(msgs)
+@test isempty(msgs)
 
 s = """
 x

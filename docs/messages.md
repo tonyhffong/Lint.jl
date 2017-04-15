@@ -149,8 +149,8 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | **W5** | *Type Warning*
 | W541   | (removed in Lint 0.3.0)
 | W542   | comparing apparently incompatible types
-| W543   | cannot determine if Type or not
-| W544   | cannot determine if Type or not
+| W543   | (no longer used)
+| W544   | (no longer used)
 | W545   | previously used variable has apparent type X, but now assigned Y
 | W546   | implicitly discarding values, m of n used
 |        |

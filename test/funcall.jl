@@ -6,8 +6,6 @@ function f(x; y = 1, z::Int = 4)
 end
 
 f(1; y = 3)
-
-z = Dict{Symbol, Any}()
 """
 msgs = lintstr(s)
 @test isempty(msgs)
@@ -343,22 +341,6 @@ msgs = lintstr(s)
 
 s = """
 function f end
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
-
-s = """
-f(; a=1) = a
-a = :b
-f(; a => 1)
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
-
-s="""
-f(; a=1) = a
-a = (:a, 1)
-f(; a)
 """
 msgs = lintstr(s)
 @test isempty(msgs)

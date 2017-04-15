@@ -11,20 +11,14 @@ function lintinclude(ctx::LintContext, f::AbstractString)
             push!(ctx.included, f)
         end
 
-        oldpath = ctx.path
-        oldfile = file(ctx)
-        oldlineabs = ctx.lineabs
-
+        oldloc = location(ctx)
         str = open(readstring, f)
-        ctx.file = f
-        ctx.path = dirname(f)
-        ctx.lineabs = 1
+        location!(ctx, Location(f, 1))
+        
         # TODO: make sure to perform the include at top level
-        lintstr(str, ctx)
+        _lintstr(str, ctx)
 
-        ctx.file = oldfile
-        ctx.path = oldpath
-        ctx.lineabs = oldlineabs
+        location!(ctx, oldloc)
     else
         msg(ctx, :W357, f, "included file doesn't exist")
     end

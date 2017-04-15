@@ -42,32 +42,49 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
         return
     end
 
-    # TODO: defer this until later
-    lintfunctionbody(ctx, ex, isstaged)
-end
-
-function lintfunctionbody(ctx::LintContext, ex, isstaged)
-    temporaryTypes = Any[]
-
     fname = Symbol("")
     if ex.args[1].head == :tuple # anonymous
         # do nothing
     elseif isexpr(ex.args[1].args[1], :(.))
         fname = ex.args[1].args[1]
-        # TODO: this is tricky. can't just add a new symbol
     elseif isa(ex.args[1].args[1], Symbol)
         fname = ex.args[1].args[1]
-        # TODO: check if we might be extending an existing function
-        set!(ctx.current, fname, VarInfo(location(ctx), Function))
     elseif !isa(ex.args[1].args[1], Expr)
         msg(ctx, :E121, ex.args[1].args[1], "Lint does not understand the expression")
         return
     elseif ex.args[1].args[1].head == :curly
         fname = ex.args[1].args[1].args[1]
-        if isa(fname, Symbol)
-            # TODO: check if we might be extending an existing function
+    end
+    if isa(fname, Symbol)
+        # TODO: warn if it's a using'd thing
+        finfo = lookup(ctx.current, fname)
+        if isnull(finfo)
             set!(ctx.current, fname, VarInfo(location(ctx), Function))
+        else
+            # TODO: warn if it's something bad
         end
+    end
+
+    ctx.scope = string(fname)
+    if fname != Symbol("") && !contains(ctx.file, "deprecate")
+        isDeprecated = functionIsDeprecated(ex.args[1])
+        if isDeprecated != nothing && !pragmaexists("Ignore deprecated $fname", ctx.current)
+            msg(ctx, :E211, ex.args[1], "$(isDeprecated.message); See: " *
+                "deprecated.jl $(isDeprecated.line)")
+        end
+    end
+
+    defer!(ctx.current, MethodInfo(location(ctx), ex, isstaged))
+end
+
+function lintfunctionbody(ctx::LintContext, mi::MethodInfo)
+    ex = mi.body
+    isstaged = mi.isstaged
+    oldloc = location(ctx)
+    location!(ctx, location(mi))
+    temporaryTypes = Any[]
+    if isexpr(ex, [:(=), :function]) && isexpr(ex.args[1], :call) &&
+       isexpr(ex.args[1].args[1], :curly)
         for i in 2:length(ex.args[1].args[1].args)
             adt = ex.args[1].args[1].args[i]
             if isa(adt, Symbol)
@@ -92,18 +109,8 @@ function lintfunctionbody(ctx::LintContext, ex, isstaged)
                 push!(temporaryTypes, adt.args[1])
             end
         end
-    elseif ex.args[1].args[1].head == :($)
-        lintexpr(ex.args[1].args[1].args[1], ctx)
     end
 
-    ctx.scope = string(fname)
-    if fname != Symbol("") && !contains(ctx.file, "deprecate")
-        isDeprecated = functionIsDeprecated(ex.args[1])
-        if isDeprecated != nothing && !pragmaexists("Ignore deprecated $fname", ctx.current)
-            msg(ctx, :E211, ex.args[1], "$(isDeprecated.message); See: " *
-                "deprecated.jl $(isDeprecated.line)")
-        end
-    end
     withcontext(ctx, LocalContext(ctx.current)) do
         # temporaryTypes are the type parameters in curly brackets, make them legal
         # in the current scope
@@ -209,7 +216,7 @@ function lintfunctionbody(ctx::LintContext, ex, isstaged)
         end
 
         params = nothing
-        for i = (fname == Symbol("") ? 1 : 2):length(ex.args[1].args)
+        for i = (isexpr(ex.args[1], :call) ? 2 : 1):length(ex.args[1].args)
             if isexpr(ex.args[1].args[i], :parameters)
                 params = ex.args[1].args[i]
                 continue
@@ -240,6 +247,7 @@ function lintfunctionbody(ctx::LintContext, ex, isstaged)
         lintexpr(ex.args[2], ctx)
     end
 
+    location!(ctx, oldloc)
     # TODO check cyclomatic complexity?
 end
 

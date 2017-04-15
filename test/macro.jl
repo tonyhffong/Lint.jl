@@ -8,13 +8,13 @@ msgs = lintstr(s)
 
 s = """
 localize_vars(foo, bar) = (foo, bar)
-macro schedule(expr)
+macro myschedule(expr)
     expr = localize_vars(:(()->(\$expr)), false)
     :(enq_work(Task(\$(esc(expr)))))
 end
 """
 msgs = lintstr(s)
-@test_broken isempty(msgs)
+@test isempty(msgs)
 
 s = """
 @deprecate put put!
