@@ -62,8 +62,12 @@ function lintimport(ex::Expr, ctx::LintContext)
             if isa(m, Module)
                 for n in names(m)
                     # TODO: don't overwrite existing identifiers
-                    vi = VarInfo(location(ctx), typeof(getfield(m, n));
-                                 source=source)
+                    typ = try
+                        typeof(getfield(m, n))
+                    catch
+                        Any
+                    end
+                    vi = VarInfo(location(ctx), typ; source=source)
                     set!(ctx.current, n, vi)
                 end
             end

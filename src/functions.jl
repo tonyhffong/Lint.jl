@@ -290,20 +290,13 @@ function lintlambda(ex::Expr, ctx::LintContext)
 end
 
 function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
-    if ex.args[1] == :include
+    if ex.args[1] == :include && ctx.quoteLvl == 0
         if isa(ex.args[2], AbstractString)
-            inclfile = string(ex.args[2])
+            inclfile = String(ex.args[2])
         else
-            inclfile = ""
-            try
-                # TODO: not a good idea...
-                inclfile = eval(ex.args[2])
-            catch
-                inclfile = string(ex.args[2])
-                # Avoid ERROR level warnings about dynamic includes.
-                msg(ctx, :I372, inclfile, "unable to follow non-literal include file")
-                return
-            end
+            # Avoid ERROR level warnings about dynamic includes.
+            msg(ctx, :I372, ex.args[2], "unable to follow non-literal include file")
+            return
         end
 
         inclfile = joinpath(ctx.path, inclfile)

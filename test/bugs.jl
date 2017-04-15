@@ -103,4 +103,11 @@ export flatten
 end
 """))
 
+# bug 221
+@test isempty(lintstr("""
+@show quote
+    include(string(VERSION))
+end
+"""))
+
 end
