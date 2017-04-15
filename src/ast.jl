@@ -1,7 +1,7 @@
 macro checktoplevel(ctx, expr)
     quote
         if !istoplevel($(esc(ctx)).current)
-            msg($(esc(ctx)), :E100, "$($expr) expression must be at top level")
+            msg($(esc(ctx)), :E100, "$($(esc(expr))) expression must be at top level")
             return
         end
     end
@@ -56,15 +56,10 @@ function lintexpr(ex::Expr, ctx::LintContext)
         end
     elseif ex.head == :module
         lintmodule(ex, ctx)
-    elseif ex.head == :using
-        lintusing(ex, ctx)
     elseif ex.head == :export
         lintexport(ex, ctx)
-    elseif ex.head == :import # single name import. e.g. import Base
+    elseif isexpr(ex, [:import, :using, :importall])
         lintimport(ex, ctx)
-    elseif ex.head == :importall
-        # TODO: not quite same as using
-        lintusing(ex, ctx)
     elseif ex.head == :comparison # only the odd indices
         for i in 1:2:length(ex.args)
             # comparison like match != 0:-1 is allowed, and shouldn't trigger lint warnings

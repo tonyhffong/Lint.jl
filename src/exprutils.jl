@@ -5,7 +5,8 @@ using ..LintCompat
 
 export split_comparison, simplify_literal, ispairexpr, isliteral,
        lexicaltypeof, lexicalfirst, lexicallast, lexicalvalue,
-       withincurly, expand_trivial_calls, expand_assignment, COMPARISON_OPS
+       withincurly, expand_trivial_calls, expand_assignment, COMPARISON_OPS,
+       understand_import, dots, kind, path
 
 """
     withincurly(ex)
@@ -182,5 +183,61 @@ end
 expand_assignment(_) = Nullable()
 
 const COMPARISON_OPS = [:(==), :(<), :(>), :(<=), :(>=), :(!=)]
+
+immutable Import
+    """
+    The number of dots preceding the import. If `dots` is `0`, then this is a
+    toplevel import (i.e., from Main, but additionally requiring the module if
+    it is not already loaded). A value of `1` indicates importing something
+    from this module (typically only useful for `using`). From there, any
+    increase of `1` to `dots` will move up one level to the parent module,
+    until it is `Main`, after which adding more dots does not change the
+    result.
+    """
+    dots :: Int
+
+    """
+    After any dots, the series of modules that must be loaded to obtain the
+    object to be imported. All but the last of these should represent a module.
+    """
+    path :: Vector{Symbol}
+
+    """
+    If this is `:import`, then the given symbol is simply imported into the
+    current namespace. If it is `:importall`, then that is done, and if the
+    loaded object is a module, all its exports are also imported. If it is
+    `:using`, then the effect is like `:importall`, except the imported symbols
+    are not available for method extension.
+    """
+    kind :: Symbol
+end
+dots(imp::Import) = imp.dots
+path(imp::Import) = imp.path
+kind(imp::Import) = imp.kind
+
+"""
+    understand_import(ex)::Nullable{Import}
+
+Return an `Import` from extracting the important semantics from the given
+expression `ex`, or `Nullable()` otherwise.
+"""
+function understand_import(ex)::Nullable{Import}
+    if !isexpr(ex, [:using, :import, :importall])
+        return Nullable()
+    end
+
+    kind = ex.head
+    dots = 0
+    for x in ex.args
+        if x === :.
+            dots += 1
+        else
+            break
+        end
+    end
+    path = ex.args[dots+1:end]
+
+    Import(dots, path, kind)
+end
 
 end

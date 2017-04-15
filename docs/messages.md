@@ -118,8 +118,9 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | **E6** | *Structure Error*
 | E611   | constructor doesn't seem to return the constructed object
 |        |
-| **W1** | *Linter Limitation*
+| **W0** | *Linter Limitation*
 | W100   | this syntax not understood by Lint.jl
+| W101   | unfortunately, Lint could not determine the exports of this module
 |        |
 | **W2** | *Miscellaneous Warning*
 | W241   | custom warning
@@ -134,7 +135,11 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | W355   | conflicts with function name
 | W356   | file included more than once
 | W357   | including file that doesn't exist
+| **W36**| *Import and Export Warning*
+| W360   | importing possibly undefined symbol
 | W361   | exporting undefined symbol
+| W362   | relative import has too many dots
+| W363   | attempted import from probable non-module
 |        |
 | **W4** | *Usage Warning*
 | W441   | probably illegal use of inside curly

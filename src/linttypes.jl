@@ -28,6 +28,9 @@ type VarInfo
         new(loc, t, 0, source, Nullable())
 end
 
+VarInfo(vi::VarInfo; source::Symbol = :defined) =
+    VarInfo(location(vi), vi.typeactual)
+
 location(vi::VarInfo) = vi.location
 registeruse!(vi::VarInfo) = (vi.usages += 1; vi)
 usages(vi::VarInfo) = vi.usages
@@ -111,6 +114,7 @@ immutable ModuleContext <: _LintContext
     ModuleContext(parent, data) = new(parent, data, Dict(), [])
 end
 
+isroot(mctx::ModuleContext) = isnull(mctx.parent)
 pragmas(mctx::ModuleContext) = mctx.pragmas
 parent(mctx::ModuleContext) = get(mctx.parent)
 data(mctx::ModuleContext) = mctx.data

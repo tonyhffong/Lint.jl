@@ -22,37 +22,105 @@ function lintmodule(ex::Expr, ctx::LintContext)
     info!(get(lookup(ctx.current, name)), data(mctx))
 end
 
-function lintusing(ex::Expr, ctx::LintContext)
-    @checktoplevel(ctx, "using")
+function lintimport(ex::Expr, ctx::LintContext)
+    if ctx.quoteLvl > 0
+        return  # not safe to import in quotes
+    end
+    imp = get(understand_import(ex))
+    @checktoplevel(ctx, kind(imp))
 
     # Don't use modules protected by a guard (these can cause crashes!)
     # see issue #149
     ctx.ifdepth > 0 && return
 
-    # TODO: distinguish between using and import
-    for s in ex.args
-        if s != :(.)
-            set!(ctx.current, s, VarInfo(location(ctx); source=:imported))
-        end
-    end
-    if ex.args[1] != :(.)
-        m = nothing
-        path = join(map(string, ex.args), ".")
-        # TODO: mark as dynamic
-        try
-            eval(Main, ex)
-            m = eval(Main, parse(path))
-        end
-        t = typeof(m)
-        if t == Module
-            for n in names(m)
-                # TODO: don't overwrite existing identifiers
-                vi = VarInfo(location(ctx), typeof(getfield(m, n));
-                             source=:imported)
-                set!(ctx.current, n, vi)
+    source = kind(imp) === :using ? :used : :imported
+    getexports = kind(imp) !== :import
+
+    if dots(imp) == 0
+        # top-level import
+        if getexports
+            # unfortunately, we need to import dynamically
+            maybem = dynamic_import_toplevel_module(path(imp)[1])
+            if isnull(maybem)
+                # TODO: make an effort to import the symbol?
+                msg(ctx, :W101, path(imp)[1],
+                    "unfortunately, Lint could not determine the exports of this module")
+                return
+            end
+            m = get(maybem)
+            # walk down m until we get to the requested symbol
+            for s in @view(path(imp)[2:end])
+                try
+                    m = getfield(m, s)
+                catch
+                    msg(ctx, :W360, join(string.(path(imp)), "."),
+                        "importing probably undefined symbol")
+                    return
+                end
             end
 
-            # TODO: restore lint helper
+            if isa(m, Module)
+                for n in names(m)
+                    # TODO: don't overwrite existing identifiers
+                    vi = VarInfo(location(ctx), typeof(getfield(m, n));
+                                 source=source)
+                    set!(ctx.current, n, vi)
+                end
+            end
+            set!(ctx.current, path(imp)[end],
+                 VarInfo(location(ctx), typeof(m); source=source))
+        else
+            set!(ctx.current, path(imp)[end],
+                 VarInfo(location(ctx); source=source))
+        end
+    else
+        importfrom = ctx.current
+        for i = 2:dots(imp)
+            if isroot(importfrom)
+                msg(ctx, :W362, join(string.(path(imp))),
+                    "relative import is too deep; at least $(dots(imp) - i) superfluous dots")
+                return
+            end
+            importfrom = parent(importfrom)
+        end
+
+        # walk down importfrom until we get to the requested symbol
+        frommodule = data(importfrom)
+        local vi
+        canimport = true
+        for s in path(imp)
+            if !canimport
+                msg(ctx, :W363, join(string.(path(imp)), "."),
+                    "attempted import from probable non-module")
+                return
+            end
+            result = lookup(frommodule, s)
+            if isnull(result)
+                msg(ctx, :W360, join(string.(path(imp)), "."),
+                    "importing probably undefined symbol")
+                return
+            else
+                vi = get(result)
+                if vi.typeactual <: Module && !isnull(vi.extra) && isa(get(vi.extra), ModuleInfo)
+                    frommodule = get(vi.extra)
+                else
+                    canimport = false
+                end
+            end
+        end
+
+        set!(ctx.current, path(imp)[end], VarInfo(vi; source=source))
+        
+        if getexports && vi.typeactual <: Module && !isnull(vi.extra) &&
+           isa(get(vi.extra), ModuleInfo)
+            for n in get(vi.extra).exports
+                nvi = lookup(get(vi.extra), n)
+                if !isnull(nvi)
+                    set!(ctx.current, n, VarInfo(get(nvi); source=source))
+                else
+                    set!(ctx.current, n, VarInfo(location(ctx); source=source))
+                end
+            end
         end
     end
 end
@@ -66,9 +134,4 @@ function lintexport(ex::Expr, ctx::LintContext)
             export!(ctx.current, sym)
         end
     end
-end
-
-function lintimport(ex::Expr, ctx::LintContext)
-    @checktoplevel(ctx, "import")
-    set!(ctx.current, ex.args[end], VarInfo(location(ctx); source=:imported))
 end
