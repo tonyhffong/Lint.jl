@@ -17,66 +17,16 @@ function stdlibobject(ex::Symbol)
 end
 
 """
-    stdlibobject(ex::Expr)
-
-If the given expression is curly, and each component of the curly is a standard
-library object, construct the object `x` as would have been done in the program
-itself, and return `Nullable{Any}(x)`.
-
-Otherwise, if the given expression is `foo.bar`, and `foo` is a standard
-library object with attribute `bar`, then construct `foo.bar` as would be done
-in the program itself and return it.
-
-Otherwise, return `Nullable{Any}()`.
-"""
-function stdlibobject(ex::Expr)
-    if isexpr(ex, :curly)
-        objs = stdlibobject.(ex.args)
-        if all(!isnull, objs)
-            try
-                Nullable{Any}(Core.apply_type(get.(objs)...))
-            catch
-                Nullable{Any}()
-            end
-        else
-            Nullable{Any}()
-        end
-    elseif isexpr(ex, :(.))
-        head = ex.args[1]
-        tail = ex.args[2].value
-        obj = stdlibobject(head)
-        if !isnull(obj)
-            try
-                Nullable{Any}(getfield(get(obj), tail))
-            catch
-                Nullable{Any}()
-            end
-        else
-            Nullable{Any}()
-        end
-    else
-        Nullable{Any}()
-    end
-end
-
-"""
-    stdlibobject(ex)
-
-Return the literal embedded within a `Nullable{Any}`.
-"""
-stdlibobject(ex) = lexicalvalue(ex)
-
-"""
-    parsetype(ex::Expr)
+    parsetype(ctx::LintContext, ex::Expr) :: Type
 
 Obtain a supertype of the type represented by `ex`.
 """
-function parsetype(ex)
-    obj = stdlibobject(ex)
+function parsetype(ctx::LintContext, ex)
+    obj = abstract_eval(ctx, ex)
     if !isnull(obj) && isa(get(obj), Type)
         get(obj)
     elseif isexpr(ex, :curly)
-        obj = stdlibobject(ex.args[1])
+        obj = abstract_eval(ctx, ex.args[1])
         if !isnull(obj) && isa(get(obj), Type) && get(obj) !== Union
             get(obj)
         else
@@ -108,7 +58,7 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
     end
 
     if isexpr(ex, :(::)) && length(ex.args) == 2
-        return parsetype(ex.args[2])
+        return parsetype(ctx, ex.args[2])
     end
 
     if isexpr(ex, :block)
@@ -129,7 +79,7 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
         argtypes = map(x -> guesstype(x, ctx), ex.args[2:end])
 
         # infer return types of Base functions
-        obj = stdlibobject(fn)
+        obj = abstract_eval(ctx, fn)
         type_argtypes = [isa(t, Type) ? t : Any for t in argtypes]
         if !isnull(obj)
             inferred = StaticTypeAnalysis.infertype(get(obj), type_argtypes)
@@ -140,13 +90,8 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
     end
 
     if isexpr(ex, :macrocall)
-        if ex.args[1] == Symbol("@sprintf") || isexpr(ex, :call) && in(ex.args[1], [
-                    :replace, :string, :utf8, :utf16, :utf32, :repr, :normalize_string,
-                    :join, :chop, :chomp, :lpad, :rpad, :strip, :lstrip, :rstrip,
-                    :uppercase, :lowercase, :ucfirst, :lcfirst, :escape_string,
-                    :unescape_string
-                ])
-            return AbstractString
+        if ex.args[1] == Symbol("@sprintf")
+            return String
         elseif ex.args[1] == Symbol("@compat")
             return guesstype(ex.args[2], ctx)
         end
@@ -158,7 +103,7 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
 
     if isexpr(ex, :ref) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
         if isexpr(ex.args[1], :curly) # must be a datatype, right?
-            elt = stdlibobject(ex.args[1])
+            elt = abstract_eval(ctx, ex.args[1])
             if !isnull(elt) && isa(get(elt), Type)
                 return Vector{get(elt)}
             else
@@ -169,7 +114,7 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
         if isa(ex.args[1], Symbol)
             what = registersymboluse(ex.args[1], ctx)
             if what <: Type
-                elt = stdlibobject(ex.args[1])
+                elt = abstract_eval(ctx, ex.args[1])
                 if !isnull(elt) && isa(get(elt), Type)
                     return Vector{get(elt)}
                 else

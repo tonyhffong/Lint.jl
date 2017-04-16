@@ -39,6 +39,7 @@ include("guesstype.jl")
 include("result.jl")
 
 # AST Linting
+include("abstracteval.jl")
 include("ast.jl")
 include("blocks.jl")
 include("controls.jl")

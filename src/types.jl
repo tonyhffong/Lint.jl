@@ -30,8 +30,8 @@ function linttype(ex::Expr, ctx::LintContext)
                             "use {T<:...}")
                     end
                 end
-                if isstandardtype(typeconstraint)
-                    dt = parsetype(typeconstraint)
+                if istype(ctx, typeconstraint)
+                    dt = parsetype(ctx, typeconstraint)
                     if isa(dt, Type) && isleaftype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
@@ -113,7 +113,7 @@ function lintabstract(ex::Expr, ctx::LintContext)
     if isa(sym, Symbol)
         set!(ctx.current, sym, VarInfo(location(ctx), Type))
     elseif isexpr(ex.args[1], :(<:))
-        sym = withincurly(ex.args[1])
+        sym = withincurly(ex.args[1].args[1])
         @checkisa(ctx, sym, Symbol)
         set!(ctx.current, sym, VarInfo(location(ctx), Type))
     end

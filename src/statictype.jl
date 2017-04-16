@@ -4,6 +4,7 @@ macro lintpragma(ex); end
 
 function __init__()
     global const EQ_METHOD_FALSE = which(==, Tuple{Void, Int})
+    global const CONSTRUCTOR_FALLBACK = which(Void, Tuple{Void})
 end
 
 """
@@ -86,6 +87,12 @@ function infertype(f, argtypes::Tuple)
            eltype(argtypes[2]) <: Integer
         # TODO: would be nice to get rid of this odd special case
         UnitRange
+    elseif isa(f, Type) && Base.length(argtypes) == 1 &&
+           isleaftype(argtypes[1]) &&
+           which(f, Tuple{argtypes[1]}) === CONSTRUCTOR_FALLBACK
+        # we can infer better code for the constructor `convert` fallback by
+        # inferring the convert itself
+        Core.Inference.return_type(convert, Tuple{Type{f}, argtypes[1]})
     else
         try
             typejoin(Base.return_types(f, Tuple{argtypes...})...)

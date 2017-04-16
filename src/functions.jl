@@ -22,8 +22,8 @@ function lintfuncargtype(ex, ctx::LintContext)
     end
 end
 
-function isstandardtype(x)
-    obj = stdlibobject(x)
+function istype(ctx::LintContext, x)
+    obj = abstract_eval(ctx, x)
     !isnull(obj) && isa(get(obj), Type)
 end
 
@@ -88,7 +88,7 @@ function lintfunctionbody(ctx::LintContext, mi::MethodInfo)
         for i in 2:length(ex.args[1].args[1].args)
             adt = ex.args[1].args[1].args[i]
             if isa(adt, Symbol)
-                if isstandardtype(adt)
+                if istype(ctx, adt)
                     msg(ctx, :E534, adt, "introducing a new name for an implicit " *
                         "argument to the function, use {T<:$(adt)}")
                 else
@@ -97,11 +97,11 @@ function lintfunctionbody(ctx::LintContext, mi::MethodInfo)
             elseif isexpr(adt, :(<:))
                 temptype = adt.args[1]
                 typeconstraint = adt.args[2]
-                if isstandardtype(temptype)
+                if istype(ctx, temptype)
                     msg(ctx, :E536, temptype, "use {T<:...} instead of a known type")
                 end
-                if isstandardtype(typeconstraint)
-                    dt = parsetype(typeconstraint)
+                if istype(ctx, typeconstraint)
+                    dt = parsetype(ctx, typeconstraint)
                     if isleaftype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
@@ -184,7 +184,7 @@ function lintfunctionbody(ctx::LintContext, mi::MethodInfo)
                     sym = resolveArguments(sube.args[1], 0)
                     if !isstaged
                         if isa(sym, Symbol)
-                            dt = parsetype(sube.args[2])
+                            dt = parsetype(ctx, sube.args[2])
                             assertions[sym] = dt
                         end
                     end
@@ -231,7 +231,7 @@ function lintfunctionbody(ctx::LintContext, mi::MethodInfo)
             try
                 vi = ctx.current.localvars[s]
                 if haskey(assertions, s)
-                    dt = parsetype(assertions[s])
+                    dt = parsetype(ctx, assertions[s])
                     vi.typeactual = dt
                     if dt != Any && haskey(typeRHShints, s) && typeRHShints[s] != Any &&
                         !(typeRHShints[s] <: dt)
@@ -290,7 +290,9 @@ function lintlambda(ex::Expr, ctx::LintContext)
 end
 
 function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
-    if ex.args[1] == :include && ctx.quoteLvl == 0
+    if ex.args[1] == :ccall
+        return  # TODO: lint ccall arguments too?
+    elseif ex.args[1] == :include && ctx.quoteLvl == 0
         if isa(ex.args[2], AbstractString)
             inclfile = String(ex.args[2])
         else
@@ -314,8 +316,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         else
             lintexpr(ex.args[1], ctx)
         end
-        # TODO: use lookup for more accuracy
-        func = stdlibobject(ex.args[1])
+        func = abstract_eval(ctx, ex.args[1])
 
         if !isnull(func) && isa(get(func), Type) && get(func) <: Dict
             lintdict(ex, ctx)
@@ -367,7 +368,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             s = lowercase(string(ex.args[1]))
             if contains(s,"error") || contains(s,"exception") || contains(s,"mismatch") || contains(s,"fault")
                 try
-                    dt = parsetype(ex.args[1])
+                    dt = parsetype(ctx, ex.args[1])
                     if dt <: Exception && !pragmaexists( "Ignore unthrown " * string(ex.args[1]), ctx.current)
                         msg(ctx, :W448, string(ex.args[1]) * " is an Exception but it is not enclosed in a throw()")
                     end

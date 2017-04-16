@@ -41,7 +41,7 @@ function lintlocal(ex::Expr, ctx::LintContext)
         elseif isexpr(sube, :(::))
             sym = sube.args[1]
             @checkisa(ctx, sym, Symbol)
-            set!(ctx.current, sym, VarInfo(location(ctx), parsetype(sube.args[2])))
+            set!(ctx.current, sym, VarInfo(location(ctx), parsetype(ctx, sube.args[2])))
         else
             msg(ctx, :E135, sube, "local declaration not understood by Lint")
         end
@@ -163,7 +163,7 @@ function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=fal
         end
         try
             if haskey(assertions, s)
-                dt = parsetype(assertions[s])
+                dt = parsetype(ctx, assertions[s])
                 vi.typeactual = dt
                 if typeintersect(dt, rhst) == Union{}
                     msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *

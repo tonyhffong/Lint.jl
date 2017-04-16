@@ -9,8 +9,17 @@ function lintmodule(ex::Expr, ctx::LintContext)
         msg(ctx, :E100, "module name must be a symbol")
         return
     end
-    set!(ctx.current, name, VarInfo(location(ctx), Module))
-    mctx = ModuleContext(ctx.current, ModuleInfo(name))
+    mi = ModuleInfo(name)
+    vi = VarInfo(location(ctx), Module)
+    info!(vi, mi)
+
+    # set binding in parent module
+    set!(ctx.current, name, vi)
+    
+    # set binding in this module
+    mctx = ModuleContext(ctx.current, mi)
+    set!(mctx, name, VarInfo(vi))
+
     withcontext(ctx, mctx) do
         lintexpr(ex.args[3], ctx)
         for sym in exports(ctx.current)
@@ -20,6 +29,66 @@ function lintmodule(ex::Expr, ctx::LintContext)
         end
     end
     info!(get(lookup(ctx.current, name)), data(mctx))
+end
+
+"""
+    walkmodulepath(m::Module, path::AbstractVector{Symbol}) :: Nullable
+
+Walk the module `m` based on the path descripton given by a series of symbols
+describing submodules of `m`. For example, if `m === Base` and `path ==
+[:Iterators, :take]`, then this returns `Base.Iterators.take` wrapped in a
+`Nullable`. If an error occurs at any step, `Nullable()` is returned.
+
+```jldoctest
+julia> using Lint.walkmodulepath
+
+julia> using Compat
+
+julia> walkmodulepath(Compat, [:Iterators, :take])
+take (generic function with 2 methods)
+```
+"""
+function walkmodulepath(m::Module, path::AbstractVector{Symbol})::Nullable
+    # walk down m until we get to the requested symbol
+    for s in path
+        try
+            m = getfield(m, s)
+        catch
+            return Nullable()
+        end
+    end
+    Nullable(m)
+end
+
+function importobject(ctx::LintContext, name::Symbol, obj, source::Symbol)
+    # TODO: don't overwrite existing identifiers
+    vi = VarInfo(location(ctx), Core.Typeof(obj); source=source)
+    info!(vi, StandardLibraryObject(obj))
+    set!(ctx.current, name, vi)
+end
+
+function importintocontext(m::Module, p::AbstractVector{Symbol},
+                           source::Symbol, getexports::Bool, ctx::LintContext)
+    # walk down m until we get to the requested symbol
+    maybem = walkmodulepath(m, @view(p[2:end]))
+    if isnull(maybem)
+        msg(ctx, :W360, join(string.(p), "."),
+            "importing probably undefined symbol")
+    end
+    m = get(maybem)
+
+    if getexports && isa(m, Module)
+        for n in names(m)
+            try
+                obj = getfield(m, n)
+                importobject(ctx, n, obj, source)
+            catch
+                set!(ctx.current, n, VarInfo(location(ctx); source=source))
+            end
+        end
+    end
+
+    importobject(ctx, p[end], m, source)
 end
 
 function lintimport(ex::Expr, ctx::LintContext)
@@ -38,7 +107,10 @@ function lintimport(ex::Expr, ctx::LintContext)
 
     if dots(imp) == 0
         # top-level import
-        if getexports
+        if path(imp)[1] in [:Base, :Compat, :Core, :Lint]
+            m = getfield(Lint, path(imp)[1])
+            importintocontext(m, path(imp), source, getexports, ctx)
+        elseif getexports
             # unfortunately, we need to import dynamically
             maybem = dynamic_import_toplevel_module(path(imp)[1])
             if isnull(maybem)
@@ -48,31 +120,7 @@ function lintimport(ex::Expr, ctx::LintContext)
                 return
             end
             m = get(maybem)
-            # walk down m until we get to the requested symbol
-            for s in @view(path(imp)[2:end])
-                try
-                    m = getfield(m, s)
-                catch
-                    msg(ctx, :W360, join(string.(path(imp)), "."),
-                        "importing probably undefined symbol")
-                    return
-                end
-            end
-
-            if isa(m, Module)
-                for n in names(m)
-                    # TODO: don't overwrite existing identifiers
-                    typ = try
-                        typeof(getfield(m, n))
-                    catch
-                        Any
-                    end
-                    vi = VarInfo(location(ctx), typ; source=source)
-                    set!(ctx.current, n, vi)
-                end
-            end
-            set!(ctx.current, path(imp)[end],
-                 VarInfo(location(ctx), typeof(m); source=source))
+            importintocontext(m, path(imp), source, getexports, ctx)
         else
             set!(ctx.current, path(imp)[end],
                  VarInfo(location(ctx); source=source))

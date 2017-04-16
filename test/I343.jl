@@ -24,7 +24,7 @@
 
     @test isempty(lintstr("""
     import Base: parent
-    @compat struct MyType end
+    immutable MyType end
     parent(_::MyType) = MyType()
     """))
 end

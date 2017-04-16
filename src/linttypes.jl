@@ -6,6 +6,7 @@ include("types/lintmessage.jl")
 import Base: parent
 
 @compat abstract type AdditionalVarInfo end
+extractobject(_::AdditionalVarInfo) = Nullable()
 
 """
 A struct with information about a variable.
@@ -17,7 +18,10 @@ type VarInfo
     "The number of times the variable has been used."
     usages::Int
 
-    "The source of the variable. Currently possible values are `:defined` and `:imported`."
+    """
+    The source of the variable. Currently possible values are `:defined`,
+    `:used`, and `:imported`.
+    """
     source::Symbol
 
     "Additional known information about the particular object."
@@ -39,6 +43,9 @@ function info!(vi::VarInfo, info::AdditionalVarInfo)
     vi.extra = Nullable(info)
 end
 
+extractobject(vi::VarInfo) =
+    flatten(BROADCAST(extractobject, vi.extra))
+
 immutable ModuleInfo <: AdditionalVarInfo
     name          :: Symbol
     globals       :: Dict{Symbol, VarInfo}
@@ -59,7 +66,9 @@ function lookup(data::ModuleInfo, sym::Symbol)::Nullable{VarInfo}
     # check standard library
     val = stdlibobject(sym)
     if !isnull(val)
-        return VarInfo(UNKNOWN_LOCATION, Core.Typeof(get(val)))
+        vi = VarInfo(UNKNOWN_LOCATION, Core.Typeof(get(val)))
+        info!(vi, StandardLibraryObject(get(val)))
+        return vi
     end
 
     return Nullable{VarInfo}()
@@ -72,6 +81,17 @@ immutable MethodInfo <: AdditionalVarInfo
     isstaged :: Bool
 end
 location(mi::MethodInfo) = mi.location
+
+"""
+The binding is known to reference a standard library object. The "standard
+library" consists of `Core`, `Base`, `Compat`, and their submodules.
+"""
+immutable StandardLibraryObject <: AdditionalVarInfo
+    object :: Any
+end
+# TODO: remove {typeof(x.object)} part when #21397 fixed
+extractobject(x::StandardLibraryObject) =
+    Nullable{typeof(x.object)}(x.object)
 
 # TODO: currently, this is not actually used
 immutable FunctionInfo <: AdditionalVarInfo
@@ -132,7 +152,7 @@ istoplevel(mctx::ModuleContext) = true
 function finish(ctx::ModuleContext, cursor)
     for x in keys(ctx.data.globals)
         vi = ctx.data.globals[x]
-        if source(vi) !== :imported  # allow imported bindings
+        if source(vi) ∉ [:imported, :used]  # allow imported/used bindings
             loc = location(vi)
             if !isnull(stdlibobject(x))
                 msg(cursor, :I343, x, "global variable defined at $loc with same name as export from Base")
