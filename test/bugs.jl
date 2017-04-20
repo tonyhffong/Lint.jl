@@ -110,4 +110,13 @@ end
 end
 """))
 
+# bug 219
+@test isempty(lintstr("""
+macro foo(x, y=100)
+    quote
+        \$(esc(x)) + \$(esc(y))
+    end
+end
+"""))
+
 end
