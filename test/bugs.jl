@@ -98,7 +98,7 @@ end
 # bug 187
 @test isempty(lintstr("""
 module Test187
-import Base.Iterators: flatten
+import Compat.Iterators: flatten
 export flatten
 end
 """))

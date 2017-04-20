@@ -74,6 +74,7 @@ function importintocontext(m::Module, p::AbstractVector{Symbol},
     if isnull(maybem)
         msg(ctx, :W360, join(string.(p), "."),
             "importing probably undefined symbol")
+        return
     end
     m = get(maybem)
 
