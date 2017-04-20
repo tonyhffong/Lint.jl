@@ -66,6 +66,8 @@ try include("linthelper.jl") end
 include("bugs.jl")
 include("lintself.jl")
 
+try
 @testset "Server" begin
     include("server.jl")
+end
 end

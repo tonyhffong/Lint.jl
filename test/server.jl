@@ -34,7 +34,6 @@ function readfromserver_new(socket)
     return response
 end
 
-
 @testset "lintserver() tests" begin
     conn = connect(port)
     write(conn, "empty\n")
