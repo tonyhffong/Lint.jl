@@ -1,7 +1,9 @@
+# TODO: when 0.5 support dropped, remove the isdefined check
 const LINT_RESULT_COLORS = Dict(
-    :INFO => :bold,
-    :WARN => :yellow,
-    :ERROR => :magenta,
+    :INFO => Base.info_color(),
+    :WARN => Base.warn_color(),
+    :ERROR => isdefined(Base, :error_color) ? Base.error_color() :
+                                              Base.warn_color(),
     :OK => :green)
 
 """
