@@ -22,7 +22,8 @@ Otherwise, return `Nullable()`.
 """
 abstract_eval(ctx::LintContext, ex::Expr) = begin
     if isexpr(ex, :curly)
-        objs = abstract_eval.(ctx, ex.args)
+        # TODO: when 0.5 support dropped, remove [...] around ctx
+        objs = abstract_eval.([ctx], ex.args)
         if all(!isnull, objs)
             try
                 Nullable(Core.apply_type(get.(objs)...))
