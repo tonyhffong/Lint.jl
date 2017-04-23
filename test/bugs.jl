@@ -57,13 +57,21 @@ x, y = error()
 """)) == Set([:E539])
 
 # bug 166
-@test isempty(messageset(lintstr("""
+@test isempty(lintstr("""
 let x = :(type X end); x; end
-""")))
+"""))
 
 # bug 164
 @test messageset(lintstr("""
 undefined()
 """)) == Set([:E321])
+
+# bug 215
+@test isempty(lintstr("""
+x = (rand(Bool) ? (1,) : (1.0,),)
+for (i,) in x
+    @show i
+end
+"""))
 
 end
