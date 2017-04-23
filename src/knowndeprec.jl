@@ -67,7 +67,7 @@ function processOneSig(s, typeHints)
         ditype = determineType(s.args[1].args[end])
         return (s.head, ditype)
     else
-        println("Lint doesn't understand " * string(s) * " as an argument")
+        println(STDERR, "Lint doesn't understand " * string(s) * " as an argument")
     end
 end
 
