@@ -133,7 +133,7 @@ function parseDeprecate(ex, lineabs)
     end
 end
 
-function getFuncNameAndSig(callex::Expr, strict::Bool=true)
+function getFuncNameAndSig(callex::Expr)
     typeHints = Dict{Symbol, Any}()
     if typeof(callex.args[1])==Symbol || Meta.isexpr(callex.args[1], :(.))
         funcname = callex.args[1]
@@ -151,8 +151,6 @@ function getFuncNameAndSig(callex::Expr, strict::Bool=true)
         # these kinds of call overloads are hard to understand
         # so for now, just ignore them
         return (nothing, nothing)
-    elseif strict
-        error("invalid function format $callex")
     else
         return (nothing, nothing)
     end
@@ -191,7 +189,7 @@ end
 # returns nothing, or DeprecateInfo
 function functionIsDeprecated(callex::Expr)
     global deprecates
-    funcname, sig = getFuncNameAndSig(callex, false)
+    funcname, sig = getFuncNameAndSig(callex)
     if Meta.isexpr(funcname, :(.))
         funcname = funcname.args[2]
     end
