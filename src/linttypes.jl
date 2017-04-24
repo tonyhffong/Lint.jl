@@ -256,7 +256,9 @@ const LINT_IGNORE_DEFAULT = LintIgnore[LintIgnore(:W651, "")]
 
 type LintContext
     file         :: String
+    "Current line number."
     line         :: Int
+    "Line number at which the current toplevel expression begins at."
     lineabs      :: Int
     scope        :: String # usually the function name
     path         :: String
@@ -276,12 +278,11 @@ type LintContext
             copy(LINT_IGNORE_DEFAULT), 0, mctx)
     end
 end
-location(ctx::LintContext) = Location(ctx.file, ctx.line + ctx.lineabs)
+location(ctx::LintContext) = Location(ctx.file, ctx.line)
 function location!(ctx::LintContext, loc::Location)
     ctx.file = file(loc)
     ctx.path = dirname(ctx.file)
-    ctx.lineabs = line(loc)
-    ctx.line = 0
+    ctx.line = line(loc)
 end
 
 finish(cur::LintContext) = finish(cur.current, cur)

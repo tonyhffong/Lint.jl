@@ -199,7 +199,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 |        |
 | **I5** | *Type Info*
 | I571   | the 1st statement under the true-branch is a boolean expression
-| I572   | assert x type= X but assign a value of Y
+| I572   | (removed)
 | I581   | (removed in Lint 0.3.0)
 |        |
 | **I6** | *Structure Info*

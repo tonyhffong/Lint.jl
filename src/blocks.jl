@@ -34,7 +34,7 @@ function lintblock(ex::Expr, ctx::LintContext)
     for (i,sube) in enumerate(ex.args)
         if isa(sube, Expr)
             if sube.head == :line
-                ctx.line = sube.args[1]-1
+                ctx.line = ctx.lineabs + sube.args[1]-1
                 continue
             elseif sube.head == :return && i != length(ex.args)
                 msg(ctx, :W641, "unreachable code after return")
@@ -62,7 +62,7 @@ function lintblock(ex::Expr, ctx::LintContext)
         elseif isa(sube, QuoteNode)
             lintexpr(sube,ctx)
         elseif isa(sube, LineNumberNode)
-            ctx.line = sube.line-1
+            ctx.line = ctx.lineabs + sube.line-1
             continue
         elseif isa(sube, Symbol)
             registersymboluse(sube, ctx)

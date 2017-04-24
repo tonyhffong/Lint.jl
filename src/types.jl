@@ -67,7 +67,7 @@ function linttype(ex::Expr, ctx::LintContext)
 
     for def in ex.args[3].args
         if isa(def, LineNumberNode)
-            ctx.line = def.line-1
+            ctx.line = ctx.lineabs + def.line-1
         elseif isa(def, Symbol)
             # it means Any, probably not a very efficient choice
             if !pragmaexists("Ignore untyped field $(def)", ctx.current, deep=false)
@@ -96,7 +96,7 @@ function linttype(ex::Expr, ctx::LintContext)
     end
 
     for f in funcs
-        ctx.line = f[2]
+        ctx.line = ctx.lineabs + f[2]
         lintfunction(f[1], ctx; ctorType = tname)
     end
 end

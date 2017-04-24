@@ -91,21 +91,16 @@ function _lintstr(str::AbstractString, ctx::LintContext, lineoffset = 0)
             i = linebreakloc + 1
             continue
         end
-        ctx.lineabs = linerange.start + lineoffset
+        ctx.line = ctx.lineabs = linerange.start + lineoffset
         try
             (ex, i) = parse(str,i)
         catch y
             if typeof(y) != ParseError || y.msg != "end of input"
                 msg(ctx, :E111, string(y))
             end
-            problem = true
-        end
-        if !problem
-            ctx.line = 0
-            lintexpr(ex, ctx)
-        else
             break
         end
+        lintexpr(ex, ctx)
     end
 end
 

@@ -165,10 +165,7 @@ function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=fal
             if haskey(assertions, s)
                 dt = parsetype(ctx, assertions[s])
                 vi.typeactual = dt
-                if typeintersect(dt, rhst) == Union{}
-                    msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *
-                        "$(rhst)")
-                end
+                # TODO: check that rhst is convertible to dt
             elseif rhst != Any && !isForLoop
                 vi.typeactual = rhst
             end

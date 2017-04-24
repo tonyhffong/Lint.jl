@@ -1,12 +1,9 @@
-s = """
+@test isempty(lintstr("""
 function f(x)
     local y::Float64 = 1
     x + y
 end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :I572
-@test contains(msgs[1].message, "but assign a value of")
+"""))
 
 s = """
 function f(c::Char)
