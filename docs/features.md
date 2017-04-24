@@ -148,41 +148,6 @@ end
 You will see line-by-line reachability in your output. See test/versions.jl
 for further examples.
 
-## Current false positives
-* Because macros can generate new symbols on the fly. Lint will have a hard time dealing
-with that. To help Lint and to reduce noise, module designers can add a
-`lint_helper` function to their module.
-
-
-## Module specific lint helper(WIP)
-Key info about adding a `lint_helper` function in your module
-
-* You don't need to export this function. Lint will find it.
-* It must return true if an expression is part of your module's
-  enabling expression (most likely a macrocall). Return false otherwise
-  so that Lint can give other modules a go at it. Note that
-  if you always returning true in your code you will break Lint.
-* `lint_helper` takes two argument, an `Expr` instance and a context.
-  - if you find an issue in your expression, call `Lint.msg(ctx, code, variable, "explanation")`
-* typical structure looks like this
-```julia
-function lint_helper(ex::Expr, ctx)
-    if ex.head == :macrocall
-        if ex.args[1] == symbol("@fancy_macro1")
-            # your own checking code
-            return true
-        elseif ex.args[1]== symbol("@fancy_macro2")
-            # more checking code
-            return true
-        end
-    end
-    return false
-end
-```
-
-See [advanced lint helper interface](context/#advanced-lint-helper-interface-information) for details on how to use `ctx`.
-
-
 ## Ignoring messages
 
 ```julia
