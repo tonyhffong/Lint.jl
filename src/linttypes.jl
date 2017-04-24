@@ -247,12 +247,15 @@ function lookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
 end
 
 @auto_hash_equals immutable LintIgnore
-    errorcode::Symbol
-    variable::AbstractString
-    LintIgnore(e::Symbol, v::AbstractString) = new(e, v)
+    errorcode :: Symbol
+    variable  :: String
 end
 
-const LINT_IGNORE_DEFAULT = LintIgnore[LintIgnore(:W651, "")]
+const LINT_IGNORE_DEFAULT = [
+    LintIgnore(:I341, ""),
+    LintIgnore(:I342, ""),
+    LintIgnore(:W651, "")
+]
 
 type LintContext
     file         :: String
@@ -313,11 +316,10 @@ function msg(ctx::LintContext, code::Symbol, variable, str::AbstractString)
     variable = string(variable)
     m = LintMessage(location(ctx), code, ctx.scope, variable, str)
     # filter out messages to ignore
-    i = findfirst(ctx.ignore, LintIgnore(code, variable))
+    i = max(findfirst(ctx.ignore, LintIgnore(code, variable)),
+            findfirst(ctx.ignore, LintIgnore(code, "")))
     if i == 0
         push!(ctx.messages, m)
-    else
-        push!(ctx.ignore[i].messages, m)
     end
 end
 

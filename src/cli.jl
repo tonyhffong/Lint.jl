@@ -69,7 +69,7 @@ function lintfile(f::AbstractString, code::AbstractString)
     end
 
     filter!(msg -> file(msg) == f, msgs)
-    clean_messages!(msgs)
+    sort!(msgs)
 
     LintResult(msgs)
 end
@@ -104,7 +104,14 @@ function _lintstr(str::AbstractString, ctx::LintContext, lineoffset = 0)
     end
 end
 
-function lintstr(str::AbstractString, ctx::LintContext = LintContext())
+"""
+    lintstr(s::AbstractString)
+
+Unlike other lint functions, like `lintpkg` and `lintfile`, `lintstr` does not
+ignore any messages by default.
+"""
+function lintstr(str::AbstractString,
+                 ctx::LintContext = (c = LintContext(); c.ignore = []; c))
     _lintstr(str, ctx)
     finish(ctx)
     ctx.messages
