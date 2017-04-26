@@ -6,8 +6,6 @@ function f(x; y = 1, z::Int = 4)
 end
 
 f(1; y = 3)
-
-z = Dict{Symbol, Any}()
 """
 msgs = lintstr(s)
 @test isempty(msgs)
@@ -140,36 +138,6 @@ msgs = lintstr(s)
 @test contains(msgs[1].message, "type parameters are invariant, try f{T<:Number}(x::T)...")
 
 s = """
-function f(x, y)
-    using Base.Meta
-    isexpr(x, :call) ? y : 0
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E414
-@test contains(msgs[1].message, "using is not allowed inside function definitions")
-
-s = """
-function f(x, y)
-    import Lint
-    isexpr(x, :call) ? y : 0
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E416
-@test contains(msgs[1].message, "import is not allowed inside function definitions")
-
-s = """
-function f(x, y)
-    export f
-    isexpr(x, :call) ? y : 0
-end
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :E415
-@test contains(msgs[1].message, "export is not allowed inside function definitions")
-
-s = """
 function f(x; y = 1, z::Int = 0.1)
     x + y
 end
@@ -256,7 +224,7 @@ function f(x)
 end
 """
 msgs = lintstr(s)
-@test isempty(msgs)
+@test_broken isempty(msgs)
 
 s = """
 function f(x)
@@ -354,16 +322,14 @@ end
 msgs = lintstr(s)
 @test isempty(msgs)
 
-s="""
+@test_broken isempty(lintstr("""
 function f1(a::Float64, b::Float64)
   function f2(x::Float64, a=a)
     x + a^2
   end
   return f2(b)
 end
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
+"""))
 
 s="""
 function f1(a::Float64; b=string(a))
@@ -375,22 +341,6 @@ msgs = lintstr(s)
 
 s = """
 function f end
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
-
-s = """
-f(; a=1) = a
-a = :b
-f(; a => 1)
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
-
-s="""
-f(; a=1) = a
-a = (:a, 1)
-f(; a)
 """
 msgs = lintstr(s)
 @test isempty(msgs)

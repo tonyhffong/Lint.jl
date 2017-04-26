@@ -1,79 +1,29 @@
-function popVarScope(ctx::LintContext; checkargs::Bool=false)
-    tmpline = ctx.line
-    stacktop = ctx.callstack[end]
-    unused = [v for (v, vi) in stacktop.localvars[end] if vi.usages == 0]
-    if ctx.quoteLvl == 0
-        for v in unused
-            if !pragmaexists("Ignore unused $v", ctx) && !startswith(string(v), '_')
-                ctx.line = line(stacktop.localvars[end][v])
-                msg(ctx, :W341, v, "local variable declared but not used")
-            end
-        end
-        if checkargs
-            unusedargs = [v for (v, vi) in stacktop.localarguments[end] if
-                          vi.usages == 0]
-            for v in unusedargs
-                if !pragmaexists("Ignore unused $v", ctx) && !startswith(string(v), '_')
-                    ctx.line = line(stacktop.localarguments[end][v])
-                    msg(ctx, :I382, v, "argument declared but not used")
-                end
-            end
-        end
-    end
-
-    union!(stacktop.oosvars, setdiff(keys(stacktop.localvars[end]), keys(stacktop.localvars[1])))
-    pop!(stacktop.localvars)
-    ctx.line = tmpline
-end
-
-function pushVarScope(ctx::LintContext)
-    push!(ctx.callstack[end].localvars, Dict{Symbol, Any}())
-end
-
-# returns
-# :var - a non-Type value
-# :Type
-# :Any - don't know, could be either (with lint warnings, if strict)
-
-# if strict == false, it won't generate lint warnings, just return :Any
-
-function registersymboluse(sym::Symbol, ctx::LintContext, strict::Bool=true)
+function registersymboluse(sym::Symbol, ctx::LintContext)
     if sym == :end
         # TODO: handle this special case elsewhere
-        return :var
+        return Any
     end
 
-    lookupresult = lookup(ctx, sym, register=true)
+    lookupresult = BROADCAST(registeruse!, lookup(ctx, sym))
 
-    result = if isnull(lookupresult)
-        # Fall back to dynamic evaluation in Main
-        result = dynamic_imported_binding_type(sym)
-    else
-        get(lookupresult).typeactual <: Type ? :Type : :var
-    end
-    if strict && result === :Any &&
-       !pragmaexists("Ignore use of undeclared variable $sym", ctx)
-        if ctx.quoteLvl == 0
+    if isnull(lookupresult)
+        if !pragmaexists("Ignore use of undeclared variable $sym", ctx.current) &&
+           ctx.quoteLvl == 0
             msg(ctx, :E321, sym, "use of undeclared symbol")
-        elseif ctx.isstaged
-            msg(ctx, :I371, sym, "use of undeclared symbol")
         end
+        Any
+    else
+        return get(lookupresult).typeactual
     end
-    return result
 end
 
 function lintglobal(ex::Expr, ctx::LintContext)
     for sym in ex.args
         if isa(sym, Symbol)
-            if !haskey(ctx.callstack[end].declglobs, sym)
-                register_global(
-                    ctx,
-                    sym,
-                    VarInfo(Location(ctx.file, ctx.line))
-               )
-            end
-        elseif isexpr(sym, ASSIGN_OPS)
-            lintassignment(sym, sym.head, ctx; isGlobal=true)
+            globalset!(ctx.current, sym, VarInfo(location(ctx), Any))
+        elseif !isnull(expand_assignment(sym))
+            ea = get(expand_assignment(sym))
+            lintassignment(Expr(:(=), ea[1], ea[2]), ctx; isGlobal=true)
         else
             msg(ctx, :E134, sym, "unknown global pattern")
         end
@@ -81,26 +31,17 @@ function lintglobal(ex::Expr, ctx::LintContext)
 end
 
 function lintlocal(ex::Expr, ctx::LintContext)
-    n = length(ctx.callstack[end].localvars)
     for sube in ex.args
         if isa(sube, Symbol)
-            ctx.callstack[end].localvars[n][sube] = VarInfo(ctx.line)
+            # temporarily set to Union{} until rescued later? this is a safer
+            # choice for now.
+            set!(ctx.current, sube, VarInfo(location(ctx), Any))
         elseif isexpr(sube, :(=))
-            lintassignment(sube, :(=), ctx; islocal = true)
+            lintassignment(sube, ctx; islocal = true)
         elseif isexpr(sube, :(::))
             sym = sube.args[1]
-            vi = VarInfo(ctx.line)
-            try
-                dt = stdlibobject(sube.args[2])
-                if !isnull(dt) && isa(get(dt), Type)
-                    vi.typeactual = get(dt)
-                else
-                    vi.typeexpr = sube.args[2]
-                end
-            catch
-                vi.typeexpr = sube.args[2]
-            end
-            ctx.callstack[end].localvars[n][sym] = vi
+            @checkisa(ctx, sym, Symbol)
+            set!(ctx.current, sym, VarInfo(location(ctx), parsetype(ctx, sube.args[2])))
         else
             msg(ctx, :E135, sube, "local declaration not understood by Lint")
         end
@@ -134,7 +75,7 @@ function resolveLHSsymbol(ex, syms::Array{Any,1}, ctx::LintContext, assertions::
     end
 end
 
-function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false) # is it a local decl & assignment?
+function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=false, isGlobal=false, isForLoop=false) # is it a local decl & assignment?
     lhs = ex.args[1]
 
     # lower curly
@@ -205,22 +146,13 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         end
         if s == :call
             msg(ctx, :E332, s, "should not be used as a variable name")
-        elseif !isnull(stdlibobject(s))
-            if s in [:e, :pi, :eu, :catalan, :eulergamma, :golden, :π, :γ, :φ]
-                if ctx.file != "constants.jl"
-                    msg(ctx, :W351, s, "redefining mathematical constant")
-                end
-            else
-                msg(ctx, :I392, s, "local variable might cause confusion with a " *
-                    "synonymous export from Base")
-            end
         end
 
         # +=, -=, *=, etc.
         if ex.head != :(=)
             registersymboluse(s, ctx)
         end
-        vi = VarInfo(ctx.line)
+        vi = VarInfo(location(ctx))
         # @lintpragma("Ignore incompatible type comparison")
         if isa(rhstype, Type) && !lhsIsTuple
             rhst = rhstype
@@ -231,80 +163,23 @@ function lintassignment(ex::Expr, assign_ops::Symbol, ctx::LintContext; islocal 
         end
         try
             if haskey(assertions, s)
-                dt = parsetype(assertions[s])
+                dt = parsetype(ctx, assertions[s])
                 vi.typeactual = dt
-                if typeintersect(dt, rhst) == Union{}
-                    msg(ctx, :I572, "assert $(s) type= $(dt) but assign a value of " *
-                        "$(rhst)")
-                end
+                # TODO: check that rhst is convertible to dt
             elseif rhst != Any && !isForLoop
                 vi.typeactual = rhst
             end
         catch er
             msg(ctx, :W251, ex, "$(er); Symbol=$(s); rhstype=$(rhst)")
-            if haskey(assertions, s)
-                vi.typeexpr = assertions[s]
-            end
         end
 
-        if islocal
-            ctx.callstack[end].localvars[end][s] = vi
-        else # it's not explicitly local, but it could be!
-            found = false
-            for i in length(ctx.callstack[end].localvars):-1:1
-                if haskey(ctx.callstack[end].localvars[i], s)
-                    found = true
-                    prevvi = ctx.callstack[end].localvars[i][s]
-                    if isa(vi.typeactual, Type) && isa(prevvi.typeactual, Type) &&
-                        vi.typeactual <: Number && prevvi.typeactual <: Number && assign_ops != :(=)
-                        if length(prevvi.typeactual.parameters) == 0
-                        else
-                        end
-                        continue
-                    elseif isa(vi.typeactual, Type) && isa(prevvi.typeactual, Type) &&
-                        vi.typeactual <: Number && prevvi.typeactual <: Array && assign_ops != :(=)
-
-                        continue
-                    elseif vi.typeactual ≠ Any && !isa(vi.typeactual, Symbol) && !(vi.typeactual <: prevvi.typeactual) &&
-                        !(vi.typeactual <: AbstractString && prevvi.typeactual <: vi.typeactual) &&
-                        !pragmaexists("Ignore unstable type variable $(s)", ctx)
-                        msg(ctx, :W545, s, "previously used variable has apparent type " *
-                            "$(prevvi.typeactual), but now assigned $(vi.typeactual)")
-                    end
-                    ctx.callstack[end].localvars[i][s] = vi
-                end
-            end
-
-            if !found && in(s, ctx.callstack[end].oosvars)
-                msg(ctx, :I482, s, "used in a local scope. Improve readability by using " *
-                    "'local' or another name")
-            end
-
-            if !found && !isGlobal && !haskey(ctx.callstack[end].declglobs, s)
-                for i in length(ctx.callstack)-1:-1:1
-                    if haskey(ctx.callstack[i].declglobs, s) && length(string(s)) > 4 &&
-                            !in(s, [:value, :index, :fname, :fargs])
-                        src = string(ctx.callstack[i].declglobs[s])
-                        l = split(src, "\n")
-                        splice!(l, 1)
-                        src = join(l, "\n")
-                        msg(ctx, :I391, s, "also a global from $(src)")
-                        break;
-                    end
-                end
-            end
-
-            if !found
-                ctx.callstack[end].localvars[1][s] = vi
-            end
-        end
-        if isGlobal || isConst || (ctx.functionLvl == 0 && ctx.callstack[end].isTop)
+        if isGlobal || isConst || istoplevel(ctx.current)
+            globalset!(ctx.current, s, vi)
             # TODO: guess type and use that type information
-            register_global(
-                ctx,
-                s,
-                VarInfo(Location(ctx.file, ctx.line))
-           )
+        elseif islocal
+            localset!(ctx.current, s, vi)
+        else
+            set!(ctx.current, s, vi)
         end
     end
 end

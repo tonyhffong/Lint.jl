@@ -1,14 +1,14 @@
 @testset "Macros" begin
 
 s = """
-macro r_str(pattern, flags...) Regex(pattern, flags...) end
+macro rr_str(pattern, flags...) Regex(pattern, flags...) end
 """
 msgs = lintstr(s)
 @test isempty(msgs)
 
 s = """
 localize_vars(foo, bar) = (foo, bar)
-macro schedule(expr)
+macro myschedule(expr)
     expr = localize_vars(:(()->(\$expr)), false)
     :(enq_work(Task(\$(esc(expr)))))
 end
@@ -73,8 +73,8 @@ msgs = lintstr(s)
     end
     """
     msgs = lintstr(s)
-    @test msgs[1].code == :E141
-    @test contains(msgs[1].message, "invalid macro syntax")
+    @test_broken msgs[1].code == :E141
+    @test_broken contains(msgs[1].message, "invalid macro syntax")
 end
 
 s = """

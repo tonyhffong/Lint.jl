@@ -188,7 +188,7 @@ function lintcomparison(ex::Expr, ctx::LintContext)
                        !(lefttype <: righttype) && !(righttype <: lefttype)
                     problem = true
                 end
-                if problem && !pragmaexists("Ignore incompatible type comparison", ctx)
+                if problem && !pragmaexists("Ignore incompatible type comparison", ctx.current)
                     msg(ctx, :W542, "comparing apparently incompatible types " *
                         "(#$(i>>1)) LHS:$(lefttype) RHS:$(righttype)")
                 end
@@ -200,29 +200,27 @@ function lintcomparison(ex::Expr, ctx::LintContext)
 end
 
 function lintfor(ex::Expr, ctx::LintContext)
-    pushVarScope(ctx)
-
-    if isexpr(ex.args[1], :(=))
-        lintassignment(ex.args[1], :(=), ctx; isForLoop=true)
-    elseif isexpr(ex.args[1], :block)
-        for a in ex.args[1].args
-            if isexpr(a, :(=))
-                lintassignment(a, :(=), ctx; isForLoop=true)
+    withcontext(ctx, LocalContext(ctx.current)) do
+        if isexpr(ex.args[1], :(=))
+            lintassignment(ex.args[1], ctx; isForLoop=true)
+        elseif isexpr(ex.args[1], :block)
+            for a in ex.args[1].args
+                if isexpr(a, :(=))
+                    lintassignment(a, ctx; isForLoop=true)
+                end
             end
         end
+        lintexpr(ex.args[2], ctx)
     end
-    lintexpr(ex.args[2], ctx)
-
-    popVarScope(ctx)
 end
 
 function lintwhile(ex::Expr, ctx::LintContext)
     if ex.args[1] == false
         msg(ctx, :W645, "while false block is unreachable")
-    elseif typeof(ex.args[1]) == Expr
-            lintboolean(ex.args[1], ctx)
+    elseif isa(ex.args[1], Expr)
+        lintboolean(ex.args[1], ctx)
     end
-    pushVarScope(ctx)
-    lintexpr(ex.args[2], ctx)
-    popVarScope(ctx)
+    withcontext(ctx, LocalContext(ctx.current)) do
+        lintexpr(ex.args[2], ctx)
+    end
 end

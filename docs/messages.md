@@ -41,6 +41,8 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | code   | sample message                                                                                   |
 | :----: | :---------------                                                                                 |
 | **E1** | *Parsing Error*
+| E100   | expression not allowed in this context (the exact error message will be more specific about which expression is not allowed and where)
+| E101   | this expression must be a T
 | E111   | failed to parse
 | E112   | incomplete expression
 | E121   | Lint does not understand the expression
@@ -53,7 +55,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E137   | lintpragma must be called using only string literals
 | E138   | incomplete pragma expression
 | E139   | (no longer used)
-| E140   | macro not allowed in local scope
+| E140   | (merged into E100)
 | E141   | invalid macro syntax
 |        |
 | **E2** | *Miscellaneous Error*
@@ -72,9 +74,9 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E411   | non-default argument following default arguments
 | E412   | named ellipsis ... can only be the last argument
 | E413   | positional ellipsis ... can only be the last argument
-| E414   | using is not allowed inside function definitions
-| E415   | export is not allowed inside function definitions
-| E416   | import is not allowed inside function definitions
+| E414   | (replaced by E100)
+| E415   | (replaced by E100)
+| E416   | (replaced by E100)
 | E417   | anonymous function inside type definition
 | E418   | RHS is a tuple, n of m variables used
 | E421   | (no longer used)
@@ -101,7 +103,7 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | E521   | (merged into E522)
 | E522   | indexing T with index types [S, U] is not supported
 | E523   | (no longer used)
-| E524   | bitstype needs its 2nd argument to be a new type symbol
+| E524   | (merged into E101)
 | E525   | is of an immutable type
 | E531   | multiple key types detected. Use Dict{Any,V}() for mixed type dict
 | E532   | multiple value types detected. Use Dict{K,Any}() for mixed type dict
@@ -116,18 +118,28 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | **E6** | *Structure Error*
 | E611   | constructor doesn't seem to return the constructed object
 |        |
+| **W0** | *Linter Limitation*
+| W100   | this syntax not understood by Lint.jl
+| W101   | unfortunately, Lint could not determine the exports of this module
+|        |
 | **W2** | *Miscellaneous Warning*
 | W241   | custom warning
 | W251   | error; Symbol= X; rhstype= ...
 |        |
 | **W3** | *Existence Warning*
-| W341   | local variable declared but not used
-| W351   | redefining mathematical constant
+| W341   | (merged into I340)
+| W351   | (merged into I342)
 | W352   | lambda argument conflicts with a local variable
-| W353   | lambda argument conflicts with an argument
+| W353   | (merged into W352)
 | W354   | lambda argument conflicts with an declared global
 | W355   | conflicts with function name
+| W356   | file included more than once
+| W357   | including file that doesn't exist
+| **W36**| *Import and Export Warning*
+| W360   | importing possibly undefined symbol
 | W361   | exporting undefined symbol
+| W362   | relative import has too many dots
+| W363   | attempted import from probable non-module
 |        |
 | **W4** | *Usage Warning*
 | W441   | probably illegal use of inside curly
@@ -142,8 +154,8 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | **W5** | *Type Warning*
 | W541   | (removed in Lint 0.3.0)
 | W542   | comparing apparently incompatible types
-| W543   | cannot determine if Type or not
-| W544   | cannot determine if Type or not
+| W543   | (no longer used)
+| W544   | (no longer used)
 | W545   | previously used variable has apparent type X, but now assigned Y
 | W546   | implicitly discarding values, m of n used
 |        |
@@ -163,12 +175,17 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I281   | (no longer used)
 |        |
 | **I3** | *Existence Info*
+| I340   | unused local variable
+| I341   | local variable shadows global variable
+| I342   | local variable shadows export from base
+| I343   | global variable with same name as export from base
+| I344   | local variable shadows other local variable
 | I371   | use of undeclared symbol
 | I372   | unable to follow non-literal include file
 | I381   | unused lintpragma
-| I382   | argument declared but not used
-| I391   | also a global from src
-| I392   | local variable might cause confusion with a synonymous export from Base
+| I382   | (merged into I340)
+| I391   | (replaced with I341)
+| I392   | (replaced with I341)
 | I393   | using an existing type as type parameter name is probably a typo
 |        |
 | **I4** | *Usage Info*
@@ -178,15 +195,11 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 | I475   | bit-wise in a boolean context. (&, |) do not have short-circuit behavior
 | I481   | replace x() with y()
 | I482   | used in a local scope. Improve readability by using 'local' or another name
-| I483   | (removed in Lint 0.3.0)
-| I484   | (removed in Lint 0.3.0)
-| I485   | (removed in Lint 0.3.0)
-| I486   | (removed in Lint 0.3.0)
-| I487   | (removed in Lint 0.3.0)
+| I48[34567]   | (removed in Lint 0.3.0)
 |        |
 | **I5** | *Type Info*
 | I571   | the 1st statement under the true-branch is a boolean expression
-| I572   | assert x type= X but assign a value of Y
+| I572   | (removed)
 | I581   | (removed in Lint 0.3.0)
 |        |
 | **I6** | *Structure Info*

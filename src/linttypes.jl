@@ -1,121 +1,294 @@
-immutable Location
-    file::String
-    line::Int
-end
-file(loc::Location) = loc.file
-line(loc::Location) = loc.line
+include("types/location.jl")
+include("types/lintmessage.jl")
 
-const UNKNOWN_LOCATION = Location("unknown", -1)
+# in fact our parent and Base.parent have the same meaning: as if climbing a
+# tree toward the root
+import Base: parent
 
-# TODO: Replace with Location(file, line)
-type LintMessage
-    file    :: String
-    code    :: Symbol #[E|W|I][1-9][1-9][1-9]
-    scope   :: String
-    line    :: Int
-    variable:: String
-    message :: String
-end
+@compat abstract type AdditionalVarInfo end
+extractobject(_::AdditionalVarInfo) = Nullable()
 
+"""
+A struct with information about a variable.
+"""
 type VarInfo
     location::Location
     typeactual::Type
-    # We may know that it is Array{T, 1}, though we do not know T, for example
-    typeexpr::Union{Expr, Symbol}
 
-    # how many times the variable is used
+    "The number of times the variable has been used."
     usages::Int
 
-    VarInfo() = new(UNKNOWN_LOCATION, Any, :(), 0)
-    VarInfo(loc::Location, t::Type = Any) = new(loc, t, :(), 0)
-    VarInfo(l::Int) = new(Location("unknown", l), Any, :(), 0)
-    VarInfo(l::Int, t::Type) = new(Location("unknown", l), t, :(), 0)
-    VarInfo(l::Int, ex::Expr) = new(Location("unknown", l), Any, ex, 0)
-    VarInfo(ex::Expr) = new(UNKNOWN_LOCATION, Any, ex, 0)
+    """
+    The source of the variable. Currently possible values are `:defined`,
+    `:used`, and `:imported`.
+    """
+    source::Symbol
+
+    "Additional known information about the particular object."
+    extra::Nullable{AdditionalVarInfo}
+
+    VarInfo(loc::Location = UNKNOWN_LOCATION, t::Type = Any;
+            source::Symbol = :defined) =
+        new(loc, t, 0, source, Nullable())
 end
-file(vi::VarInfo) = file(vi.location)
-line(vi::VarInfo) = line(vi.location)
+
+VarInfo(vi::VarInfo; source::Symbol = :defined) =
+    VarInfo(location(vi), vi.typeactual)
+
+location(vi::VarInfo) = vi.location
 registeruse!(vi::VarInfo) = (vi.usages += 1; vi)
+usages(vi::VarInfo) = vi.usages
+source(vi::VarInfo) = vi.source
+function info!(vi::VarInfo, info::AdditionalVarInfo)
+    vi.extra = Nullable(info)
+end
+
+extractobject(vi::VarInfo) =
+    flatten(BROADCAST(extractobject, vi.extra))
+
+immutable ModuleInfo <: AdditionalVarInfo
+    name          :: Symbol
+    globals       :: Dict{Symbol, VarInfo}
+    exports       :: Set{Symbol}
+
+    ModuleInfo(name) = new(name, Dict(), Set())
+end
+
+name(data::ModuleInfo) = data.name
+export!(data::ModuleInfo, sym::Symbol) = push!(data.exports, sym)
+exports(data::ModuleInfo) = data.exports
+set!(data::ModuleInfo, sym::Symbol, info::VarInfo) = data.globals[sym] = info
+function lookup(data::ModuleInfo, sym::Symbol)::Nullable{VarInfo}
+    if sym in keys(data.globals)
+        return data.globals[sym]
+    end
+
+    # check standard library
+    val = stdlibobject(sym)
+    if !isnull(val)
+        vi = VarInfo(UNKNOWN_LOCATION, Core.Typeof(get(val)))
+        info!(vi, StandardLibraryObject(get(val)))
+        return vi
+    end
+
+    return Nullable{VarInfo}()
+end
+
+immutable MethodInfo <: AdditionalVarInfo
+    # signature :: ...
+    location :: Location
+    body     :: Any
+    isstaged :: Bool
+end
+location(mi::MethodInfo) = mi.location
+
+"""
+The binding is known to reference a standard library object. The "standard
+library" consists of `Core`, `Base`, `Compat`, and their submodules.
+"""
+immutable StandardLibraryObject <: AdditionalVarInfo
+    object :: Any
+end
+# TODO: remove {typeof(x.object)} part when #21397 fixed
+extractobject(x::StandardLibraryObject) =
+    Nullable{typeof(x.object)}(x.object)
+
+# TODO: currently, this is not actually used
+immutable FunctionInfo <: AdditionalVarInfo
+    name    :: Symbol
+    methods :: Vector{MethodInfo}
+end
+name(data::FunctionInfo) = data.name
+method!(data::FunctionInfo, mi::MethodInfo) = push!(data.methods, mi)
 
 type PragmaInfo
-    line :: Int
-    used :: Bool
+    location :: Location
+    used     :: Bool
 end
 
-type LintStack
-    declglobs     :: Dict{Symbol, VarInfo}
-    localarguments:: Array{Dict{Symbol, VarInfo}, 1}
-    localvars     :: Array{Dict{Symbol, VarInfo}, 1}
+@compat abstract type _LintContext end
+istoplevel(ctx::_LintContext) = false
+toplevel(ctx::_LintContext) = istoplevel(ctx) ? ctx : toplevel(parent(ctx))
+pragmas(ctx::_LintContext) = Dict{String, PragmaInfo}()
+function pragma!(ctx::_LintContext, pragma, location::Location)
+    pragmas(ctx)[pragma] = PragmaInfo(location, false)
+end
+finish(ctx::_LintContext, _) = nothing
+globalset!(ctx::_LintContext, sym::Symbol, info::VarInfo) =
+    set!(ctx, sym, info)
+localset!(ctx::_LintContext, sym::Symbol, info::VarInfo) =
+    set!(ctx, sym, info)
+
+# A special context for linting a `module` keyword
+immutable ModuleContext <: _LintContext
+    parent        :: Nullable{_LintContext}
+    data          :: ModuleInfo
+    pragmas       :: Dict{String, PragmaInfo}
+
+    """
+    Methods whose linting has been deferred until the completion of this
+    context.
+    """
+    deferred      :: Vector{MethodInfo}
+
+    ModuleContext(parent, data) = new(parent, data, Dict(), [])
+end
+
+isroot(mctx::ModuleContext) = isnull(mctx.parent)
+pragmas(mctx::ModuleContext) = mctx.pragmas
+parent(mctx::ModuleContext) = get(mctx.parent)
+data(mctx::ModuleContext) = mctx.data
+lookup(mctx::ModuleContext, args...; kwargs...) =
+    lookup(mctx.data, args...; kwargs...)
+locallookup(mctx::ModuleContext, name::Symbol) = Nullable()
+set!(mctx::ModuleContext, sym::Symbol, info::VarInfo) =
+    set!(mctx.data, sym, info)
+function defer!(mctx::ModuleContext, mi::MethodInfo)
+    push!(mctx.deferred, mi)
+end
+export!(mctx::ModuleContext, sym::Symbol) = export!(mctx.data, sym)
+exports(mctx::ModuleContext) = exports(mctx.data)
+istoplevel(mctx::ModuleContext) = true
+function finish(ctx::ModuleContext, cursor)
+    for x in keys(ctx.data.globals)
+        vi = ctx.data.globals[x]
+        if source(vi) ∉ [:imported, :used]  # allow imported/used bindings
+            loc = location(vi)
+            if !isnull(stdlibobject(x))
+                msg(cursor, :I343, x, "global variable defined at $loc with same name as export from Base")
+            end
+        end
+    end
+    for method in ctx.deferred
+        lintfunctionbody(cursor, method)
+    end
+end
+
+type LocalContext <: _LintContext
+    parent        :: _LintContext
+    declglobs     :: Set{Symbol}
+    localvars     :: Dict{Symbol, VarInfo}
     oosvars       :: Set{Symbol}
-    pragmas       :: Dict{String, PragmaInfo} # the boolean denotes if the pragma has been used
-    calledfuncs   :: Set{Symbol}
-    moduleName    :: Any
-    typefields    :: Dict{Any, Any}
-    exports       :: Set{Symbol}
-    imports       :: Set{Symbol}
-    linthelpers   :: Dict{String, Any}
-    isTop         :: Bool
-    LintStack() = new(Dict{Symbol,Any}(),
-                      [Dict{Symbol, Any}()],
-                      [Dict{Symbol, Any}()],
-                      Set{Symbol}(),
-                      Dict{String, Bool}(), #pragmas
-                      Set{Symbol}(),
-                      Symbol(""),
-                      Dict{Any,Any}(),
-                      Set{Any}(),
-                      Set{Any}(),
-                      Dict{String, Any}(),
-                      false)
+    pragmas       :: Dict{String, PragmaInfo}
+
+    """
+    Methods whose linting has been deferred until the completion of this
+    context.
+    """
+    deferred      :: Vector{MethodInfo}
+    LocalContext(parent) = new(parent, Set(), Dict(), Set(), Dict(), [])
+end
+parent(ctx::LocalContext) = ctx.parent
+pragmas(ctx::LocalContext) = ctx.pragmas
+function defer!(ctx::LocalContext, mi::MethodInfo)
+    push!(ctx.deferred, mi)
+end
+function finish(ctx::LocalContext, cursor)
+    for method in ctx.deferred
+        lintfunctionbody(cursor, method)
+    end
+    tl = toplevel(ctx)
+    nl = parent(ctx)
+    for x in keys(ctx.localvars)
+        loc = location(ctx.localvars[x])
+        if usages(ctx.localvars[x]) == 0 && !startswith(string(x), "_")
+            # TODO: a better line number
+            msg(cursor, :I340, x, "unused local variable, defined at $loc")
+        elseif !isnull(stdlibobject(x))
+            msg(cursor, :I342, x, "local variable defined at $loc shadows export from Base")
+        elseif !isnull(lookup(tl, x))
+            msg(cursor, :I341, x, "local variable defined at $loc shadows global variable defined at $(location(get(lookup(tl, x))))")
+        elseif !isnull(lookup(nl, x))
+            msg(cursor, :I344, x, "local variable defined at $loc shadows local variable defined at $(location(get(lookup(nl, x))))")
+        end
+    end
 end
 
-function addconst!(s::LintStack, name::Symbol, typ::Type,
-                   loc::Location=UNKNOWN_LOCATION)
-    # TODO: check if symbol already found
-    s.declglobs[name] = VarInfo(loc, typ)
+function set!(s::LocalContext, name::Symbol, vi::VarInfo)
+    # TODO: check if it's soft or hard local scope
+    var = locallookup(s, name)
+    if !isnull(var)
+        # TODO: warn about type instability?
+        get(var).typeactual = Union{get(var).typeactual, vi.typeactual}
+    else
+        localset!(s, name, vi)
+    end
 end
 
-function LintStack(t::Bool)
-    x = LintStack()
-    x.isTop = t
-    x
+function localset!(s::LocalContext, name::Symbol, vi::VarInfo)
+    # TODO: check if already set?
+    s.localvars[name] = vi
 end
 
-type LintIgnore
-    errorcode::Symbol
-    variable::AbstractString
-    messages::Array{LintMessage, 1} # messages that have been ignored
-    LintIgnore(e::Symbol, v::AbstractString) = new(e, v, LintMessage[])
+function globalset!(s::LocalContext, name::Symbol, vi::VarInfo)
+    # TODO: check if this global declaration is legal
+    # TODO: remove from localvars if needed
+    push!(s.declglobs, name)
+    globalset!(parent(s), name, vi)
 end
 
-function ==(m1::LintIgnore, m2::LintIgnore)
-    m1.errorcode == m2.errorcode &&
-    m1.variable == m2.variable
+function locallookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
+    if name in keys(ctx.localvars)
+        return ctx.localvars[name]
+    elseif name in ctx.declglobs
+        return lookup(toplevel(ctx), name)
+    else
+        return locallookup(parent(ctx), name)
+    end
 end
 
-const LINT_IGNORE_DEFAULT = LintIgnore[LintIgnore(:W651, "")]
+function lookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
+    var = locallookup(ctx, name)
+    if isnull(var)
+        lookup(toplevel(ctx), name)
+    else
+        var
+    end
+end
+
+@auto_hash_equals immutable LintIgnore
+    errorcode :: Symbol
+    variable  :: String
+end
+
+const LINT_IGNORE_DEFAULT = [
+    LintIgnore(:I341, ""),
+    LintIgnore(:I342, ""),
+    LintIgnore(:W651, "")
+]
 
 type LintContext
     file         :: String
+    "Current line number."
     line         :: Int
+    "Line number at which the current toplevel expression begins at."
     lineabs      :: Int
     scope        :: String # usually the function name
-    isstaged     :: Bool
     path         :: String
     included     :: Array{AbstractString,1} # list of files included
-    functionLvl  :: Int
     macrocallLvl :: Int
     quoteLvl     :: Int
-    callstack    :: Array{Any, 1}
     messages     :: Array{LintMessage, 1}
     versionreachable:: Function # VERSION -> true means this code is reachable by VERSION
     ignore       :: Array{LintIgnore, 1}
     ifdepth      :: Int
-    LintContext() = new("none", 0, 1, "", false, ".", AbstractString[],
-            0, 0, 0, Any[LintStack(true)], LintMessage[], _ -> true,
-            copy(LINT_IGNORE_DEFAULT), 0)
+    current      :: _LintContext
+    function LintContext()
+        mdata = ModuleInfo(:Main)
+        mctx = ModuleContext(Nullable(), mdata)
+        new("none", 0, 1, "", ".", AbstractString[],
+            0, 0, LintMessage[], _ -> true,
+            copy(LINT_IGNORE_DEFAULT), 0, mctx)
+    end
 end
 location(ctx::LintContext) = Location(ctx.file, ctx.line)
+function location!(ctx::LintContext, loc::Location)
+    ctx.file = file(loc)
+    ctx.path = dirname(ctx.file)
+    ctx.line = line(loc)
+end
+
+finish(cur::LintContext) = finish(cur.current, cur)
 
 function LintContext(file::AbstractString; ignore::Array{LintIgnore, 1} = LintIgnore[])
     ctx = LintContext()
@@ -127,65 +300,29 @@ function LintContext(file::AbstractString; ignore::Array{LintIgnore, 1} = LintIg
     return ctx
 end
 
-function pushcallstack(ctx::LintContext)
-    push!(ctx.callstack, LintStack())
+function withcontext(f, ctx::LintContext, temp::_LintContext)
+    old = ctx.current
+    ctx.current = temp
+    f()
+    finish(ctx.current, ctx)
+    ctx.current = old
 end
 
-function popcallstack(ctx::LintContext)
-    stacktop = ctx.callstack[end]
-    for (p,b) in stacktop.pragmas
-        if !b.used
-            tmpline = ctx.line
-            ctx.line = b.line
-            msg(ctx, :I381, p, "unused lintpragma")
-            ctx.line = tmpline
-        end
-    end
-    pop!(ctx.callstack)
+function lookup(ctx::LintContext, sym::Symbol)::Nullable{VarInfo}
+    lookup(ctx.current, sym)
 end
 
-function register_global(ctx::LintContext, glob, info::VarInfo,
-                         callstackindex=length(ctx.callstack))
-    ctx.callstack[callstackindex].declglobs[glob] = info
-    filter!(message -> begin
-                return !(message.code == :E321 && message.variable == string(glob) &&
-                        (!isempty(message.scope) || message.file != ctx.file))
-            end,
-        ctx.messages
-    )
+function msg(ctx::LintContext, code::Symbol, variable, str::AbstractString)
+    variable = string(variable)
+    m = LintMessage(location(ctx), code, ctx.scope, variable, str)
+    # filter out messages to ignore
+    i = max(findfirst(ctx.ignore, LintIgnore(code, variable)),
+            findfirst(ctx.ignore, LintIgnore(code, "")))
+    if i == 0
+        push!(ctx.messages, m)
+    end
 end
 
-function lookup(ctx::LintContext, sym::Symbol;
-                register=false)::Nullable{VarInfo}
-    use!(x) = register ? registeruse!(x) : x
-    stacktop = ctx.callstack[end]
-
-    for varframe in @view(stacktop.localvars[end:-1:1])
-        if sym in keys(varframe)
-            return use!(varframe[sym])
-        end
-    end
-    for argframe in @view(stacktop.localarguments[end:-1:1])
-        if sym in keys(argframe)
-            return use!(argframe[sym])
-        end
-    end
-    for stackframe in @view(ctx.callstack[end:-1:1])
-        if sym in stackframe.imports
-            return VarInfo(-1, Any)
-        elseif sym in keys(stackframe.declglobs)
-            return stackframe.declglobs[sym]
-        end
-    end
-
-    # check standard library
-    val = stdlibobject(sym)
-    if !isnull(val)
-        if isa(get(val), Type)
-            return VarInfo(-1, Type{get(val)})
-        else
-            return VarInfo(-1, typeof(get(val)))
-        end
-    end
-    return Nullable{VarInfo}()
+function msg(ctx::LintContext, code::Symbol, str::AbstractString)
+    msg(ctx, code, "", str)
 end

@@ -10,6 +10,11 @@ using Lint: StaticTypeAnalysis
 @test !get(StaticTypeAnalysis.canequal(Int, String))
 @test !get(StaticTypeAnalysis.canequal(Vector{Char}, String))
 
+@test StaticTypeAnalysis.infertype(String, (Int,)) == Union{}
+@test StaticTypeAnalysis.infertype(String, (String,)) == String
+@test StaticTypeAnalysis.infertype(String, (Vector{UInt8},)) == String
+@test StaticTypeAnalysis.infertype(String, (IOBuffer,)) == String
+
 @test StaticTypeAnalysis.eltype(Tuple{Int,Int}) == Int
 @test StaticTypeAnalysis.eltype(Tuple{Int,String}) == Any
 @test StaticTypeAnalysis.eltype(Tuple{}) == Union{}

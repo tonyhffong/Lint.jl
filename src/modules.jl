@@ -1,96 +1,190 @@
 # module, using, import, export
-
 function lintmodule(ex::Expr, ctx::LintContext)
-    addconst!(ctx.callstack[end], ex.args[2], Module,
-              Location(ctx.file, ctx.line))
-    pushcallstack(ctx)
-    stacktop = ctx.callstack[end]
-    stacktop.moduleName = ex.args[2]
-    stacktop.isTop = true
+    @checktoplevel(ctx, "module")
 
-    lintexpr(ex.args[3], ctx)
-
-    undefs = setdiff(stacktop.exports, keys(stacktop.declglobs))
-    undefs = setdiff(undefs, keys(stacktop.localvars[1]))
-    undefs = setdiff(undefs, stacktop.imports)
-
-    for sym in undefs
-        msg(ctx, :W361, sym, "exporting undefined symbol")
+    # TODO: do something about baremodules
+    bare = ex.args[1]::Bool
+    name = ex.args[2]
+    if !isa(name, Symbol)
+        msg(ctx, :E100, "module name must be a symbol")
+        return
     end
-    popcallstack(ctx)
+    mi = ModuleInfo(name)
+    vi = VarInfo(location(ctx), Module)
+    info!(vi, mi)
+
+    # set binding in parent module
+    set!(ctx.current, name, vi)
+    
+    # set binding in this module
+    mctx = ModuleContext(ctx.current, mi)
+    set!(mctx, name, VarInfo(vi))
+
+    withcontext(ctx, mctx) do
+        lintexpr(ex.args[3], ctx)
+        for sym in exports(ctx.current)
+            if isnull(lookup(ctx.current, sym))
+                msg(ctx, :W361, sym, "exporting undefined symbol")
+            end
+        end
+    end
+    info!(get(lookup(ctx.current, name)), data(mctx))
 end
 
-function lintusing(ex::Expr, ctx::LintContext)
+"""
+    walkmodulepath(m::Module, path::AbstractVector{Symbol}) :: Nullable
+
+Walk the module `m` based on the path descripton given by a series of symbols
+describing submodules of `m`. For example, if `m === Base` and `path ==
+[:Iterators, :take]`, then this returns `Base.Iterators.take` wrapped in a
+`Nullable`. If an error occurs at any step, `Nullable()` is returned.
+
+```jldoctest
+julia> using Lint.walkmodulepath
+
+julia> using Compat
+
+julia> walkmodulepath(Compat, [:Iterators, :take])
+take (generic function with 2 methods)
+```
+"""
+function walkmodulepath(m::Module, path::AbstractVector{Symbol})::Nullable
+    # walk down m until we get to the requested symbol
+    for s in path
+        try
+            m = getfield(m, s)
+        catch
+            return Nullable()
+        end
+    end
+    Nullable(m)
+end
+
+function importobject(ctx::LintContext, name::Symbol, obj, source::Symbol)
+    # TODO: don't overwrite existing identifiers
+    vi = VarInfo(location(ctx), Core.Typeof(obj); source=source)
+    info!(vi, StandardLibraryObject(obj))
+    set!(ctx.current, name, vi)
+end
+
+function importintocontext(m::Module, p::AbstractVector{Symbol},
+                           source::Symbol, getexports::Bool, ctx::LintContext)
+    # walk down m until we get to the requested symbol
+    maybem = walkmodulepath(m, @view(p[2:end]))
+    if isnull(maybem)
+        msg(ctx, :W360, join(string.(p), "."),
+            "importing probably undefined symbol")
+        return
+    end
+    m = get(maybem)
+
+    if getexports && isa(m, Module)
+        for n in names(m)
+            try
+                obj = getfield(m, n)
+                importobject(ctx, n, obj, source)
+            catch
+                set!(ctx.current, n, VarInfo(location(ctx); source=source))
+            end
+        end
+    end
+
+    importobject(ctx, p[end], m, source)
+end
+
+function lintimport(ex::Expr, ctx::LintContext)
+    if ctx.quoteLvl > 0
+        return  # not safe to import in quotes
+    end
+    imp = get(understand_import(ex))
+    @checktoplevel(ctx, kind(imp))
+
     # Don't use modules protected by a guard (these can cause crashes!)
     # see issue #149
     ctx.ifdepth > 0 && return
-    if ctx.functionLvl > 0
-        msg(ctx, :E414, "using is not allowed inside function definitions")
-    end
-    for s in ex.args
-        if s != :(.)
-            register_global(
-                ctx,
-                s,
-                VarInfo(Location(ctx.file, ctx.line))
-           )
+
+    source = kind(imp) === :using ? :used : :imported
+    getexports = kind(imp) !== :import
+
+    if dots(imp) == 0
+        # top-level import
+        if path(imp)[1] in [:Base, :Compat, :Core, :Lint]
+            m = getfield(Lint, path(imp)[1])
+            importintocontext(m, path(imp), source, getexports, ctx)
+        elseif getexports
+            # unfortunately, we need to import dynamically
+            maybem = dynamic_import_toplevel_module(path(imp)[1])
+            if isnull(maybem)
+                # TODO: make an effort to import the symbol?
+                msg(ctx, :W101, path(imp)[1],
+                    "unfortunately, Lint could not determine the exports of this module")
+                return
+            end
+            m = get(maybem)
+            importintocontext(m, path(imp), source, getexports, ctx)
+        else
+            set!(ctx.current, path(imp)[end],
+                 VarInfo(location(ctx); source=source))
         end
-    end
-    if ex.args[1] != :(.) && ctx.versionreachable(VERSION)
-        m = nothing
-        path = join(map(string, ex.args), ".")
-        try
-            eval(Main, ex)
-            m = eval(Main, parse(path))
+    else
+        importfrom = ctx.current
+        for i = 2:dots(imp)
+            if isroot(importfrom)
+                msg(ctx, :W362, join(string.(path(imp))),
+                    "relative import is too deep; at least $(dots(imp) - i) superfluous dots")
+                return
+            end
+            importfrom = parent(importfrom)
         end
-        t = typeof(m)
-        if t == Module
-            for n in names(m)
-                if !haskey(ctx.callstack[end].declglobs, n)
-                    register_global(
-                        ctx,
-                        n,
-                        VarInfo(Location(ctx.file, ctx.line))
-                   )
+
+        # walk down importfrom until we get to the requested symbol
+        frommodule = data(importfrom)
+        local vi
+        canimport = true
+        for s in path(imp)
+            if !canimport
+                msg(ctx, :W363, join(string.(path(imp)), "."),
+                    "attempted import from probable non-module")
+                return
+            end
+            result = lookup(frommodule, s)
+            if isnull(result)
+                msg(ctx, :W360, join(string.(path(imp)), "."),
+                    "importing probably undefined symbol")
+                return
+            else
+                vi = get(result)
+                if vi.typeactual <: Module && !isnull(vi.extra) && isa(get(vi.extra), ModuleInfo)
+                    frommodule = get(vi.extra)
+                else
+                    canimport = false
                 end
             end
+        end
 
-            if in(:lint_helper, names(m, true))
-                if !haskey(ctx.callstack[end].linthelpers, path)
-                    println("found lint_helper in " * string(m))
+        set!(ctx.current, path(imp)[end], VarInfo(vi; source=source))
+        
+        if getexports && vi.typeactual <: Module && !isnull(vi.extra) &&
+           isa(get(vi.extra), ModuleInfo)
+            for n in get(vi.extra).exports
+                nvi = lookup(get(vi.extra), n)
+                if !isnull(nvi)
+                    set!(ctx.current, n, VarInfo(get(nvi); source=source))
+                else
+                    set!(ctx.current, n, VarInfo(location(ctx); source=source))
                 end
-                ctx.callstack[end].linthelpers[path] = m.lint_helper
             end
         end
     end
 end
 
 function lintexport(ex::Expr, ctx::LintContext)
-    if ctx.functionLvl > 0
-        msg(ctx, :E415, "export is not allowed inside function definitions")
-    end
+    @checktoplevel(ctx, "export")
     for sym in ex.args
-        if in(sym, ctx.callstack[end].exports)
+        if sym in exports(ctx.current)
             msg(ctx, :E333, sym, "duplicate exports of symbol")
         else
-            push!(ctx.callstack[end].exports, sym)
+            export!(ctx.current, sym)
         end
     end
-end
-
-function lintimport(ex::Expr, ctx::LintContext; all::Bool = false)
-    if ctx.functionLvl > 0
-        msg(ctx, :E416, "import is not allowed inside function definitions")
-    end
-    if !ctx.versionreachable(VERSION)
-        return
-    end
-    problem = false
-    m = nothing
-    register_global(
-        ctx,
-        ex.args[end],
-        VarInfo(Location(ctx.file, ctx.line))
-    )
-    push!(ctx.callstack[end].imports, ex.args[end])
 end

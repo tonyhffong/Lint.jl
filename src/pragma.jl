@@ -38,22 +38,24 @@ function lintlintpragma(ex::Expr, ctx::LintContext)
             if !ctx.versionreachable(VERSION)
                 return
             end
-            ctx.callstack[end].pragmas[ex.args[2]] = PragmaInfo(ctx.line, false)
+            pragma!(ctx.current, ex.args[2], location(ctx))
         end
     else
         msg(ctx, :E137, "lintpragma must be called using only string literals")
     end
 end
 
-function pragmaexists(s::Compat.UTF8String, ctx::LintContext; deep=true)
-    iend = deep ? 1 : length(ctx.callstack)
-    for i in length(ctx.callstack):-1:iend
-        if haskey(ctx.callstack[i].pragmas, s)
-            ctx.callstack[i].pragmas[s].used = true # it has been used
-            return true
-        end
+function pragmaexists(s::String, ctx::_LintContext; deep=true)
+    if s in keys(pragmas(ctx))
+        true
+    elseif istoplevel(ctx)
+        false
+    elseif deep
+        pragmaexists(s, parent(ctx); deep=true)
+    else
+        false
     end
-    return false
 end
 
-pragmaexists(s::AbstractString, ctx::LintContext; deep = true) = pragmaexists(Compat.UTF8String(s), ctx; deep = deep)
+pragmaexists(s::AbstractString, ctx::_LintContext; deep=true) =
+    pragmaexists(String(s), ctx; deep = deep)

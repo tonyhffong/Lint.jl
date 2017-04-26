@@ -1,57 +1,22 @@
 function lintmacro(ex::Expr, ctx::LintContext)
-    if ctx.functionLvl > 0
-        msg(ctx, :E140, ex.args[1], "macro not allowed in local scope.")
-        return
-    end
+    @checktoplevel(ctx, "macro")
+
     if !isexpr(ex.args[1], :call)
-        msg(ctx, :E141, ex.args[1], "invalid macro syntax")
+        msg(ctx, :W100, ex.args[1], "this macro syntax not understood by Lint.jl")
         return
     end
+
     fname = ex.args[1].args[1]
-    # TODO: use the same technique as for functions
-    addconst!(ctx.callstack[end], Symbol("@", fname), Function, location(ctx))
-    push!(ctx.callstack[end].localarguments, Dict{Symbol, Any}())
-
-    # TODO: reuse the code of functions
-    # grab the arguments. push a new stack, populate the new stack's argument fields and process the block
-    stacktop = ctx.callstack[end]
-    function resolveArguments(sube::Symbol)
-        stacktop.localarguments[end][sube]=VarInfo(ctx.line)
-        #= # I don't think macro arguments use any of these
-        elseif sube.head == :parameters
-            for kw in sube.args
-                resolveArguments(kw)
-            end
-        elseif sube.head == :(=) || sube.head == :kw
-            resolveArguments(sube.args[1])
-        elseif sube.head == :(::) && length(sube.args) == 2
-            typeex = sube.args[2]
-            if  typeex != :Expr && typeex != :Symbol
-                msg(ctx, :E522, sube, "macro arguments can only be Symbol/Expr")
-            end
-            resolveArguments(sube.args[1])
-        =#
-    end
-    function resolveArguments(sube)
-        if isexpr(sube, :(...)) || isexpr(sube, :(::))
-            resolveArguments(sube.args[1])
-        #= # macro definition inside another macro? highly unlikely
-        elseif sube.head == :($)
-            lintexpr(sube.args[1], ctx)
-        =#
-        else
-            msg(ctx, :E136, sube, "Lint does not understand macro")
-        end
+    if !isa(fname, Symbol)
+        msg(ctx, :E141, ex.args[1].args[1], "invalid macro syntax")
+        return
     end
 
-    for i = 2:length(ex.args[1].args)
-        resolveArguments(ex.args[1].args[i])
-    end
-
-    ctx.functionLvl += 1
-    lintexpr(ex.args[2], ctx)
-    ctx.functionLvl -= 1
-    pop!(ctx.callstack[end].localarguments)
+    # now we pretend we're a function...
+    # TODO: make this less hackish
+    fname = Symbol('@', fname)
+    lintfunction(Expr(:function, Expr(:call, fname, ex.args[1].args[2:end]...),
+                      ex.args[2:end]...), ctx)
 end
 
 istopmacro(ex, mod, mac) = ex in (
@@ -107,9 +72,9 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
 
     if ex.args[1] == Symbol("@pyimport")
         if length(ex.args) == 2 && typeof(ex.args[2]) == Symbol
-            ctx.callstack[end].localvars[end][ex.args[2]] = VarInfo(ctx.line)
+            set!(ctx.current, ex.args[2], VarInfo(location(ctx)))
         elseif length(ex.args) == 4 && ex.args[3] == :as && typeof(ex.args[4]) == Symbol
-            ctx.callstack[end].localvars[end][ex.args[4]] = VarInfo(ctx.line)
+            set!(ctx.current, ex.args[4], VarInfo(location(ctx)))
         end
         return
     end
@@ -122,21 +87,21 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
     if ex.args[1] == Symbol("@gensym")
         for i in 2:length(ex.args)
             if typeof(ex.args[i]) == Symbol
-                vi = VarInfo(ctx.line)
-                ctx.callstack[end].localvars[end][ex.args[i]] = vi
+                set!(ctx.current, ex.args[i], VarInfo(location(ctx)))
             end
         end
         return
     end
 
     if ex.args[1] == Symbol("@enum")
+        @checktoplevel(ctx, "@enum")
         for i in 2:length(ex.args)
             if typeof(ex.args[i]) == Symbol
-                vi = VarInfo(ctx.line)
-                register_global(ctx, ex.args[i], vi, 1)
+                vi = VarInfo(location(ctx))
+                set!(ctx.current, ex.args[i], vi)
             elseif isexpr(ex.args[i], :(=)) && typeof(ex.args[i].args[1]) == Symbol
-                vi = VarInfo(ctx.line)
-                register_global(ctx, ex.args[i].args[1], vi, 1)
+                vi = VarInfo(location(ctx))
+                set!(ctx.current, ex.args[i].args[1], vi)
             end
         end
         return

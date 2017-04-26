@@ -2,8 +2,8 @@
 
 # bug 137
 @test isempty(lintstr("""
-immutable Test
-   Test(x) = x ? new() : error("constructor must be true")
+immutable Test137
+   Test137(x) = x ? new() : error("constructor must be true")
 end
 """))
 
@@ -97,9 +97,25 @@ end
 
 # bug 187
 @test isempty(lintstr("""
-module Test
-import Base.Iterators: flatten
+module Test187
+import Compat.Iterators: flatten
 export flatten
+end
+"""))
+
+# bug 221
+@test isempty(lintstr("""
+@show quote
+    include(string(VERSION))
+end
+"""))
+
+# bug 219
+@test isempty(lintstr("""
+macro foo(x, y=100)
+    quote
+        \$(esc(x)) + \$(esc(y))
+    end
 end
 """))
 

@@ -32,19 +32,9 @@ function lintblock(ex::Expr, ctx::LintContext)
     end
 
     for (i,sube) in enumerate(ex.args)
-        if typeof(sube) == Expr
+        if isa(sube, Expr)
             if sube.head == :line
-                ctx.line = sube.args[1]-1
-                #=
-                # We don't use the file argument since it is inaccurate
-                # as of 0.4.0-dev+1833
-                if length(sube.args)>1
-                    file= string(sube.args[2])
-                    if file != "none"
-                        ctx.file = file
-                    end
-                end
-                =#
+                ctx.line = ctx.lineabs + sube.args[1]-1
                 continue
             elseif sube.head == :return && i != length(ex.args)
                 msg(ctx, :W641, "unreachable code after return")
@@ -69,12 +59,12 @@ function lintblock(ex::Expr, ctx::LintContext)
                 lintexpr(sube, ctx)
                 lastexpr = sube
             end
-        elseif typeof(sube) == QuoteNode
+        elseif isa(sube, QuoteNode)
             lintexpr(sube,ctx)
-        elseif typeof(sube) == LineNumberNode
-            ctx.line = sube.line-1
+        elseif isa(sube, LineNumberNode)
+            ctx.line = ctx.lineabs + sube.line-1
             continue
-        elseif typeof(sube) == Symbol
+        elseif isa(sube, Symbol)
             registersymboluse(sube, ctx)
             if checksimilarityflag
                 checksimilarity()
@@ -144,39 +134,44 @@ function test_similarity_string{T<:AbstractString}(str::T)
 end
 
 function linttry(ex::Expr, ctx::LintContext)
-    pushVarScope(ctx)
-    stacktop = ctx.callstack[end]
-    lintexpr(ex.args[1], ctx)
-    popVarScope(ctx)
-    if typeof(ex.args[2]) == Symbol
-        stacktop.localvars[end][ex.args[2]] = VarInfo(ctx.line)
+    # try
+    withcontext(ctx, LocalContext(ctx.current)) do
+        lintexpr(ex.args[1], ctx)
     end
-    for i in 3:length(ex.args)
-        pushVarScope(ctx)
-        lintexpr(ex.args[i], ctx)
-        popVarScope(ctx)
+
+    # catch
+    if isa(ex.args[2], Symbol)
+        withcontext(ctx, LocalContext(ctx.current)) do
+            set!(ctx.current, ex.args[2], VarInfo(location(ctx), Exception))
+            lintexpr(ex.args[3], ctx)
+        end
+    end
+
+    # finally
+    if length(ex.args) > 3
+        @assert length(ex.args) == 4
+        withcontext(ctx, LocalContext(ctx.current)) do
+            lintexpr(ex.args[4], ctx)
+        end
     end
 end
 
 function lintlet(ex::Expr, ctx::LintContext)
-    pushVarScope(ctx)
-    ctx.functionLvl += 1
-    for j = 2:length(ex.args)
-        # it's always assignment, or the parser would have thrown at the very start
-        if isexpr(ex.args[j], :(=)) && !isexpr(ex.args[j].args[1], :call)
-            lintassignment(ex.args[j], :(=), ctx; islocal = true)
+    withcontext(ctx, LocalContext(ctx.current)) do
+        for arg in ex.args
+            # it's always assignment, or the parser would have thrown at the very start
+            if isexpr(arg, :(=)) && !isexpr(arg.args[1], :call)
+                lintassignment(arg, ctx; islocal = true)
+            end
+        end
+        blk = ex.args[1]
+        @assert isexpr(blk, :block)
+        for arg in blk.args
+            if isexpr(arg, :(=)) && !isexpr(arg.args[1], :call)
+                lintassignment(arg, ctx; islocal = true)
+            else
+                lintexpr(arg, ctx)
+            end
         end
     end
-    blk = ex.args[1]
-    @assert(blk.head == :block)
-    for i = 1:length(blk.args)
-        if isexpr(blk.args[i], :(=)) && !isexpr(blk.args[i].args[1], :call)
-            lintassignment(blk.args[i], :(=), ctx; islocal = true)
-        else
-            lintexpr(blk.args[i], ctx)
-        end
-    end
-    popVarScope(ctx)
-    ctx.functionLvl -= 1
 end
-

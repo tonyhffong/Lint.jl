@@ -6,10 +6,10 @@ msgs = lintstr(s)
 @test length(msgs) == 3
 @test msgs[1].code == :W643
 @test contains(msgs[1].message, "false branch is unreachable")
-@test msgs[2].code == :I382
-@test contains(msgs[2].message, "argument declared but not used")
-@test msgs[3].code == :I382
-@test contains(msgs[3].message, "argument declared but not used")
+@test msgs[2].code == :I340
+@test contains(msgs[2].message, "unused local variable")
+@test msgs[3].code == :I340
+@test contains(msgs[3].message, "unused local variable")
 
 s = """
 wrap(pos::Int, len::Int) = false ? 1 : (pos > len ? len : pos)
@@ -18,7 +18,7 @@ msgs = lintstr(s)
 @test length(msgs) == 1
 @test msgs[1].code == :W642
 @test contains(msgs[1].message, "true branch is unreachable")
-@test msgs[1].line == 1
+@test Lint.line(msgs[1]) == 1
 
 s = """
 f(x) = (x=1) ? 1 : 2 # clearly not what we want
