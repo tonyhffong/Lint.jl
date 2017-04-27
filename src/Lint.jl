@@ -4,10 +4,9 @@ module Lint
 
 using Base.Meta
 using Compat
-using Compat.TypeUtils
+using Compat: TypeUtils, readline
 using JSON
 using AutoHashEquals
-import Compat: readline
 
 if isdefined(Base, :unwrap_unionall)
     using Base: unwrap_unionall

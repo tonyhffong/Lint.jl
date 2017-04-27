@@ -1,4 +1,4 @@
-import Compat: readline
+using Compat.readline
 
 # find a good port
 conn = listenany(2228)
