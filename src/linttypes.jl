@@ -5,6 +5,16 @@ include("types/lintmessage.jl")
 # tree toward the root
 import Base: parent
 
+function Typeof(x::ANY)
+    if x === Vararg
+        typeof(x)
+    elseif isa(x, Type)
+        Type{x}
+    else
+        typeof(x)
+    end
+end
+
 @compat abstract type AdditionalVarInfo end
 extractobject(_::AdditionalVarInfo) = Nullable()
 
@@ -66,7 +76,7 @@ function lookup(data::ModuleInfo, sym::Symbol)::Nullable{VarInfo}
     # check standard library
     val = stdlibobject(sym)
     if !isnull(val)
-        vi = VarInfo(UNKNOWN_LOCATION, Core.Typeof(get(val)))
+        vi = VarInfo(UNKNOWN_LOCATION, Typeof(get(val)))
         info!(vi, StandardLibraryObject(get(val)))
         return vi
     end
