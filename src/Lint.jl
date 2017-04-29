@@ -28,6 +28,8 @@ end
 # needed for BROADCAST
 include("compat.jl")
 using .LintCompat
+include("RequiredKeywordArguments.jl")
+include("SemanticASTs/SemanticASTs.jl")
 include("exprutils.jl")
 using .ExpressionUtils
 

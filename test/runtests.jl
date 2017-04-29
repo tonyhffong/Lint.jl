@@ -6,6 +6,7 @@ messageset(msgs) = Set(x.code for x in msgs)
 
 include("exprutils.jl")
 include("statictype.jl")
+include("requiredargs.jl")
 
 @testset "Lint Messages" begin
     include("messages.jl")
