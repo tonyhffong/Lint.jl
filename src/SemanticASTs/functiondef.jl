@@ -151,3 +151,16 @@ function show(io::IO, ast::MethodDefinition)
     end
     print("code=", code(ast), ")")
 end
+
+function annotateⁿ(::Type{FunctionDefinition}, ast::AST)
+    if isexpr(ast, :function) && length(ast.args) == 2
+        fn = ast.args[1]
+        body = ast.args[2]
+        if isexpr(fn, :tuple)
+            Lambda(signature=fn, code=SemanticAST(body))
+        elseif isexpr(fn, :call)
+            fnname = annotateⁿ(FunctionName, fn)
+            MethodDefinition(func=fnname, signature=fn, code=SemanticAST(body))
+        end
+    end
+end
