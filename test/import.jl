@@ -11,13 +11,6 @@ importall Lint
 msgs = lintstr(s)
 @test isempty(msgs)
 
-s = """
-import Compat
-f = Compat.rewrite_dict(:(a=b))
-"""
-msgs = lintstr(s)
-@test isempty(msgs)
-
 # Avoid warning users about dynamic includes.
 s = """
 script = \"test.jl\"; include(script)
