@@ -72,6 +72,7 @@ function processOneSig(s, typeHints)
         return (s.head, ditype)
     else
         println(STDERR, "Lint doesn't understand " * string(s) * " as an argument")
+        return (:normal, :Any)
     end
 end
 
