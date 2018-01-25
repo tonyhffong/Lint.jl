@@ -35,7 +35,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(b) == $(Compat.ASCIIString)")
+@test contains(msgs[1].message, "typeof(b) == $(Compat.String)")
 
 u = """
 안녕하세요 = "Hello World"
