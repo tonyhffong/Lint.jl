@@ -4,7 +4,7 @@
 type DeprecateInfo
     funcname::Any
     sig::Union{Void, Array{Any,1}}
-    message::Compat.UTF8String
+    message::Compat.String
     line::Int
 end
 const deprecates = Dict{Symbol, Vector{DeprecateInfo}}()

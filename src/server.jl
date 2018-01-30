@@ -82,7 +82,7 @@ function readandwritethestream(conn,style)
         # println("file: ", file)
         code_len = parse(Int, readline(conn))
         # println("Code bytes: ", code_len)
-        code = Compat.UTF8String(read(conn, code_len))
+        code = Compat.String(read(conn, code_len))
         # println("Code received")
         # Do the linting
         msgs = lintfile(file, code)
