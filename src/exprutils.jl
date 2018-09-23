@@ -1,7 +1,7 @@
 module ExpressionUtils
 
 using Base.Meta
-using ..LintCompat
+# using ..LintCompat
 
 export split_comparison, simplify_literal, ispairexpr, isliteral,
        lexicaltypeof, lexicalfirst, lexicallast, lexicalvalue,
@@ -94,24 +94,24 @@ that is, `x` is not `Expr`, `QuoteNode`, or `Symbol`.
 isliteral(x) = !isa(x, Expr) && !isa(x, QuoteNode) && !isa(x, Symbol)
 
 """
-    lexicalvalue(x) :: Nullable{Any}
+    lexicalvalue(x) :: Union{Any, Nothing}
 
-If `x` is a literal, or a quoted literal, return that literal wrapped in a
-`Nullable`. Otherwise, return `Nullable{Any}()`.
+If `x` is a literal, or a quoted literal, return that literal.
+Otherwise, return `nothing`.
 """
 function lexicalvalue(x)
     if isliteral(x)
-        Nullable{Any}(x)
+        x
     elseif isexpr(x, :quote)
         if isexpr(x.args[1], :($))
             lexicalvalue(x.args[1].args[1])
         else
-            Nullable{Any}(x.args[1])
+            x.args[1]
         end
     elseif isa(x, QuoteNode)
-        Nullable{Any}(x.value)
+        x.value
     else
-        Nullable{Any}()
+        nothing
     end
 end
 
@@ -127,7 +127,7 @@ type is defined as
 That is, the maximal amount of information detectable from the lexical context
 alone.
 """
-lexicaltypeof(x) = get(BROADCAST(typeof, lexicalvalue(x)), Any)
+lexicaltypeof(x) = get(broadcast(typeof, lexicalvalue(x)), Any)
 
 """
     expand_trivial_calls(x)
@@ -141,8 +141,6 @@ function expand_trivial_calls(ex)
         Expr(:call, :colon, ex.args...)
     elseif isexpr(ex, Symbol("'"))
         Expr(:call, :ctranspose, ex.args...)
-    elseif isexpr(ex, Symbol(".'"))
-        Expr(:call, :transpose, ex.args...)
     elseif isexpr(ex, :(=>))
         Expr(:call, :(=>), ex.args...)
     elseif isexpr(ex, :vect)
@@ -158,33 +156,32 @@ end
 
 Return a tuple `(LHS, RHS)` by expanding the expression as if it represents a
 single assignment. For example, `x += y` is expanded to `x = x + y`, which is
-returned as `(x, x + y)`. Return `Nullable()` if the argument could not be
+returned as `(x, x + y)`. Return `nothing` if the argument could not be
 interpreted as an assignment.
 """
-function expand_assignment(expr::Expr)::Nullable
+function expand_assignment(expr::Expr)::Union{Any, Nothing}
     op = expr.head
     if op in COMPARISON_OPS
-        Nullable()
+        nothing
     elseif op == :(=)
         @assert length(expr.args) == 2
-        Nullable((expr.args[1], expr.args[2]))
+        (expr.args[1], expr.args[2])
     else
         str = string(op)
         if str[end] == '='
             fop = Symbol(str[1:end-1])
             @assert length(expr.args) == 2
-            Nullable((expr.args[1], Expr(:call, fop, expr.args[1],
-                                         expr.args[2])))
+            (expr.args[1], Expr(:call, fop, expr.args[1], expr.args[2]))
         else
-            Nullable()
+            nothing
         end
     end
 end
-expand_assignment(_) = Nullable()
+expand_assignment(_) = nothing
 
 const COMPARISON_OPS = [:(==), :(<), :(>), :(<=), :(>=), :(!=)]
 
-immutable Import
+struct Import
     """
     The number of dots preceding the import. If `dots` is `0`, then this is a
     toplevel import (i.e., from Main, but additionally requiring the module if
@@ -216,14 +213,14 @@ path(imp::Import) = imp.path
 kind(imp::Import) = imp.kind
 
 """
-    understand_import(ex)::Nullable{Import}
+    understand_import(ex)::Union{Import, Nothing}
 
 Return an `Import` from extracting the important semantics from the given
-expression `ex`, or `Nullable()` otherwise.
+expression `ex`, or `nothing` otherwise.
 """
-function understand_import(ex)::Nullable{Import}
+function understand_import(ex)::Union{Import, Nothing}
     if !isexpr(ex, [:using, :import, :importall])
-        return Nullable()
+        return nothing
     end
 
     kind = ex.head

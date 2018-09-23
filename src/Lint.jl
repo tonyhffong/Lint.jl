@@ -7,6 +7,7 @@ using Compat
 using Compat: TypeUtils, readline
 using JSON
 using AutoHashEquals
+using Printf
 
 if isdefined(Base, :unwrap_unionall)
     using Base: unwrap_unionall
@@ -26,8 +27,8 @@ macro lintpragma(s)
 end
 
 # needed for BROADCAST
-include("compat.jl")
-using .LintCompat
+# include("compat.jl")
+# using .LintCompat
 include("exprutils.jl")
 using .ExpressionUtils
 

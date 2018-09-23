@@ -10,7 +10,7 @@ const LINT_RESULT_COLORS = Dict(
 A collection of `LintMessage`s. This behaves similarly to a vector of
 `LintMessage`s, but has different display behaviour.
 """
-immutable LintResult <: AbstractVector{LintMessage}
+struct LintResult <: AbstractVector{LintMessage}
     messages::Array{LintMessage, 1}
 end
 

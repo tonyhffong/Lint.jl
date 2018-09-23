@@ -5,7 +5,7 @@ include("types/lintmessage.jl")
 # tree toward the root
 import Base: parent
 
-function Typeof(x::ANY)
+function Typeof(@nospecialize x)
     if x === Vararg
         typeof(x)
     elseif isa(x, Type)
@@ -16,12 +16,12 @@ function Typeof(x::ANY)
 end
 
 @compat abstract type AdditionalVarInfo end
-extractobject(_::AdditionalVarInfo) = Nullable()
+extractobject(_::AdditionalVarInfo) = nothing
 
 """
 A struct with information about a variable.
 """
-type VarInfo
+struct VarInfo
     location::Location
     typeactual::Type
 
@@ -35,11 +35,11 @@ type VarInfo
     source::Symbol
 
     "Additional known information about the particular object."
-    extra::Nullable{AdditionalVarInfo}
+    extra::Union{AdditionalVarInfo, Nothing}
 
     VarInfo(loc::Location = UNKNOWN_LOCATION, t::Type = Any;
             source::Symbol = :defined) =
-        new(loc, t, 0, source, Nullable())
+        new(loc, t, 0, source, nothing)
 end
 
 VarInfo(vi::VarInfo; source::Symbol = :defined) =
@@ -50,13 +50,13 @@ registeruse!(vi::VarInfo) = (vi.usages += 1; vi)
 usages(vi::VarInfo) = vi.usages
 source(vi::VarInfo) = vi.source
 function info!(vi::VarInfo, info::AdditionalVarInfo)
-    vi.extra = Nullable(info)
+    vi.extra = info
 end
 
 extractobject(vi::VarInfo) =
     flatten(BROADCAST(extractobject, vi.extra))
 
-immutable ModuleInfo <: AdditionalVarInfo
+struct ModuleInfo <: AdditionalVarInfo
     name          :: Symbol
     globals       :: Dict{Symbol, VarInfo}
     exports       :: Set{Symbol}
@@ -68,7 +68,7 @@ name(data::ModuleInfo) = data.name
 export!(data::ModuleInfo, sym::Symbol) = push!(data.exports, sym)
 exports(data::ModuleInfo) = data.exports
 set!(data::ModuleInfo, sym::Symbol, info::VarInfo) = data.globals[sym] = info
-function lookup(data::ModuleInfo, sym::Symbol)::Nullable{VarInfo}
+function lookup(data::ModuleInfo, sym::Symbol)::Union{VarInfo, Nothing}
     if sym in keys(data.globals)
         return data.globals[sym]
     end
@@ -81,10 +81,10 @@ function lookup(data::ModuleInfo, sym::Symbol)::Nullable{VarInfo}
         return vi
     end
 
-    return Nullable{VarInfo}()
+    return nothing
 end
 
-immutable MethodInfo <: AdditionalVarInfo
+struct MethodInfo <: AdditionalVarInfo
     # signature :: ...
     location :: Location
     body     :: Any
@@ -96,22 +96,22 @@ location(mi::MethodInfo) = mi.location
 The binding is known to reference a standard library object. The "standard
 library" consists of `Core`, `Base`, `Compat`, and their submodules.
 """
-immutable StandardLibraryObject <: AdditionalVarInfo
+struct StandardLibraryObject <: AdditionalVarInfo
     object :: Any
 end
 # TODO: remove {typeof(x.object)} part when #21397 fixed
 extractobject(x::StandardLibraryObject) =
-    Nullable{typeof(x.object)}(x.object)
+    x.object
 
 # TODO: currently, this is not actually used
-immutable FunctionInfo <: AdditionalVarInfo
+struct FunctionInfo <: AdditionalVarInfo
     name    :: Symbol
     methods :: Vector{MethodInfo}
 end
 name(data::FunctionInfo) = data.name
 method!(data::FunctionInfo, mi::MethodInfo) = push!(data.methods, mi)
 
-type PragmaInfo
+struct PragmaInfo
     location :: Location
     used     :: Bool
 end
@@ -130,8 +130,8 @@ localset!(ctx::_LintContext, sym::Symbol, info::VarInfo) =
     set!(ctx, sym, info)
 
 # A special context for linting a `module` keyword
-immutable ModuleContext <: _LintContext
-    parent        :: Nullable{_LintContext}
+struct ModuleContext <: _LintContext
+    parent        :: Union{_LintContext, Nothing}
     data          :: ModuleInfo
     pragmas       :: Dict{String, PragmaInfo}
 
@@ -150,7 +150,7 @@ parent(mctx::ModuleContext) = get(mctx.parent)
 data(mctx::ModuleContext) = mctx.data
 lookup(mctx::ModuleContext, args...; kwargs...) =
     lookup(mctx.data, args...; kwargs...)
-locallookup(mctx::ModuleContext, name::Symbol) = Nullable()
+locallookup(mctx::ModuleContext, name::Symbol) = nothing
 set!(mctx::ModuleContext, sym::Symbol, info::VarInfo) =
     set!(mctx.data, sym, info)
 function defer!(mctx::ModuleContext, mi::MethodInfo)
@@ -174,7 +174,7 @@ function finish(ctx::ModuleContext, cursor)
     end
 end
 
-type LocalContext <: _LintContext
+struct LocalContext <: _LintContext
     parent        :: _LintContext
     declglobs     :: Set{Symbol}
     localvars     :: Dict{Symbol, VarInfo}
@@ -237,7 +237,7 @@ function globalset!(s::LocalContext, name::Symbol, vi::VarInfo)
     globalset!(parent(s), name, vi)
 end
 
-function locallookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
+function locallookup(ctx::LocalContext, name::Symbol)::Union{VarInfo, Nothing}
     if name in keys(ctx.localvars)
         return ctx.localvars[name]
     elseif name in ctx.declglobs
@@ -247,7 +247,7 @@ function locallookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
     end
 end
 
-function lookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
+function lookup(ctx::LocalContext, name::Symbol)::Union{VarInfo, Nothing}
     var = locallookup(ctx, name)
     if isnull(var)
         lookup(toplevel(ctx), name)
@@ -256,7 +256,7 @@ function lookup(ctx::LocalContext, name::Symbol)::Nullable{VarInfo}
     end
 end
 
-@auto_hash_equals immutable LintIgnore
+@auto_hash_equals struct LintIgnore
     errorcode :: Symbol
     variable  :: String
 end
@@ -267,7 +267,7 @@ const LINT_IGNORE_DEFAULT = [
     LintIgnore(:W651, "")
 ]
 
-type LintContext
+mutable struct LintContext
     file         :: String
     "Current line number."
     line         :: Int
@@ -285,7 +285,7 @@ type LintContext
     current      :: _LintContext
     function LintContext()
         mdata = ModuleInfo(:Main)
-        mctx = ModuleContext(Nullable(), mdata)
+        mctx = ModuleContext(nothing, mdata)
         new("none", 0, 1, "", ".", AbstractString[],
             0, 0, LintMessage[], _ -> true,
             copy(LINT_IGNORE_DEFAULT), 0, mctx)
@@ -318,7 +318,7 @@ function withcontext(f, ctx::LintContext, temp::_LintContext)
     ctx.current = old
 end
 
-function lookup(ctx::LintContext, sym::Symbol)::Nullable{VarInfo}
+function lookup(ctx::LintContext, sym::Symbol)::Union{VarInfo, Nothing}
     lookup(ctx.current, sym)
 end
 
@@ -326,9 +326,8 @@ function msg(ctx::LintContext, code::Symbol, variable, str::AbstractString)
     variable = string(variable)
     m = LintMessage(location(ctx), code, ctx.scope, variable, str)
     # filter out messages to ignore
-    i = max(findfirst(ctx.ignore, LintIgnore(code, variable)),
-            findfirst(ctx.ignore, LintIgnore(code, "")))
-    if i == 0
+    if !(LintIgnore(code, variable) in ctx.ignore ||
+         LintIgnore(code, "") in ctx.ignore)
         push!(ctx.messages, m)
     end
 end

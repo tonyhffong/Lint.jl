@@ -32,12 +32,12 @@ function lintmodule(ex::Expr, ctx::LintContext)
 end
 
 """
-    walkmodulepath(m::Module, path::AbstractVector{Symbol}) :: Nullable
+    walkmodulepath(m::Module, path::AbstractVector{Symbol}) :: Union{Any, Nothing}
 
 Walk the module `m` based on the path descripton given by a series of symbols
 describing submodules of `m`. For example, if `m === Base` and `path ==
-[:Iterators, :take]`, then this returns `Base.Iterators.take` wrapped in a
-`Nullable`. If an error occurs at any step, `Nullable()` is returned.
+[:Iterators, :take]`, then this returns `Base.Iterators.take`. If an error
+occurs at any step, `nothing` is returned.
 
 ```jldoctest
 julia> using Lint.walkmodulepath
@@ -48,16 +48,16 @@ julia> walkmodulepath(Compat, [:Iterators, :take])
 take (generic function with 2 methods)
 ```
 """
-function walkmodulepath(m::Module, path::AbstractVector{Symbol})::Nullable
+function walkmodulepath(m::Module, path::AbstractVector{Symbol})::Union{Any, Nothing}
     # walk down m until we get to the requested symbol
     for s in path
         try
             m = getfield(m, s)
         catch
-            return Nullable()
+            return nothing
         end
     end
-    Nullable(m)
+    m
 end
 
 function importobject(ctx::LintContext, name::Symbol, obj, source::Symbol)

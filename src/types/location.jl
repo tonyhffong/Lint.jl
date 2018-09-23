@@ -1,4 +1,4 @@
-@auto_hash_equals immutable Location
+@auto_hash_equals struct Location
     file::String
     line::Int
 end

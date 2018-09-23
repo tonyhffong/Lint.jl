@@ -102,7 +102,7 @@ function expr_similar_score(e1::Expr, e2::Expr, base::Float64 = 1.0)
     return score
 end
 
-function test_similarity_string{T<:AbstractString}(str::T)
+function test_similarity_string(str::T) where T<:AbstractString
     i = start(str)
     firstexpr = nothing
     lastexpr = nothing

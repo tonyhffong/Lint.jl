@@ -2,42 +2,42 @@ module StaticTypeAnalysis
 
 macro lintpragma(ex); end
 
-function __init__()
-    global const EQ_METHOD_FALSE = which(==, Tuple{Void, Int})
-    global const CONSTRUCTOR_FALLBACK = which(Void, Tuple{Void})
-end
+EQ_METHOD_FALSE = which(==, Tuple{Nothing, Int})
+#CONSTRUCTOR_FALLBACK = which(Nothing, Tuple{Nothing})
 
 """
-    StaticTypeAnalysis.canequal(S::Type, T::Type) :: Nullable{Bool}
+    StaticTypeAnalysis.canequal(S::Type, T::Type) :: Union{Bool, Nothing}
 
-Given types `S` and `T`, return `Nullable(false)` if it is not possible for
-`s::S == t::T`. Return `Nullable(true)` if it is possible, and
-`Nullable{Bool}()` if it cannot be determined.
+Given types `S` and `T`, return `false` if it is not possible for
+`s::S == t::T`. Return `true` if it is possible, and
+`nothing` if it cannot be determined.
 
 ```jldoctest
 julia> StaticTypeAnalysis.canequal(Int, Float64)
-Nullable(true)
+true
 
 julia> StaticTypeAnalysis.canequal(Int, String)
-Nullable(false)
+false
 ```
 """
 function canequal(S::Type, T::Type)
     if S == Union{} || T == Union{}
-        return Nullable(false)
+        false
     elseif typeintersect(S, T) ≠ Union{}
         # TODO: this is not fully correct; some types are not Union{} but still
         # not instantiated
-        return Nullable{Bool}(true)
+        true
     elseif isleaftype(S) && isleaftype(T) &&
            EQ_METHOD_FALSE == which(==, Tuple{S, T})
         # == falls back to === here, but we saw earlier that the intersection
         # is empty
-        return Nullable(false)
-    elseif try zero(S) == zero(T) catch false end
-        return Nullable{Bool}(true)
+        false
     else
-        return Nullable{Bool}()
+        try zero(S) == zero(T)
+            true
+        catch
+            nothing
+        end
     end
 end
 
@@ -61,7 +61,7 @@ function isknownerror(::typeof(Base.getindex), argtypes)
             try
                 K = keytype(argtypes[1])
                 ce = canequal(K, argtypes[2])
-                !isnull(ce) && !get(ce)
+                ce !== nothing && !ce
             catch
                 false
             end
@@ -87,12 +87,12 @@ function infertype(f, argtypes::Tuple)
            eltype(argtypes[2]) <: Integer
         # TODO: would be nice to get rid of this odd special case
         UnitRange
-    elseif isa(f, Type) && Base.length(argtypes) == 1 &&
-           isleaftype(argtypes[1]) &&
-           which(f, Tuple{argtypes[1]}) === CONSTRUCTOR_FALLBACK
-        # we can infer better code for the constructor `convert` fallback by
-        # inferring the convert itself
-        Core.Inference.return_type(convert, Tuple{Type{f}, argtypes[1]})
+    # elseif isa(f, Type) && Base.length(argtypes) == 1 &&
+    #        isleaftype(argtypes[1]) &&
+    #        which(f, Tuple{argtypes[1]}) === CONSTRUCTOR_FALLBACK
+    #     # we can infer better code for the constructor `convert` fallback by
+    #     # inferring the convert itself
+    #     Core.Inference.return_type(convert, Tuple{Type{f}, argtypes[1]})
     else
         try
             typejoin(Base.return_types(f, Tuple{argtypes...})...)
@@ -114,30 +114,30 @@ operation on numbers is consistent with iteration order.
 
 Note that, in particular, this is not true for `String` and `Dict`.
 """
-getindexable{T<:Union{Tuple,Pair,Array,Number}}(::Type{T}) = true
+getindexable(::Type{T}) where {T <: Union{Tuple,Pair,Array,Number}} = true
 getindexable(::Type) = false
 
 """
-    StaticTypeAnalysis.length(T::Type) :: Nullable{Int}
+    StaticTypeAnalysis.length(T::Type) :: Union{Int, Nothing}
 
 If it can be determined that all objects of type `T` have length `n`, then
-return `Nullable(n)`. Otherwise, return `Nullable{Int}()`.
+return `n`. Otherwise, return `nothing`.
 """
-length(::Type{Union{}}) = Nullable(0)
-length(::Type) = Nullable{Int}()
-length{T<:Pair}(::Type{T}) = Nullable(2)
+length(::Type{Union{}}) = 0
+length(::Type) = nothing
+length(::Type{T}) where {T <: Pair} = 2
 
-if VERSION < v"0.6.0-dev.2123" # where syntax introduced by julia PR #18457
-    length{T<:Tuple}(::Type{T}) = if !isa(T, DataType) || Core.Inference.isvatuple(T)
-        Nullable{Int}()
-    else
-        Nullable{Int}(Base.length(T.types))
-    end
-else
-    include_string("""
-    length(::Type{T}) where T <: NTuple{N, Any} where N = Nullable{Int}(N)
-    """)
-end
+# if VERSION < v"0.6.0-dev.2123" # where syntax introduced by julia PR #18457
+#     length(::Type{T}) where {T <: Tuple} = if !isa(T, DataType) || Core.Inference.isvatuple(T)
+#         nothing
+#     else
+#         Base.length(T.types)
+#     end
+# else
+#     include_string("""
+length(::Type{T}) where T <: NTuple{N, Any} where N = N
+#     """)
+# end
 
 """
     StaticTypeAnalysis.eltype(T::Type)
@@ -148,8 +148,8 @@ element type `S`.
 eltype(::Type{Union{}}) = Union{}
 eltype(T::Type) = Base.eltype(T)
 
-_getindex_nth{n}(xs::Any, ::Type{Val{n}}) = xs[n]
-_typeof_nth_getindex{T}(::Type{T}, n::Integer) =
+_getindex_nth(xs::Any, ::Type{Val{n}}) where {n} = xs[n]
+_typeof_nth_getindex(::Type{T}, n::Integer) where {T} =
     infertype(_getindex_nth, Any[T, Type{Val{Int(n)}}])
 
 """
@@ -164,7 +164,7 @@ typeof_nth(T::Type, n::Integer) =
     else
         eltype(T)
     end
-typeof_nth{K,V}(::Type{Pair{K,V}}, n::Integer) =
+typeof_nth(::Type{Pair{K,V}}, n::Integer) where {K, V} =
     n == 1 ? K : n == 2 ? V : Union{}
 typeof_nth(::Type{Union{}}, ::Integer) = Union{}
 

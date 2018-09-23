@@ -1,6 +1,6 @@
 using Lint
 using Compat
-using Base.Test
+using Test
 
 messageset(msgs) = Set(x.code for x in msgs)
 

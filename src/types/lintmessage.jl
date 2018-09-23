@@ -1,4 +1,4 @@
-@auto_hash_equals immutable LintMessage
+@auto_hash_equals struct LintMessage
     location:: Location
     code    :: Symbol #[E|W|I][1-9][1-9][1-9]
     scope   :: String

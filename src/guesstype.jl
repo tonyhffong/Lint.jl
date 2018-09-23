@@ -3,16 +3,16 @@ using Base: isexported
 """
     stdlibobject(name::Symbol)
 
-If `name` is an export of Base or Core, return `Nullable{Any}(x)` where `x` is
-the object itself. Otherwise, return `Nullable{Any}()`.
+If `name` is an export of Base or Core, return `x` where `x` is
+the object itself. Otherwise, return `nothing`.
 """
 function stdlibobject(ex::Symbol)
     if isexported(Base, ex) && isdefined(Base, ex)
-        Nullable{Any}(getfield(Base, ex))
+        getfield(Base, ex)
     elseif isexported(Core, ex) && isdefined(Core, ex)
-        Nullable{Any}(getfield(Core, ex))
+        getfield(Core, ex)
     else
-        Nullable{Any}()
+        nothing
     end
 end
 
@@ -62,7 +62,7 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
     end
 
     if isexpr(ex, :block)
-        return isempty(ex.args) ? Void : guesstype(ex.args[end], ctx)
+        return isempty(ex.args) ? Nothing : guesstype(ex.args[end], ctx)
     end
 
     if isexpr(ex, :return)
@@ -153,8 +153,9 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
                 else
                     return eletyp
                 end
+            catch
+                return Any
             end
-            return Any
         else
             argtypes = [guesstype(x, ctx) for x in ex.args]
             type_argtypes = [isa(t, Type) ? t : Any for t in argtypes]
@@ -184,7 +185,7 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
         ft = if length(ex.args) == 3
             guesstype(ex.args[3], ctx)
         else
-            Void
+            nothing
         end
         if tt == ft
             # we need this case because tt and ft might be symbols

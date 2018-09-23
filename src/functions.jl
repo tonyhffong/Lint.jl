@@ -240,6 +240,7 @@ function lintfunctionbody(ctx::LintContext, mi::MethodInfo)
                 elseif haskey(typeRHShints, s)
                     vi.typeactual = typeRHShints[s]
                 end
+            catch
             end
         end
 
@@ -372,6 +373,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
                     if dt <: Exception && !pragmaexists( "Ignore unthrown " * string(ex.args[1]), ctx.current)
                         msg(ctx, :W448, string(ex.args[1]) * " is an Exception but it is not enclosed in a throw()")
                     end
+                catch
                 end
             end
         end
