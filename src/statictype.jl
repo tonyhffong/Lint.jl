@@ -27,7 +27,7 @@ function canequal(S::Type, T::Type)
         # TODO: this is not fully correct; some types are not Union{} but still
         # not instantiated
         true
-    elseif isleaftype(S) && isleaftype(T) &&
+    elseif isconcretetype(S) && isconcretetype(T) &&
            EQ_METHOD_FALSE == which(==, Tuple{S, T})
         # == falls back to === here, but we saw earlier that the intersection
         # is empty
@@ -78,7 +78,7 @@ Given a function `f` and a list of types `argtypes`, use inference and other
 static type checking techniques to figure out a type `S` such that the result
 of applying `f` to `argtypes` is always of type `S`.
 """
-infertype(f, argtypes) = infertype(f, (argtypes...))
+infertype(f, argtypes...) = infertype(f, argtypes)
 function infertype(f, argtypes::Tuple)
     if isknownerror(f, argtypes)
         Union{}
@@ -88,7 +88,7 @@ function infertype(f, argtypes::Tuple)
         # TODO: would be nice to get rid of this odd special case
         UnitRange
     # elseif isa(f, Type) && Base.length(argtypes) == 1 &&
-    #        isleaftype(argtypes[1]) &&
+    #        isconcretetype(argtypes[1]) &&
     #        which(f, Tuple{argtypes[1]}) === CONSTRUCTOR_FALLBACK
     #     # we can infer better code for the constructor `convert` fallback by
     #     # inferring the convert itself
@@ -97,7 +97,7 @@ function infertype(f, argtypes::Tuple)
         try
             typejoin(Base.return_types(f, Tuple{argtypes...})...)
         catch  # error might be thrown if generic function, try using inference
-            if all(isleaftype, argtypes)
+            if all(isconcretetype, argtypes)
                 Core.Inference.return_type(f, Tuple{argtypes...})
             else
                 Any
@@ -159,8 +159,8 @@ Return `S` as specific as possible such that all objects of type `T`, when
 iterated over, have `n`th element type `S`.
 """
 typeof_nth(T::Type, n::Integer) =
-    if getindexable(T)
-        typeintersect(eltype(T), _typeof_nth_getindex(T, n))
+    if getindexable(T) && n <= Base.length(T.types)
+        typeintersect(eltype(T), T.types[n])
     else
         eltype(T)
     end

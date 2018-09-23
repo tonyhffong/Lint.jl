@@ -102,7 +102,7 @@ function lintfunctionbody(ctx::LintContext, mi::MethodInfo)
                 end
                 if istype(ctx, typeconstraint)
                     dt = parsetype(ctx, typeconstraint)
-                    if isleaftype(dt)
+                    if isconcretetype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
                 end

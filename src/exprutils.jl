@@ -137,9 +137,7 @@ expression nodes that almost always lower to calls but are not represented as
 such. The special case lowering of `A*B'` is neglected.
 """
 function expand_trivial_calls(ex)
-    if isexpr(ex, :(:))
-        Expr(:call, :colon, ex.args...)
-    elseif isexpr(ex, Symbol("'"))
+    if isexpr(ex, Symbol("'"))
         Expr(:call, :ctranspose, ex.args...)
     elseif isexpr(ex, :(=>))
         Expr(:call, :(=>), ex.args...)

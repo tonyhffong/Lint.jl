@@ -143,8 +143,7 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
                 end
 
                 for i in 2:length(ex.args)
-                    if ex.args[i] == :(:) || isexpr(ex.args[i], :call) &&
-                            ex.args[i].args[1] == :Colon
+                    if ex.args[i] == :(:)
                         tmpdim += 1
                     end
                 end
