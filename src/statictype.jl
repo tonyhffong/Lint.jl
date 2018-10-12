@@ -159,8 +159,12 @@ Return `S` as specific as possible such that all objects of type `T`, when
 iterated over, have `n`th element type `S`.
 """
 typeof_nth(T::Type, n::Integer) =
-    if getindexable(T) && n <= Base.length(T.types)
-        typeintersect(eltype(T), T.types[n])
+    if getindexable(T) && 0 < Base.length(T.types)
+        if n ≤ Base.length(T.types)
+            typeintersect(eltype(T), T.types[n])
+        else
+            Union{}
+        end
     else
         eltype(T)
     end
