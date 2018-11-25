@@ -116,11 +116,11 @@ function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=fal
         end
     elseif isa(rhstype, Type) && lhsIsTuple
         computedlength = StaticTypeAnalysis.length(rhstype)
-        if !isnull(computedlength)
-            if get(computedlength) < tuplelen
+        if computedlength ≠ nothing
+            if computedlength < tuplelen
                 msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
                     "$(get(computedlength)) variables used")
-            elseif get(computedlength) > tuplelen
+            elseif computedlength > tuplelen
                 msg(ctx, :W546, rhstype, string(
                     "implicitly discarding values, $tuplelen of ",
                     get(computedlength), " used"))

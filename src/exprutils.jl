@@ -127,7 +127,7 @@ type is defined as
 That is, the maximal amount of information detectable from the lexical context
 alone.
 """
-lexicaltypeof(x) = get(broadcast(typeof, lexicalvalue(x)), Any)
+lexicaltypeof(x) = broadcast(typeof, lexicalvalue(x))
 
 """
     expand_trivial_calls(x)

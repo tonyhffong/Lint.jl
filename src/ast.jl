@@ -43,8 +43,8 @@ function lintexpr(ex::Expr, ctx::LintContext)
         lintifexpr(ex, ctx)
     elseif ex.head == :(=) && typeof(ex.args[1])==Expr && ex.args[1].head == :call
         lintfunction(ex, ctx)
-    elseif !isnull(expand_assignment(ex))
-        ea = get(expand_assignment(ex))
+    elseif expand_assignment(ex) ≠ nothing
+        ea = expand_assignment(ex)
         lintassignment(Expr(:(=), ea[1], ea[2]), ctx)
     elseif ex.head == :local
         lintlocal(ex, ctx)

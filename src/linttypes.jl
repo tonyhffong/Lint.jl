@@ -21,7 +21,7 @@ extractobject(_::AdditionalVarInfo) = nothing
 """
 A struct with information about a variable.
 """
-struct VarInfo
+mutable struct VarInfo
     location::Location
     typeactual::Type
 
@@ -75,9 +75,9 @@ function lookup(data::ModuleInfo, sym::Symbol)::Union{VarInfo, Nothing}
 
     # check standard library
     val = stdlibobject(sym)
-    if !isnull(val)
-        vi = VarInfo(UNKNOWN_LOCATION, Typeof(get(val)))
-        info!(vi, StandardLibraryObject(get(val)))
+    if val ≠ nothing
+        vi = VarInfo(UNKNOWN_LOCATION, Typeof(val))
+        info!(vi, StandardLibraryObject(val))
         return vi
     end
 
@@ -249,7 +249,7 @@ end
 
 function lookup(ctx::LocalContext, name::Symbol)::Union{VarInfo, Nothing}
     var = locallookup(ctx, name)
-    if isnull(var)
+    if var == nothing
         lookup(toplevel(ctx), name)
     else
         var
