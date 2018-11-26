@@ -26,9 +26,6 @@ const SIMILARITY_THRESHOLD = 10.0
 macro lintpragma(s)
 end
 
-# needed for BROADCAST
-# include("compat.jl")
-# using .LintCompat
 include("exprutils.jl")
 using .ExpressionUtils
 

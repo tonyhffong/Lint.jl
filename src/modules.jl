@@ -23,7 +23,7 @@ function lintmodule(ex::Expr, ctx::LintContext)
     withcontext(ctx, mctx) do
         lintexpr(ex.args[3], ctx)
         for sym in exports(ctx.current)
-            if isnull(lookup(ctx.current, sym))
+            if lookup(ctx.current, sym) == nothing
                 msg(ctx, :W361, sym, "exporting undefined symbol")
             end
         end
@@ -71,12 +71,12 @@ function importintocontext(m::Module, p::AbstractVector{Symbol},
                            source::Symbol, getexports::Bool, ctx::LintContext)
     # walk down m until we get to the requested symbol
     maybem = walkmodulepath(m, @view(p[2:end]))
-    if isnull(maybem)
+    if maybem == nothing
         msg(ctx, :W360, join(string.(p), "."),
             "importing probably undefined symbol")
         return
     end
-    m = get(maybem)
+    m = maybem
 
     if getexports && isa(m, Module)
         for n in names(m)
@@ -114,13 +114,13 @@ function lintimport(ex::Expr, ctx::LintContext)
         elseif getexports
             # unfortunately, we need to import dynamically
             maybem = dynamic_import_toplevel_module(path(imp)[1])
-            if isnull(maybem)
+            if maybem == nothing
                 # TODO: make an effort to import the symbol?
                 msg(ctx, :W101, path(imp)[1],
                     "unfortunately, Lint could not determine the exports of this module")
                 return
             end
-            m = get(maybem)
+            m = maybem
             importintocontext(m, path(imp), source, getexports, ctx)
         else
             set!(ctx.current, path(imp)[end],
@@ -148,14 +148,14 @@ function lintimport(ex::Expr, ctx::LintContext)
                 return
             end
             result = lookup(frommodule, s)
-            if isnull(result)
+            if result == nothing
                 msg(ctx, :W360, join(string.(path(imp)), "."),
                     "importing probably undefined symbol")
                 return
             else
-                vi = get(result)
-                if vi.typeactual <: Module && !isnull(vi.extra) && isa(get(vi.extra), ModuleInfo)
-                    frommodule = get(vi.extra)
+                vi = result
+                if vi.typeactual <: Module && vi.extra ≠ nothing && isa(vi.extra, ModuleInfo)
+                    frommodule = vi.extra
                 else
                     canimport = false
                 end
@@ -164,12 +164,12 @@ function lintimport(ex::Expr, ctx::LintContext)
 
         set!(ctx.current, path(imp)[end], VarInfo(vi; source=source))
         
-        if getexports && vi.typeactual <: Module && !isnull(vi.extra) &&
-           isa(get(vi.extra), ModuleInfo)
-            for n in get(vi.extra).exports
-                nvi = lookup(get(vi.extra), n)
-                if !isnull(nvi)
-                    set!(ctx.current, n, VarInfo(get(nvi); source=source))
+        if getexports && vi.typeactual <: Module && vi.extra ≠ nothing &&
+           isa(vi.extra, ModuleInfo)
+            for n in vi.extra.exports
+                nvi = lookup(vi.extra, n)
+                if nvi ≠ nothing
+                    set!(ctx.current, n, VarInfo(nvi); source=source)
                 else
                     set!(ctx.current, n, VarInfo(location(ctx); source=source))
                 end

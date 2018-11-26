@@ -24,7 +24,7 @@ end
 
 function istype(ctx::LintContext, x)
     obj = abstract_eval(ctx, x)
-    !isnull(obj) && isa(get(obj), Type)
+    obj ≠ nothing && isa(obj, Type)
 end
 
 # if ctorType isn't symbol("") then we are in the context of
@@ -58,7 +58,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     if isa(fname, Symbol)
         # TODO: warn if it's a using'd thing
         finfo = lookup(ctx.current, fname)
-        if isnull(finfo)
+        if finfo == nothing
             set!(ctx.current, fname, VarInfo(location(ctx), Function))
         else
             # TODO: warn if it's something bad
@@ -66,7 +66,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     end
 
     ctx.scope = string(fname)
-    if fname != Symbol("") && !contains(ctx.file, "deprecate")
+    if fname != Symbol("") && !occursin(ctx.file, "deprecate")
         isDeprecated = functionIsDeprecated(ex.args[1])
         if isDeprecated != nothing && !pragmaexists("Ignore deprecated $fname", ctx.current)
             msg(ctx, :E211, ex.args[1], "$(isDeprecated.message); See: " *
@@ -319,7 +319,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         end
         func = abstract_eval(ctx, ex.args[1])
 
-        if !isnull(func) && isa(get(func), Type) && get(func) <: Dict
+        if func ≠ nothing && isa(func, Type) && func <: Dict
             lintdict(ex, ctx)
         end
 
@@ -367,7 +367,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
 
         if !inthrow && isa(ex.args[1], Symbol)
             s = lowercase(string(ex.args[1]))
-            if contains(s,"error") || contains(s,"exception") || contains(s,"mismatch") || contains(s,"fault")
+            if occursin(s,"error") || occursin(s,"exception") || occursin(s,"mismatch") || occursin(s,"fault")
                 try
                     dt = parsetype(ctx, ex.args[1])
                     if dt <: Exception && !pragmaexists( "Ignore unthrown " * string(ex.args[1]), ctx.current)

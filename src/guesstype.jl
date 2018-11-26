@@ -23,12 +23,12 @@ Obtain a supertype of the type represented by `ex`.
 """
 function parsetype(ctx::LintContext, ex)
     obj = abstract_eval(ctx, ex)
-    if !isnull(obj) && isa(get(obj), Type)
-        get(obj)
+    if obj ≠ nothing && isa(obj, Type)
+        obj
     elseif isexpr(ex, :curly)
         obj = abstract_eval(ctx, ex.args[1])
-        if !isnull(obj) && isa(get(obj), Type) && get(obj) !== Union
-            get(obj)
+        if obj ≠ nothing && isa(obj, Type) && obj !== Union
+            obj
         else
             Any
         end
@@ -39,10 +39,10 @@ end
 
 function guesstype(ex::Symbol, ctx::LintContext)
     result = lookup(ctx, ex)
-    if isnull(result)
+    if result == nothing
         Any  # conservative guess
     else
-        get(result).typeactual
+        result.typeactual
     end
 end
 
@@ -81,8 +81,8 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
         # infer return types of Base functions
         obj = abstract_eval(ctx, fn)
         type_argtypes = [isa(t, Type) ? t : Any for t in argtypes]
-        if !isnull(obj)
-            inferred = StaticTypeAnalysis.infertype(get(obj), type_argtypes)
+        if obj ≠ nothing
+            inferred = StaticTypeAnalysis.infertype(obj, type_argtypes)
             if inferred ≠ Any
                 return inferred
             end
@@ -104,8 +104,8 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
     if isexpr(ex, :ref) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
         if isexpr(ex.args[1], :curly) # must be a datatype, right?
             elt = abstract_eval(ctx, ex.args[1])
-            if !isnull(elt) && isa(get(elt), Type)
-                return Vector{get(elt)}
+            if elt ≠ nothing && isa(elt, Type)
+                return Vector{elt}
             else
                 return Vector
             end
@@ -115,8 +115,8 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
             what = registersymboluse(ex.args[1], ctx)
             if what <: Type
                 elt = abstract_eval(ctx, ex.args[1])
-                if !isnull(elt) && isa(get(elt), Type)
-                    return Vector{get(elt)}
+                if elt ≠ nothing && isa(elt, Type)
+                    return Vector{elt}
                 else
                     return Vector
                 end

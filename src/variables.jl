@@ -4,16 +4,21 @@ function registersymboluse(sym::Symbol, ctx::LintContext)
         return Any
     end
 
-    lookupresult = BROADCAST(registeruse!, lookup(ctx, sym))
+    lookupresult = nothing
+    let lu = lookup(ctx, sym)
+        if lu ≠ nothing
+            lookupresult = registeruse!(lu)
+        end
+    end
 
-    if isnull(lookupresult)
+    if lookupresult == nothing
         if !pragmaexists("Ignore use of undeclared variable $sym", ctx.current) &&
            ctx.quoteLvl == 0
             msg(ctx, :E321, sym, "use of undeclared symbol")
         end
         Any
     else
-        return get(lookupresult).typeactual
+        return lookupresult.typeactual
     end
 end
 
@@ -21,8 +26,8 @@ function lintglobal(ex::Expr, ctx::LintContext)
     for sym in ex.args
         if isa(sym, Symbol)
             globalset!(ctx.current, sym, VarInfo(location(ctx), Any))
-        elseif !isnull(expand_assignment(sym))
-            ea = get(expand_assignment(sym))
+        elseif expand_assignment(sym) ≠ nothing
+            ea = expand_assignment(sym)
             lintassignment(Expr(:(=), ea[1], ea[2]), ctx; isGlobal=true)
         else
             msg(ctx, :E134, sym, "unknown global pattern")
@@ -109,7 +114,7 @@ function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=fal
 
         if lhsIsTuple
             computedlength = StaticTypeAnalysis.length(rhstype)
-            if !isnull(computedlength) && get(computedlength) ≠ tuplelen
+            if computedlength ≠ nothing && get(computedlength) ≠ tuplelen
                 msg(ctx, :I474, rhstype, "iteration generates tuples, " *
                     "$tuplelen of $(get(computedlength)) variables used")
             end
