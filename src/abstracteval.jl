@@ -27,7 +27,7 @@ Otherwise, return `nothing`.
 """
 abstract_eval(ctx::LintContext, ex::Expr) = begin
     if isexpr(ex, :curly)
-        objs = abstract_eval.(ctx, ex.args)
+        objs = [abstract_eval(ctx, arg) for arg in ex.args]
         if all(e->e≠nothing, objs)
             try
                 Core.apply_type(objs...)

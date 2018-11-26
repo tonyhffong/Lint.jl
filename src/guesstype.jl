@@ -128,7 +128,7 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
             # we are in a context of a constructor of a new type, so it's
             # difficult to figure out the content
             return Any
-        elseif partyp <: AbstractArray && !(partyp <: Range)
+        elseif partyp <: AbstractArray && !(partyp <: AbstractRange)
             eletyp = StaticTypeAnalysis.eltype(partyp)
             try
                 nd = ndims(partyp) # This may throw if we couldn't infer the dimension
