@@ -80,6 +80,26 @@ function lintfile(f::AbstractString, code::AbstractString)
     LintResult(msgs)
 end
 
+"Produce expressions to channel from full_string according to current_line."
+function _produce_expressions(channel, context, full_string, current_line_offset, current_line)
+    try
+        # `i` will be sliding index of start-for-current-expression
+        i = current_line_offset
+        while i ≤ length(current_line)
+            (ex, i_for_end_of_expression) = Meta.parse(full_string, i)
+            put!(channel, ex)
+            # update for next loop
+            i = i_for_end_of_expression
+        end
+    catch y
+        # report an unexpected error
+        # end-of-input and parsing errors are expected
+        if typeof(y) != Meta.ParseError || y.msg != "end of input"
+            msg(context, :E111, string(y))
+        end
+    end
+end
+
 "Lint over each expression in each line.
 
 Calls `lintexpr` over each parseable-parsed expression.
@@ -87,27 +107,12 @@ Each parse is called over each line."
 function _lintstr(str::AbstractString, ctx::LintContext, lineoffset = 0)
     non_empty_lines=split(str, "\n", limit=0, keepempty=false)
     for line in non_empty_lines
-        line_offset=line.offset + 1 # SubString.offset + 1 ↔ String.index
+        current_line_offset=line.offset + 1 # SubString.offset + 1 ↔ String.index
 
         # inform context of current line
-        ctx.line = ctx.lineabs = (line_offset + length(line)) + lineoffset
+        ctx.line = ctx.lineabs = (current_line_offset + length(line)) + lineoffset
 
-        expr_ch = Channel(c->begin
-                              # try to produce expressions from line
-                              try
-                                  i = line_offset
-                                  while i ≤ length(line)
-                                      (ex, i) = Meta.parse(str, i)
-                                      put!(c, ex)
-                                  end
-                              catch y
-                                  # report an unexpected error
-                                  # end-of-input and parsing errors are expected
-                                  if typeof(y) != Meta.ParseError || y.msg != "end of input"
-                                      msg(ctx, :E111, string(y))
-                                  end
-                              end
-                          end)
+        expr_ch = Channel(c->_produce_expressions(c, ctx, str, current_line_offset, line))
         # lint/consume expressions
         for ex in expr_ch
             lintexpr(ex, ctx)
