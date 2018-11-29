@@ -38,8 +38,8 @@ function parsetype(ctx::LintContext, ex)
 end
 
 """Returns true if ex is `:` or `Colon()`"""
-function iscolon(ex::Symbol)::Bool
-    return ex == :(:) #TODO(felipe): this is *not* working (fails with `Colon()`)
+function iscolon(ex)::Bool
+    return ex == :(:) || ex == :(Colon())
 end
 
 function guesstype(ex::Symbol, ctx::LintContext)
@@ -154,7 +154,7 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
             dim_diff+=length(colon_arguments)
 
             if dim_diff != 0
-                return Array{eletyp, tmpdim} # is this strictly right?
+                return Array{eletyp, dim_diff} # is this strictly right?
             else
                 return eletyp
             end
