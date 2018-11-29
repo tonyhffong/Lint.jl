@@ -37,6 +37,11 @@ function parsetype(ctx::LintContext, ex)
     end
 end
 
+"""Returns true if ex is `:` or `Colon()`"""
+function iscolon(ex::Symbol)::Bool
+    return ex == :(:) #TODO(felipe): this is *not* working (fails with `Colon()`)
+end
+
 function guesstype(ex::Symbol, ctx::LintContext)
     result = lookup(ctx, ex)
     if result == nothing
@@ -130,30 +135,28 @@ function guesstype(ex::Expr, ctx::LintContext)::Type
             return Any
         elseif partyp <: AbstractArray && !(partyp <: AbstractRange)
             eletyp = StaticTypeAnalysis.eltype(partyp)
+            nd=0
             try
                 nd = ndims(partyp) # This may throw if we couldn't infer the dimension
-                tmpdim = nd - (length(ex.args)-1)
-                if tmpdim < 0
-                    if nd == 0 && ex.args[2] == 1 # ok to do A[1] for a 0-dimensional array
-                        return eletyp
-                    else
-                        msg(ctx, :E436, ex, "more indices than dimensions")
-                        return Any
-                    end
-                end
-
-                for i in 2:length(ex.args)
-                    if ex.args[i] == :(:)
-                        tmpdim += 1
-                    end
-                end
-                if tmpdim != 0
-                    return Array{eletyp, tmpdim} # is this strictly right?
-                else
-                    return eletyp
-                end
             catch
                 return Any
+            end
+            dim_diff = nd - (length(ex.args)-1)
+            if dim_diff < 0
+                if nd == 0 && ex.args[2] == 1 # ok to do A[1] for a 0-dimensional array
+                    return eletyp
+                else
+                    msg(ctx, :E436, ex, "more indices than dimensions")
+                    return Any
+                end
+            end
+            colon_arguments = filter(iscolon, ex.args[2:end])
+            dim_diff+=length(colon_arguments)
+
+            if dim_diff != 0
+                return Array{eletyp, tmpdim} # is this strictly right?
+            else
+                return eletyp
             end
         else
             argtypes = [guesstype(x, ctx) for x in ex.args]
