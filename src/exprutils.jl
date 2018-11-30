@@ -89,9 +89,9 @@ lexicallast(x) = VERSION < v"0.6.0-dev.2613" ? x.args[2] : x.args[3] # changed b
 
 """
 Return `true` if the value represented by expression `x` is exactly `x` itself;
-that is, `x` is not `Expr`, `QuoteNode`, or `Symbol`.
+that is, `x` is not `Expr`, `LineNumberNode`, `QuoteNode`, or `Symbol`.
 """
-isliteral(x) = !isa(x, Expr) && !isa(x, QuoteNode) && !isa(x, Symbol)
+isliteral(x) = !any(t->isa(x, t), [Expr LineNumberNode QuoteNode Symbol])
 
 """
     lexicalvalue(x) :: Union{Any, Nothing}
@@ -127,7 +127,13 @@ type is defined as
 That is, the maximal amount of information detectable from the lexical context
 alone.
 """
-lexicaltypeof(x) = broadcast(typeof, lexicalvalue(x))
+function lexicaltypeof(x)
+    lex_value = lexicalvalue(x)
+    if lex_value == nothing
+        return Nothing
+    end
+    broadcast(typeof, lex_value)
+end
 
 """
     expand_trivial_calls(x)

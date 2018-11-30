@@ -64,6 +64,7 @@ struct ComparisonTag <: ExpressionTag end
 struct CurlyTag <: ExpressionTag end
 struct TernaryIfTag <: ExpressionTag end
 struct LambdaTag <: ExpressionTag end
+struct AssignTag <: ExpressionTag end
 struct DefaultTag <: ExpressionTag end
 
 # condition → tag
@@ -104,6 +105,9 @@ function get_tag_per_condition(ex::Expr)
     if isexpr(ex, :(->))
         return LambdaTag
     end
+    if isexpr(ex, :(=))
+        return AssignTag
+    end
 
     return DefaultTag
 end
@@ -124,6 +128,7 @@ end
 function guesstype(ex::Expr, ctx::LintContext, ::Type{BlockTag})::Type
     isempty(ex.args) ? Nothing : guesstype(ex.args[end], ctx)
 end
+
 function guesstype(ex::Expr, ctx::LintContext, ::Type{ReturnTag})::Type
     guesstype(ex.args[1], ctx)
 end
@@ -258,6 +263,10 @@ end
 
 function guesstype(ex::Expr, ctx::LintContext, ::Type{DefaultTag})::Type
     Any
+end
+
+function guesstype(ex::Expr, ctx::LintContext, ::Type{AssignTag})::Type
+    return guesstype(ex.args[2], ctx)
 end
 
 # `guesstype` dispatcher (resolves the tag)
