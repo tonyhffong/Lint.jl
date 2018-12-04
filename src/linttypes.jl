@@ -211,9 +211,9 @@ function finish(ctx::LocalContext, cursor)
         elseif stdlibobject(x) ≠ nothing
             msg(cursor, :I342, x, "local variable defined at $loc shadows export from Base")
         elseif lookup(tl, x) ≠ nothing
-            msg(cursor, :I341, x, "local variable defined at $loc shadows global variable defined at $(location(get(lookup(tl, x))))")
+            msg(cursor, :I341, x, "local variable defined at $loc shadows global variable defined at $(location(lookup(tl, x)))")
         elseif lookup(nl, x) ≠ nothing
-            msg(cursor, :I344, x, "local variable defined at $loc shadows local variable defined at $(location(get(lookup(nl, x))))")
+            msg(cursor, :I344, x, "local variable defined at $loc shadows local variable defined at $(location(lookup(nl, x)))")
         end
     end
 end

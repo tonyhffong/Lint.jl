@@ -1,7 +1,7 @@
 function lintlintpragma(ex::Expr, ctx::LintContext)
     if length(ex.args) >= 2 && isa(ex.args[2], AbstractString)
         m = match(r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)|(version)) +(.+)"s, ex.args[2])
-        if m != nothing
+        if m ≠ nothing
             action = m.captures[1]
             infotype = m.captures[6]
             rest_str = m.captures[10]
