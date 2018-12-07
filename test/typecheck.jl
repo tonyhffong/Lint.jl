@@ -21,9 +21,9 @@ end
 """
 msgs = lintstr(s)
 @test_broken msgs[1].code == :W545
-@test_broken contains(msgs[1].message, "previously used variable has apparent type")
+@test_broken occursin(msgs[1].message, "previously used variable has apparent type")
 @test msgs[end].code == :I271
-@test_broken contains(msgs[end].message, "typeof(x) == Complex")
+@test_broken occursin(msgs[end].message, "typeof(x) == Complex")
 
 s = """
 function f()
@@ -34,7 +34,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(x) == Float64")
+@test occursin(msgs[1].message, "typeof(x) == Float64")
 
 s = """
 function f()
@@ -47,9 +47,9 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(x) == Array{Float64,1}")
+@test occursin(msgs[1].message, "typeof(x) == Array{Float64,1}")
 @test msgs[2].code == :I271
-@test contains(msgs[2].message, "typeof(y) == Array{Bool,2}")
+@test occursin(msgs[2].message, "typeof(y) == Array{Bool,2}")
 
 s = """
 function f()
@@ -61,7 +61,7 @@ end
 """
 msgs = lintstr(s)
 @test_broken msgs[1].code == :W545
-@test_broken contains(msgs[1].message, "previously used variable has apparent type Int64, but " *
+@test_broken occursin(msgs[1].message, "previously used variable has apparent type Int64, but " *
     "now assigned Float64")
 
 s = """
@@ -73,7 +73,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(x) == Int")
+@test occursin(msgs[1].message, "typeof(x) == Int")
 
 s = """
 g(x) = x
@@ -86,7 +86,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(x) == Function")
+@test occursin(msgs[1].message, "typeof(x) == Function")
 
 s = """
 module MyModule
@@ -100,7 +100,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(x) == Module")
+@test occursin(msgs[1].message, "typeof(x) == Module")
 
 s = """
 function f()
@@ -112,7 +112,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :E525
 @test msgs[1].variable == "z"
-@test contains(msgs[1].message, "is of an immutable type Complex")
+@test occursin(msgs[1].message, "is of an immutable type Complex")
 
 #= TODO: the warning here should be on a = Array{Int32, n}, not the E521
 s = """
@@ -125,7 +125,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :E521
 @test msgs[1].variable == "a"
-@test contains(msgs[1].message, "apparent type Type")
+@test occursin(msgs[1].message, "apparent type Type")
 =#
 
 include("E522.jl")
@@ -139,7 +139,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(d) == Dict")
+@test occursin(msgs[1].message, "typeof(d) == Dict")
 
 s = """
 function f()
@@ -150,7 +150,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(d) == Dict")
+@test occursin(msgs[1].message, "typeof(d) == Dict")
 
 s = """
 function f(n)
@@ -166,10 +166,10 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(a) == Array{Float64,3}")
-@test contains(msgs[2].message, "typeof(c) == Array{Float64,3}")
-@test contains(msgs[3].message, "typeof(d) == Array{Float64,2}")
-@test contains(msgs[4].message, "typeof(e1) == Array{Float64,1}")
+@test occursin(msgs[1].message, "typeof(a) == Array{Float64,3}")
+@test occursin(msgs[2].message, "typeof(c) == Array{Float64,3}")
+@test occursin(msgs[3].message, "typeof(d) == Array{Float64,2}")
+@test occursin(msgs[4].message, "typeof(e1) == Array{Float64,1}")
 
 s = """
 function f()
@@ -180,7 +180,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(s) == Tuple{Int64,Int64,Int64}")
+@test occursin(msgs[1].message, "typeof(s) == Tuple{Int64,Int64,Int64}")
 
 s = """
 function f()
@@ -190,7 +190,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(a) == Array{Complex{Float64},1}")
+@test occursin(msgs[1].message, "typeof(a) == Array{Complex{Float64},1}")
 
 s = """
     Complex(0.0,0.0) == 0
@@ -203,7 +203,7 @@ s = """
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W542
-@test contains(msgs[1].message, "comparing apparently incompatible type")
+@test occursin(msgs[1].message, "comparing apparently incompatible type")
 
 s = """
 s = Union(Int,Double)

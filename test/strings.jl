@@ -3,7 +3,7 @@ s = "a" + "b"
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E422
-@test contains(msgs[1].message, "string uses * to concatenate")
+@test occursin(msgs[1].message, "string uses * to concatenate")
 
 s = """
 function f(x)
@@ -12,7 +12,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E422
-@test contains(msgs[1].message, "string uses * to concatenate")
+@test occursin(msgs[1].message, "string uses * to concatenate")
 
 @test messageset(lintstr("""
 s = String(1)
@@ -24,7 +24,7 @@ s = "a" + b
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E422
-@test contains(msgs[1].message, "string uses * to concatenate")
+@test occursin(msgs[1].message, "string uses * to concatenate")
 
 s = """
 function f()
@@ -35,7 +35,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(b) == $(Compat.String)")
+@test occursin(msgs[1].message, "typeof(b) == $(Compat.String)")
 
 u = """
 안녕하세요 = "Hello World"

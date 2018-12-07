@@ -8,7 +8,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E211
-@test contains(msgs[1].message, "generic deprecate message")
+@test occursin(msgs[1].message, "generic deprecate message")
 
 # THIS DOESN'T TRIGGER LINT WARNING SINCE THE SIGNATURE DOESN'T MATCH
 s = """
@@ -43,7 +43,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E211
-@test contains(msgs[1].message, "generic deprecate message")
+@test occursin(msgs[1].message, "generic deprecate message")
 
 s = """
 function testDep3{T <: Real}(x::Array{T,1})
@@ -52,7 +52,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E211
-@test contains(msgs[1].message, "generic deprecate message")
+@test occursin(msgs[1].message, "generic deprecate message")
 
 s = """
 function testDep4(x::Int, y::Int...)
@@ -61,7 +61,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E211
-@test contains(msgs[1].message, "generic deprecate message")
+@test occursin(msgs[1].message, "generic deprecate message")
 
 s = """
 function testDep4(x::Int, y::Int)
@@ -70,7 +70,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E211
-@test contains(msgs[1].message, "generic deprecate message")
+@test occursin(msgs[1].message, "generic deprecate message")
 
 s = """
 function testDep5{T <: AbstractString}(x::Array{T,1})

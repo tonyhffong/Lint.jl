@@ -24,8 +24,8 @@ end
 """)
 @test msgs[1].code == :I341
 @test msgs[1].variable == "yyyyyy"
-@test contains(msgs[1].message, "local variable")
-@test contains(msgs[1].message, "shadows global variable")
+@test occursin(msgs[1].message, "local variable")
+@test occursin(msgs[1].message, "shadows global variable")
 
 s = """
 y = 1
@@ -56,14 +56,14 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E111
-@test contains(msgs[1].message, "expected assignment after \\\"const\\\"")
+@test occursin(msgs[1].message, "expected assignment after \\\"const\\\"")
 
 s = """
 global 5
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E134
-@test contains(msgs[1].message, "unknown global pattern")
+@test occursin(msgs[1].message, "unknown global pattern")
 
 s = """
 f() = x
@@ -78,7 +78,7 @@ x = 5
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E321
-@test contains(msgs[1].message, "use of undeclared symbol")
+@test occursin(msgs[1].message, "use of undeclared symbol")
 
 # Test gloabls defined in other files
 # File in package src

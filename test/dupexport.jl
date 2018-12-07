@@ -12,4 +12,4 @@ end
 
 msgs = lintstr(s)
 @test msgs[1].code == :E333
-@test contains(msgs[1].message, "duplicate exports of symbol")
+@test occursin(msgs[1].message, "duplicate exports of symbol")

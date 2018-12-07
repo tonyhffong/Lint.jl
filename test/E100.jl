@@ -6,7 +6,7 @@
     end
     """)
     @test messageset(msgs) == Set([:E100, :E321])
-    @test contains(msgs[1].message, "using expression must be at top level")
+    @test occursin(msgs[1].message, "using expression must be at top level")
 
     msgs = lintstr("""
     function f(x, y)
@@ -15,7 +15,7 @@
     end
     """)
     @test messageset(msgs) == Set([:E100, :E321])
-    @test contains(msgs[1].message, "import expression must be at top level")
+    @test occursin(msgs[1].message, "import expression must be at top level")
 
     msgs = lintstr("""
     function f(x, y)
@@ -24,5 +24,5 @@
     end
     """)
     @test messageset(msgs) == Set([:E100, :E321])
-    @test contains(msgs[1].message, "export expression must be at top level")
+    @test occursin(msgs[1].message, "export expression must be at top level")
 end

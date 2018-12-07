@@ -6,8 +6,8 @@
     
     @test messageset(msgs) == Set([:E522])
     @test msgs[1].variable == "s[1]"
-    @test contains(msgs[1].message, "indexing UniformScaling")
-    @test contains(msgs[1].message, "with index types $Int is not supported")
+    @test occursin(msgs[1].message, "indexing UniformScaling")
+    @test occursin(msgs[1].message, "with index types $Int is not supported")
 
     # dicts
     @test messageset(lintstr("""
@@ -33,8 +33,8 @@
     """)
     @test messageset(msgs) == Set([:E522, :E539])
     @test msgs[1].variable == "d[a]"
-    @test contains(msgs[1].message, "indexing Dict")
-    @test contains(msgs[1].message, "Int")
+    @test occursin(msgs[1].message, "indexing Dict")
+    @test occursin(msgs[1].message, "Int")
 
     # strings
     msgs = lintstr("""
@@ -45,8 +45,8 @@
     """)
     @test messageset(msgs) == Set([:E522])
     @test msgs[1].variable == "b[:start]"
-    @test contains(msgs[1].message, "indexing String")
-    @test contains(msgs[1].message, "with index types Symbol is not supported")
+    @test occursin(msgs[1].message, "indexing String")
+    @test occursin(msgs[1].message, "with index types Symbol is not supported")
 
     # zero-dimensional indexing
     msgs = lintstr("""
@@ -54,15 +54,15 @@
     x = d[]
     """)
     @test messageset(msgs) == Set([:E522, :E539])
-    @test contains(msgs[1].message, "indexing Dict")
-    @test contains(msgs[1].message, "with no indices is not supported")
+    @test occursin(msgs[1].message, "indexing Dict")
+    @test occursin(msgs[1].message, "with no indices is not supported")
 
     msgs = lintstr("""
     a = ""
     a[]
     """)
     @test messageset(msgs) == Set([:E522])
-    @test contains(msgs[1].message, "indexing String with no indices")
+    @test occursin(msgs[1].message, "indexing String with no indices")
 
     # issue 196
     @test messageset(lintstr("""

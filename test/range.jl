@@ -3,7 +3,7 @@ r = 5:1
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E433
-@test contains(msgs[1].message, "for a decreasing range, use a negative step e.g. 10:-1:1")
+@test occursin(msgs[1].message, "for a decreasing range, use a negative step e.g. 10:-1:1")
 
 s = """
 x = [1,2,7,8]
@@ -33,8 +33,8 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(r) == UnitRange")
+@test occursin(msgs[1].message, "typeof(r) == UnitRange")
 @test msgs[2].code == :I271
-@test contains(msgs[2].message, "typeof(a) == Any")
+@test occursin(msgs[2].message, "typeof(a) == Any")
 @test msgs[3].code == :I271
-@test contains(msgs[3].message, "typeof(b) == UnitRange")
+@test occursin(msgs[3].message, "typeof(b) == UnitRange")

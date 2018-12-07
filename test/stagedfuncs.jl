@@ -12,7 +12,7 @@ end
 
 msgs = lintstr(s)
 @test msgs[1].code == :W542
-@test contains(msgs[1].message, "incompatible types (#1)")
+@test occursin(msgs[1].message, "incompatible types (#1)")
 
 # if it is not a staged function, it would have no lint message
 s = """
@@ -22,7 +22,7 @@ end
 """
 msgs = lintstr(s)
 @test_broken msgs[1].code == :I371
-@test_broken contains(msgs[1].message, "use of undeclared symbol")
+@test_broken occursin(msgs[1].message, "use of undeclared symbol")
 
 s = """
 @generated function f(args::Int...)
@@ -34,6 +34,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(args) == Tuple{Vararg{Type")
+@test occursin(msgs[1].message, "typeof(args) == Tuple{Vararg{Type")
 @test msgs[2].code == :I271
-@test contains(msgs[2].message, "typeof(x) == ")
+@test occursin(msgs[2].message, "typeof(x) == ")

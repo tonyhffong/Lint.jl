@@ -47,7 +47,7 @@ end
     write(conn, "4\n")
     write(conn, "bad\n")
 
-    @test contains(readline(conn), "use of undeclared symbol")
+    @test occursin(readline(conn), "use of undeclared symbol")
     @test readline(conn) == ""
 end
 

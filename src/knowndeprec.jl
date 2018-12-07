@@ -87,7 +87,7 @@ function parseDeprecate(ex, lineabs)
             # can't deal with complex expressions like Broadcast.func yet
             return
         end
-        if in(funcname, [:depwarn, :firstcaller]) || contains(lowercase(string(funcname)), "deprecate")
+        if in(funcname, [:depwarn, :firstcaller]) || occursin(lowercase(string(funcname)), "deprecate")
             # the first two are support functions.
             # Any function declaration that has "deprecate" in the name...
             # well, the user/developer should know what they are in for.
@@ -123,7 +123,7 @@ function parseDeprecate(ex, lineabs)
             oldcall = sprint(io->Base.show_unquoted(io,old))
             newcall = sprint(io->Base.show_unquoted(io,new))
 
-            if contains(string(funcname), "deprecate")
+            if occursin(string(funcname), "deprecate")
                 return
             end
             if sig == nothing

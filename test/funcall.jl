@@ -35,7 +35,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E331
-@test contains(msgs[1].message, "duplicate argument")
+@test occursin(msgs[1].message, "duplicate argument")
 
 s = """
 function f{Int64}(x::Int64, y::Int64)
@@ -45,7 +45,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :E534
 @test msgs[1].variable == "Int64"
-@test contains(msgs[1].message, "introducing a new name for an implicit argument to the " *
+@test occursin(msgs[1].message, "introducing a new name for an implicit argument to the " *
     "function, use {T<:Int64}")
 
 s = """
@@ -56,7 +56,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :E513
 @test msgs[1].variable == "T <: Int64"
-@test contains(msgs[1].message, "leaf type as a type constraint makes no sense")
+@test occursin(msgs[1].message, "leaf type as a type constraint makes no sense")
 
 s = """
 function f{Int<:Real}(x::Int, y::Int)
@@ -65,7 +65,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E536
-@test contains(msgs[1].message, "use {T<:...} instead of a known type")
+@test occursin(msgs[1].message, "use {T<:...} instead of a known type")
 
 s = """
 function f(x, args...)
@@ -82,7 +82,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E413
-@test contains(msgs[1].message, "positional ellipsis ... can only be the last argument")
+@test occursin(msgs[1].message, "positional ellipsis ... can only be the last argument")
 
 s = """
 function f(x=1, y, args...)
@@ -91,7 +91,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E411
-@test contains(msgs[1].message, "non-default argument following default arguments")
+@test occursin(msgs[1].message, "non-default argument following default arguments")
 
 s = """
 function f(x, y; z, q=1)
@@ -100,7 +100,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E423
-@test contains(msgs[1].message, "named keyword argument must have a default")
+@test occursin(msgs[1].message, "named keyword argument must have a default")
 
 s = """
 function f(x, y; args..., z=1)
@@ -109,7 +109,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E412
-@test contains(msgs[1].message, "named ellipsis ... can only be the last argument")
+@test occursin(msgs[1].message, "named ellipsis ... can only be the last argument")
 
 s = """
 function f(x, args...; kwargs...)
@@ -126,7 +126,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E533
-@test contains(msgs[1].message, "type parameters are invariant, try f{T<:Number}(x::T)...")
+@test occursin(msgs[1].message, "type parameters are invariant, try f{T<:Number}(x::T)...")
 
 s = """
 function f(x::Dict{Symbol,Number})
@@ -135,7 +135,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E533
-@test contains(msgs[1].message, "type parameters are invariant, try f{T<:Number}(x::T)...")
+@test occursin(msgs[1].message, "type parameters are invariant, try f{T<:Number}(x::T)...")
 
 s = """
 function f(x; y = 1, z::Int = 0.1)
@@ -144,7 +144,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E516
-@test contains(msgs[1].message, "type assertion and default")
+@test occursin(msgs[1].message, "type assertion and default")
 
 s = """
 function f(x; y = 1, z::Int = error("You must provide z"))
@@ -190,21 +190,21 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(a) == Array")
+@test occursin(msgs[1].message, "typeof(a) == Array")
 @test msgs[2].code == :I271
-@test contains(msgs[2].message, "typeof(n) == Tuple{Int64}")
+@test occursin(msgs[2].message, "typeof(n) == Tuple{Int64}")
 if VERSION ≥ v"0.6-"
     @test msgs[3].code == :I271
-    @test contains(msgs[3].message, "typeof(tmp) == Array")
+    @test occursin(msgs[3].message, "typeof(tmp) == Array")
 end
 @test msgs[4].code == :I271
-@test_broken contains(msgs[4].message, "typeof(T) == Type")
+@test_broken occursin(msgs[4].message, "typeof(T) == Type")
 if VERSION ≥ v"0.6-"
     @test msgs[5].code == :I271
-    @test contains(msgs[5].message, "typeof(tmp2) == Array")
+    @test occursin(msgs[5].message, "typeof(tmp2) == Array")
 end
 @test msgs[6].code == :I271
-@test contains(msgs[6].message, "typeof(tmp3) == Array{Float64,3}")
+@test occursin(msgs[6].message, "typeof(tmp3) == Array{Float64,3}")
 
 s = """
 function f(x)
@@ -215,7 +215,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :W355
 @test msgs[1].variable == "f"
-@test contains(msgs[1].message, "conflicts with function name")
+@test occursin(msgs[1].message, "conflicts with function name")
 
 s = """
 function f(x)
@@ -242,7 +242,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(x) == Int")
+@test occursin(msgs[1].message, "typeof(x) == Int")
 
 s = """
 function f(x::Int8=Int8(1))
@@ -252,7 +252,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(x) == Int8")
+@test occursin(msgs[1].message, "typeof(x) == Int8")
 
 s = """
 function f(c::Char)
@@ -263,7 +263,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(x) == Int")
+@test occursin(msgs[1].message, "typeof(x) == Int")
 
 s = """
 function f(args...; dict...)
@@ -274,9 +274,9 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(args) == Tuple")
+@test occursin(msgs[1].message, "typeof(args) == Tuple")
 @test msgs[2].code == :I271
-@test contains(msgs[2].message, "typeof(dict) == Tuple")
+@test occursin(msgs[2].message, "typeof(dict) == Tuple")
 
 s = """
 function f(args::Float64...)
@@ -286,7 +286,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test contains(msgs[1].message, "typeof(args) == Tuple{Vararg{Float64")
+@test occursin(msgs[1].message, "typeof(args) == Tuple{Vararg{Float64")
 
 s = """
 function f(args::Float64...)
@@ -311,7 +311,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W542
-@test contains(msgs[1].message, "comparing apparently incompatible type")
+@test occursin(msgs[1].message, "comparing apparently incompatible type")
 
 s = """
 function f(X::Int)
@@ -351,7 +351,7 @@ f(; 2)
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E133
-@test contains(msgs[1].message, "unknown keyword pattern")
+@test occursin(msgs[1].message, "unknown keyword pattern")
 
 s = """
 function () end
@@ -376,7 +376,7 @@ s="""
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E132
-@test contains(msgs[1].message, "Lint does not understand argument")
+@test occursin(msgs[1].message, "Lint does not understand argument")
 
 s = """
 (==)((1, 1)...)

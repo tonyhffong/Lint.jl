@@ -4,7 +4,7 @@ s = """
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I171
-@test contains(msgs[1].message, "LHS in assignment not understood by Lint")
+@test occursin(msgs[1].message, "LHS in assignment not understood by Lint")
 
 s = """
 local 5
@@ -12,7 +12,7 @@ local 5
 msgs = lintstr(s)
 @test msgs[1].code == :E135
 @test msgs[1].variable == "5"
-@test contains(msgs[1].message, "local declaration not understood by Lint")
+@test occursin(msgs[1].message, "local declaration not understood by Lint")
 
 s = """
 a = 5
@@ -22,7 +22,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :E511
 @test msgs[1].variable == "a"
-@test contains(msgs[1].message, "apparent non-Bool type")
+@test occursin(msgs[1].message, "apparent non-Bool type")
 
 s = """
 d = Dict{float, float}()
@@ -34,7 +34,7 @@ if VERSION < v"0.5.0-dev+2959"
 @test msgs[2].code == :W441
 else
 @test msgs[1].code == :W447
-@test contains(msgs[1].message, "it should be of type Type")
+@test occursin(msgs[1].message, "it should be of type Type")
 @test msgs[2].code == :W447
-@test contains(msgs[2].message, "it should be of type Type")
+@test occursin(msgs[2].message, "it should be of type Type")
 end

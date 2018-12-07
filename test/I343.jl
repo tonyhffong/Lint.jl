@@ -20,7 +20,7 @@
     e = 1
     """)
     @test messageset(msgs) == Set([:I343])
-    @test contains(msgs[1].message, "with same name as export from Base")
+    @test occursin(msgs[1].message, "with same name as export from Base")
 
     @test isempty(lintstr("""
     import Base: parent

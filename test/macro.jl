@@ -50,7 +50,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E522
-@test contains(msgs[1].message, "macro arguments can only be Symbol/Expr")
+@test occursin(msgs[1].message, "macro arguments can only be Symbol/Expr")
 =#
 
 s = """
@@ -74,7 +74,7 @@ msgs = lintstr(s)
     """
     msgs = lintstr(s)
     @test_broken msgs[1].code == :E141
-    @test_broken contains(msgs[1].message, "invalid macro syntax")
+    @test_broken occursin(msgs[1].message, "invalid macro syntax")
 end
 
 s = """

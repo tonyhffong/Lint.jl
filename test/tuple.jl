@@ -5,14 +5,14 @@ s = """
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W546
-@test contains(msgs[1].message, "implicitly discarding values, 2 of 3 used")
+@test occursin(msgs[1].message, "implicitly discarding values, 2 of 3 used")
 
 s = """
     a, = (1,2,3)
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W546
-@test contains(msgs[1].message, "implicitly discarding values, 1 of 3 used")
+@test occursin(msgs[1].message, "implicitly discarding values, 1 of 3 used")
 
 @test isempty(lintstr("a = (1, 2, 3)"))
 
@@ -30,6 +30,6 @@ s = """
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E418
-@test contains(msgs[1].message, "RHS is a tuple, 3 of 2 variables used")
+@test occursin(msgs[1].message, "RHS is a tuple, 3 of 2 variables used")
 
 end

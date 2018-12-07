@@ -6,5 +6,5 @@
     """
     msgs = lintstr(s)
     @test msgs[1].code == :W361
-    @test contains(msgs[1].message, "exporting undefined symbol")
+    @test occursin(msgs[1].message, "exporting undefined symbol")
 end
