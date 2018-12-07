@@ -9,6 +9,6 @@ try
 
     msgs = lintfile("DEMOMODULE3.jl")
     @test_broken msgs[1].code == :E311
-    @test_broken occursin(msgs[1].message, "cannot find include file")
+    @test_broken occursin("cannot find include file", msgs[1].message)
 end
 end

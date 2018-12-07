@@ -10,7 +10,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W645
-@test occursin(msgs[1].message, "while false block is unreachable")
+@test occursin("while false block is unreachable", msgs[1].message)
 
 s = """
 function f(x)
@@ -46,6 +46,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin(msgs[1].message, "typeof(x) == Int")
+@test occursin("typeof(x, msgs[1].message) == Int")
 @test msgs[2].code == :I672
-@test occursin(msgs[2].message, "iteration works for a number but it may be a typo")
+@test occursin("iteration works for a number but it may be a typo", msgs[2].message)

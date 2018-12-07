@@ -5,7 +5,7 @@
     end
     """)
     @test messageset(msgs) == Set([:E321])
-    @test occursin(msgs[1].message, "use of undeclared symbol")
+    @test occursin("use of undeclared symbol", msgs[1].message)
 
     @test isempty(lintstr("""
     function f(x)
@@ -51,7 +51,7 @@ end
 """
 msgs = lintstr(s)
 @test_broken msgs[1].code == :I482
-@test_broken occursin(msgs[1].message, "used in a local scope")
+@test_broken occursin("used in a local scope", msgs[1].message)
 
 s = """
 function f()

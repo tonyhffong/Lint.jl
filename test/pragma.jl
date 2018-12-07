@@ -32,7 +32,7 @@ end
 msgs = lintstr(s)
 @test length(msgs) == 1
 @test msgs[1].code == :I271
-@test occursin(msgs[1].message, "typeof(b) == Int")
+@test occursin("typeof(b, msgs[1].message) == Int")
 
 s = """
 function f(x)
@@ -44,7 +44,7 @@ end
 msgs = lintstr(s)
 @test length(msgs) == 1
 @test msgs[1].code == :W241
-@test occursin(msgs[1].message, "typeof(b) == Int")
+@test occursin("typeof(b, msgs[1].message) == Int")
 
 s = """
 function f(x)
@@ -56,7 +56,7 @@ end
 msgs = lintstr(s)
 @test length(msgs) == 1
 @test msgs[1].code == :E221
-@test occursin(msgs[1].message, "typeof(b) == Int")
+@test occursin("typeof(b, msgs[1].message) == Int")
 
 s = """
 function f(x)
@@ -77,7 +77,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E138
-@test occursin(msgs[1].message, "incomplete pragma expression")
+@test occursin("incomplete pragma expression", msgs[1].message)
 
 s = """
 function f(x)
@@ -88,7 +88,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin(msgs[1].message, "my own reminder")
+@test occursin("my own reminder", msgs[1].message)
 
 s = """
 function f(x)
@@ -99,7 +99,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E137
-@test occursin(msgs[1].message, "lintpragma must be called using only string literals")
+@test occursin("lintpragma must be called using only string literals", msgs[1].message)
 
 s = """
 function f(x)
@@ -112,11 +112,11 @@ end
 msgs = lintstr(s)
 @test_broken msgs[1].code == :I381
 @test_broken msgs[1].variable == "Ignore unused a"
-@test_broken occursin(msgs[1].message, "unused lintpragma")
+@test_broken occursin("unused lintpragma", msgs[1].message)
 
 s = """
 @lintpragma()
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E137
-@test occursin(msgs[1].message, "lintpragma must be called using only string literals")
+@test occursin("lintpragma must be called using only string literals", msgs[1].message)

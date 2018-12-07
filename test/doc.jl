@@ -14,7 +14,7 @@ f() = 0
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W443
-@test occursin(msgs[1].message, "did you forget an -> after @doc or make it inline?")
+@test occursin("did you forget an -> after @doc or make it inline?", msgs[1].message)
 
 s = """
 @doc "this is a test" f() = 0

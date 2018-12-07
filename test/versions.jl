@@ -9,10 +9,10 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin(msgs[1].message, "Reachable by 0.3")
-@test occursin(msgs[2].message, "Unreachable by 0.4")
-@test occursin(msgs[3].message, "Unreachable by 0.3")
-@test occursin(msgs[4].message, "Reachable by 0.4")
+@test occursin("Reachable by 0.3", msgs[1].message)
+@test occursin("Unreachable by 0.4", msgs[2].message)
+@test occursin("Unreachable by 0.3", msgs[3].message)
+@test occursin("Reachable by 0.4", msgs[4].message)
 
 s = """
 test() = true
@@ -27,10 +27,10 @@ end
 msgs = lintstr(s)
 @test length(msgs) == 4
 @test msgs[1].code == :I271
-@test occursin(msgs[1].message, "Reachable by 0.3")
-@test occursin(msgs[2].message, "Unreachable by 0.4")
-@test occursin(msgs[3].message, "Reachable by 0.3")
-@test occursin(msgs[4].message, "Reachable by 0.4") # we cannot prove unreachable
+@test occursin("Reachable by 0.3", msgs[1].message)
+@test occursin("Unreachable by 0.4", msgs[2].message)
+@test occursin("Reachable by 0.3", msgs[3].message)
+@test occursin("Reachable by 0.4", msgs[4].message) # we cannot prove unreachable
 
 s = """
 test() = true
@@ -45,10 +45,10 @@ end
 msgs = lintstr(s)
 @test length(msgs) == 4
 @test msgs[1].code == :I271
-@test occursin(msgs[1].message, "Reachable by 0.3")
-@test occursin(msgs[2].message, "Reachable by 0.4")
-@test occursin(msgs[3].message, "Unreachable by 0.3")
-@test occursin(msgs[4].message, "Reachable by 0.4")
+@test occursin("Reachable by 0.3", msgs[1].message)
+@test occursin("Reachable by 0.4", msgs[2].message)
+@test occursin("Unreachable by 0.3", msgs[3].message)
+@test occursin("Reachable by 0.4", msgs[4].message)
 
 # testing `||`, should be rare
 s = """
@@ -63,10 +63,10 @@ end
 msgs = lintstr(s)
 @test length(msgs) == 4
 @test msgs[1].code == :I271
-@test occursin(msgs[1].message, "Unreachable by 0.3")
-@test occursin(msgs[2].message, "Reachable by 0.4")
-@test occursin(msgs[3].message, "Reachable by 0.3")
-@test occursin(msgs[4].message, "Unreachable by 0.4")
+@test occursin("Unreachable by 0.3", msgs[1].message)
+@test occursin("Reachable by 0.4", msgs[2].message)
+@test occursin("Reachable by 0.3", msgs[3].message)
+@test occursin("Unreachable by 0.4", msgs[4].message)
 
 s = """
 if !(VERSION >= v"0.4-")
@@ -79,7 +79,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin(msgs[1].message, "Reachable by 0.3")
-@test occursin(msgs[2].message, "Unreachable by 0.4")
-@test occursin(msgs[3].message, "Unreachable by 0.3")
-@test occursin(msgs[4].message, "Reachable by 0.4")
+@test occursin("Reachable by 0.3", msgs[1].message)
+@test occursin("Unreachable by 0.4", msgs[2].message)
+@test occursin("Unreachable by 0.3", msgs[3].message)
+@test occursin("Reachable by 0.4", msgs[4].message)
