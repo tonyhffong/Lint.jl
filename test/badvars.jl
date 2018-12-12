@@ -11,13 +11,15 @@
 end
 
 @testset "I342" begin
-    s = """
-    function f()
-        var = "hi" # this is just asking for trouble
-        var
+    let variable_with_conflicting_name = "+",
+        s = """
+        function f()
+            $(variable_with_conflicting_name) = "hi"
+            $(variable_with_conflicting_name)
+        end
+        """
+        msgs = lintstr(s)
+        @test msgs[1].code == :I342
+        @test msgs[1].variable == variable_with_conflicting_name
     end
-    """
-    msgs = lintstr(s)
-    @test msgs[1].code == :I342
-    @test msgs[1].variable == "var"
 end
