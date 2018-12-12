@@ -8,7 +8,6 @@
     msgs = lintstr(s)
     @test msgs[1].code == :E332
     @test msgs[1].variable == "call"
-    @test occursin(msgs[1].message, "should not be used as a variable name")
 end
 
 @testset "I342" begin
@@ -21,6 +20,4 @@ end
     msgs = lintstr(s)
     @test msgs[1].code == :I342
     @test msgs[1].variable == "var"
-    @test occursin(msgs[1].message, "local variable")
-    @test occursin(msgs[1].message, "shadows export from Base")
 end
