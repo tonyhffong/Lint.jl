@@ -54,7 +54,7 @@ isknownerror(_f, _argtypes) = false
 function isknownerror(::typeof(Base.getindex), argtypes)
     if isempty(argtypes)
         true
-    elseif argtypes[1] <: Associative
+    elseif argtypes[1] <: AbstractDict
         if Base.length(argtypes) ≠ 2
             true
         else

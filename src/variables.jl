@@ -12,8 +12,8 @@ function registersymboluse(sym::Symbol, ctx::LintContext)
     end
 
     if lookupresult == nothing
-        if !pragmaexists("Ignore use of undeclared variable $sym", ctx.current) &&
-           ctx.quoteLvl == 0
+        if (!pragmaexists("Ignore use of undeclared variable $sym", ctx.current)
+            && ctx.quoteLvl == 0)
             msg(ctx, :E321, sym, "use of undeclared symbol")
         end
         Any
@@ -114,9 +114,10 @@ function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=fal
 
         if lhsIsTuple
             computedlength = StaticTypeAnalysis.length(rhstype)
-            if computedlength ≠ nothing && get(computedlength) ≠ tuplelen
+            if (computedlength ≠ nothing
+                && computedlength ≠ tuplelen)
                 msg(ctx, :I474, rhstype, "iteration generates tuples, " *
-                    "$tuplelen of $(get(computedlength)) variables used")
+                    "$tuplelen of $(computedlength) variables used")
             end
         end
     elseif isa(rhstype, Type) && lhsIsTuple
@@ -124,11 +125,11 @@ function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=fal
         if computedlength ≠ nothing
             if computedlength < tuplelen
                 msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
-                    "$(get(computedlength)) variables used")
+                    "$(computedlength) variables used")
             elseif computedlength > tuplelen
                 msg(ctx, :W546, rhstype, string(
                     "implicitly discarding values, $tuplelen of ",
-                    get(computedlength), " used"))
+                    computedlength, " used"))
             end
         end
     end

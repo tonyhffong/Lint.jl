@@ -28,7 +28,8 @@ function lintmodule(ex::Expr, ctx::LintContext)
             end
         end
     end
-    info!(get(lookup(ctx.current, name)), data(mctx))
+    @assert lookup(ctx.current, name) ≠ nothing
+    info!(lookup(ctx.current, name), data(mctx))
 end
 
 """
@@ -96,7 +97,8 @@ function lintimport(ex::Expr, ctx::LintContext)
     if ctx.quoteLvl > 0
         return  # not safe to import in quotes
     end
-    imp = get(understand_import(ex))
+    imp = understand_import(ex)
+    @assert imp ≠ nothing
     @checktoplevel(ctx, kind(imp))
 
     # Don't use modules protected by a guard (these can cause crashes!)
