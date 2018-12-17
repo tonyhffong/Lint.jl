@@ -37,7 +37,7 @@ end
     @test occursin("too many type parameters", msgs[1].message)
 
     s = """
-    a = Ptr{Void}
+    a = Ptr{Cvoid}
     """
     msgs = lintstr(s)
     @test isempty(msgs)
