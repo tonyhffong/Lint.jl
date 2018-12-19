@@ -17,7 +17,7 @@
     @test occursin("type parameter for Dict", msgs[1].message)
 
     msgs = lintstr("a = Array{2, Int64}()")
-    @test_broken messageset(msgs) == Set([:W447])
+    @test messageset(msgs) == Set([:W447])
     @test occursin("type parameter for Array", msgs[1].message)
 end
 
@@ -37,7 +37,7 @@ end
     @test occursin("too many type parameters", msgs[1].message)
 
     s = """
-    a = Ptr{Void}
+    a = Ptr{Cvoid}
     """
     msgs = lintstr(s)
     @test isempty(msgs)
