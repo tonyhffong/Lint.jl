@@ -308,7 +308,6 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             msg(ctx, :E311, inclfile, "cannot find include file")
             return
         else
-            #println("include: ", inclfile)
             lintinclude(ctx, inclfile)
         end
     else
