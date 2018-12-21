@@ -130,18 +130,7 @@ return `n`. Otherwise, return `nothing`.
 length(::Type{Union{}}) = 0
 length(::Type) = nothing
 length(::Type{T}) where {T <: Pair} = 2
-
-# if VERSION < v"0.6.0-dev.2123" # where syntax introduced by julia PR #18457
-#     length(::Type{T}) where {T <: Tuple} = if !isa(T, DataType) || Core.Inference.isvatuple(T)
-#         nothing
-#     else
-#         Base.length(T.types)
-#     end
-# else
-#     include_string("""
 length(::Type{T}) where T <: NTuple{N, Any} where N = N
-#     """)
-# end
 
 """
     StaticTypeAnalysis.eltype(T::Type)
