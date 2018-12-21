@@ -21,9 +21,23 @@
             x
             end
             """,
-        lines = collect(Lint.ExpressionIterator.each_line_iterator(s))
-        lines_offsets = collect(Lint.ExpressionIterator.lines_offsets(s))
+        lines = collect(Lint.ExpressionIterator.each_line_iterator(s)),
+        lines_offsets = collect(Lint.ExpressionIterator.lines_offsets(s)),
         lines_per_offsets = [SubString(s, t[1], t[2]) for t in lines_offsets]
         @test lines == [SubString(s, t[1], t[2]) for t in lines_offsets]
+        @test collect(Lint.ExpressionIterator.each_expression(s)) == [Meta.parse(s)]
+    end
+
+    let s = """
+            function f()
+            x = zeros(10, 10)
+            x
+            end
+            """,
+        lines = collect(Lint.ExpressionIterator.each_line_iterator(s)),
+        lines_offsets = collect(Lint.ExpressionIterator.lines_offsets(s)),
+        lines_per_offsets = [SubString(s, t[1], t[2]) for t in lines_offsets]
+        @test lines == [SubString(s, t[1], t[2]) for t in lines_offsets]
+        @test collect(Lint.ExpressionIterator.each_expression(s)) == [Meta.parse(s)]
     end
 end

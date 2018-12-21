@@ -9,6 +9,7 @@ each_line_iterator(s::AbstractString) = Channel(c->begin
 struct EachExpression
     original::String
     current_line_offset::Int # used externally
+    next_line_offset_it # `lines_offsets(…)`
 end
 
 """ Get [begin, end] offsets for each line (end is inclusive)"""
@@ -19,16 +20,16 @@ lines_offsets(s::AbstractString) = map(line->begin
 
 """points to info about "where should we get our *next* expression"""
 struct _EachExpressionState
-    next_line_offset # `iterate(lines_offsets(…))`
+    maybe_next_line_offset # as in ` = iterate(…)`
     offset_where_last_expression_ends::Union{Nothing,Int}
 end
 
 _EachExpressionState(iter::EachExpression) = _EachExpressionState(
-    Base.iterate(lines_offsets(iter.original)),
+    Base.iterate(iter.next_line_offset_it),
     nothing)
 
 function Base.iterate(iter::EachExpression, state=_EachExpressionState(iter)) #::Union{Nothing, Tuple{EachExpression, _EachExpressionState}}
-    if state.line_offset_it == nothing
+    if state.maybe_next_line_offset == nothing
         # no more lines → we're done
         return nothing
     end
@@ -36,37 +37,33 @@ function Base.iterate(iter::EachExpression, state=_EachExpressionState(iter)) #:
     # line ↔ [begin, end] offsets that describe a line
 
     # move next-line-wards …
-    (current_line, current_line_state) = state.line_offset_it
-    @show state.line_offset_it, current_line
+    (current_line, current_line_state) = state.maybe_next_line_offset
     (line_begin, line_end) = current_line
-    next_line_it = iterate(state.line_offset_it, current_line_state)
+    maybe_next_line = Base.iterate(iter.next_line_offset_it, current_line_state)
 
     # … at least we catch up with last parsed expression
     if state.offset_where_last_expression_ends !== nothing
         while line_begin < state.offset_where_last_expression_ends
-            if next_line_it isa Nothing
+            if maybe_next_line isa Nothing
                 # ran out of lines with the last expression → nothing left to parse
                 return nothing
             end
             # update current line info
-            (current_line, current_line_state) = next_line_it
+            (current_line, current_line_state) = maybe_next_line
             (line_begin, line_end) = current_line
 
             # update next line info
-            next_line_it = iterate(next_line_it, current_line_state)
-            @show current_line, next_line_it
+            maybe_next_line = Base.iterate(iter.next_line_offset_it, current_line_state)
         end
     end
 
-    @show line_begin, line_end
-    @show "trying to parse ", SubString(iter.original, line_begin, line_end)
     (ex, i_for_end_of_expression) = Meta.parse(iter.original, line_begin)
 
-    return (ex, _EachExpressionState(next_line_it,
+    return (ex, _EachExpressionState(maybe_next_line,
                                      i_for_end_of_expression))
 end
 
-each_expression(original::String, current_line_offset=0) = EachExpression(original, current_line_offset)
+each_expression(original::String, current_line_offset=0) = EachExpression(original, current_line_offset, lines_offsets(original))
 
 function Base.length(iter::EachExpression)
     count=0
