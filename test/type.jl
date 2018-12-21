@@ -6,7 +6,7 @@
     msgs = lintstr(s)
     @test msgs[1].code == :I393
     @test msgs[1].variable == "Int64"
-    @test contains(msgs[1].message, "using an existing type as type parameter name is probably a typo")
+    @test occursin(msgs[1].message, "using an existing type as type parameter name is probably a typo")
 
     @test messageset(lintstr("""
     type MyType{Int64} <: Float64
@@ -21,7 +21,7 @@ end
     """)
     @test messageset(msgs) == Set([:E513])
     @test msgs[1].variable == "T <: Int"
-    @test contains(msgs[1].message, "leaf type as a type constraint makes no sense")
+    @test occursin(msgs[1].message, "leaf type as a type constraint makes no sense")
 
     msgs = lintstr("""
     type MyType{T<:Int, Int<:Real}
@@ -29,9 +29,9 @@ end
     """)
     @test messageset(msgs) == Set([:E513, :E538])
     @test msgs[1].variable == "T <: Int"
-    @test contains(msgs[1].message, "leaf type as a type constraint makes no sense")
+    @test occursin(msgs[1].message, "leaf type as a type constraint makes no sense")
     @test msgs[2].variable == "Int"
-    @test contains(msgs[2].message, "known type in parametric data type, use {T<:...}")
+    @test occursin(msgs[2].message, "known type in parametric data type, use {T<:...}")
 end
 
 @testset "E538" begin
@@ -40,7 +40,7 @@ end
     end
     """)
     @test messageset(msgs) == Set([:E538])
-    @test contains(msgs[1].message, "known type in parametric data type, use {T<:...}")
+    @test occursin(msgs[1].message, "known type in parametric data type, use {T<:...}")
 
     msgs = lintstr("""
     type SomeType
@@ -49,7 +49,7 @@ end
     end
     """)
     @test messageset(msgs) == Set([:E538])
-    @test contains(msgs[1].message, "known type in parametric data type, use {T<:...}")
+    @test occursin(msgs[1].message, "known type in parametric data type, use {T<:...}")
 end
 
 # TODO: this inner constructor syntax is deprecated
@@ -79,7 +79,7 @@ end
     msgs = lintstr(s)
     @test_broken msgs[1].code == :E517
     @test_broken msgs[1].variable == "MyTypo"
-    @test_broken contains(msgs[1].message, "constructor-like function name doesn't match type MyType")
+    @test_broken occursin(msgs[1].message, "constructor-like function name doesn't match type MyType")
 
     @test_broken isempty(lintstr("""
     type MyType{T}
@@ -123,7 +123,7 @@ end
 """
 msgs = lintstr(s)
 @test_broken msgs[1].code == :E611
-@test_broken contains(msgs[1].message, "constructor doesn't seem to return the constructed object")
+@test_broken occursin(msgs[1].message, "constructor doesn't seem to return the constructed object")
 
 s = """
 type MyType{T<:Integer}
@@ -146,7 +146,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :I691
 @test msgs[1].variable == "a"
-@test contains(msgs[1].message, "a type is not given to the field which can be slow")
+@test occursin(msgs[1].message, "a type is not given to the field which can be slow")
 
 s = """
 type MyType
@@ -165,7 +165,7 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :I692
 @test msgs[1].variable == "a"
-@test contains(msgs[1].message, "array field has no dimension which can be slow")
+@test occursin(msgs[1].message, "array field has no dimension which can be slow")
 
 s = """
 type MyType
@@ -184,14 +184,14 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E425
-@test contains(msgs[1].message, "use lintpragma macro inside type declaration")
+@test occursin(msgs[1].message, "use lintpragma macro inside type declaration")
 
 s = """
 @compat primitive type 8 a end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E101
-@test contains(msgs[1].message, "this expression must be a Symbol")
+@test occursin(msgs[1].message, "this expression must be a Symbol")
 
 s = """
 type MyType
@@ -220,10 +220,10 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E417
-@test contains(msgs[1].message, "anonymous function inside type definition")
+@test occursin(msgs[1].message, "anonymous function inside type definition")
 @test_broken msgs[2].code == :E517
 @test_broken msgs[2].variable == ""
-@test_broken contains(msgs[2].message, "constructor-like function name doesn't match type MyType")
+@test_broken occursin(msgs[2].message, "constructor-like function name doesn't match type MyType")
 
 s = """
 type MyType
@@ -234,7 +234,7 @@ end
 """
 msgs = lintstr(s)
 @test_broken msgs[1].code == :I671
-@test_broken contains(msgs[1].message, "new is provided with fewer arguments than fields")
+@test_broken occursin(msgs[1].message, "new is provided with fewer arguments than fields")
 
 @testset "Inner Constructors" begin
     @test isempty(lintstr("""
@@ -261,7 +261,7 @@ end
 """
 msgs = lintstr(s)
 @test_broken msgs[1].code == :E435
-@test_broken contains(msgs[1].message, "new is provided with more arguments than fields")
+@test_broken occursin(msgs[1].message, "new is provided with more arguments than fields")
 
 s = """
 type MyType
@@ -305,4 +305,4 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I771
-@test contains(msgs[1].message, "type names should start with an upper case")
+@test occursin(msgs[1].message, "type names should start with an upper case")

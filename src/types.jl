@@ -14,7 +14,7 @@ function linttype(ex::Expr, ctx::LintContext)
             adt = sube.args[i]
             if isa(adt, Symbol)
                 foundobj = lookup(ctx, adt)
-                if !isnull(foundobj) && get(foundobj).typeactual <: Type
+                if foundobj !== nothing && foundobj.typeactual <: Type
                     msg(ctx, :I393, adt, "using an existing type as type parameter name is probably a typo")
                 end
                 # TODO: review all uses of this function
@@ -25,14 +25,14 @@ function linttype(ex::Expr, ctx::LintContext)
 
                 if temptype != :T
                     foundobj = lookup(ctx, temptype)
-                    if !isnull(foundobj) && get(foundobj).typeactual <: Type
+                    if foundobj !== nothing && foundobj.typeactual <: Type
                         msg(ctx, :E538, temptype, "known type in parametric data type, " *
                             "use {T<:...}")
                     end
                 end
                 if istype(ctx, typeconstraint)
                     dt = parsetype(ctx, typeconstraint)
-                    if isa(dt, Type) && isleaftype(dt)
+                    if isa(dt, Type) && isconcretetype(dt)
                         msg(ctx, :E513, adt, "leaf type as a type constraint makes no sense")
                     end
                 end

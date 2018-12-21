@@ -1,9 +1,9 @@
 # all usage of deprecated functions are warning
 # all method extensions of deprecated generic functions are errors
 
-type DeprecateInfo
+struct DeprecateInfo
     funcname::Any
-    sig::Union{Void, Array{Any,1}}
+    sig::Union{Nothing, Array{Any,1}}
     message::Compat.String
     line::Int
 end
@@ -14,17 +14,18 @@ function initDeprecateInfo()
     if sf === nothing
         return
     end
-    str = open(readstring, sf)
-    linecharc = cumsum(map(x->length(x)+1, @compat(split(str, "\n", keep=true))))
+    str = read(sf, String)
+    linecharc = cumsum(map(x->length(x)+1, @compat(split(str, "\n", keepempty=true))))
 
-    i = start(str)
+    itr = iterate(str)
     lineabs = 1
-    while !done(str,i)
+    while itr !== nothing
+        (_, i) = itr
         problem = false
         ex = nothing
-        lineabs = searchsorted(linecharc, i).start
+        lineabs = first(searchsorted(linecharc, i))
         try
-            (ex, i) = parse(str, i)
+            itr = Meta.parse(str, i)
         catch
             problem = true
         end
@@ -86,7 +87,7 @@ function parseDeprecate(ex, lineabs)
             # can't deal with complex expressions like Broadcast.func yet
             return
         end
-        if in(funcname, [:depwarn, :firstcaller]) || contains(lowercase(string(funcname)), "deprecate")
+        if in(funcname, [:depwarn, :firstcaller]) || occursin("deprecate", lowercase(string(funcname)))
             # the first two are support functions.
             # Any function declaration that has "deprecate" in the name...
             # well, the user/developer should know what they are in for.
@@ -122,7 +123,7 @@ function parseDeprecate(ex, lineabs)
             oldcall = sprint(io->Base.show_unquoted(io,old))
             newcall = sprint(io->Base.show_unquoted(io,new))
 
-            if contains(string(funcname), "deprecate")
+            if occursin("deprecate", string(funcname))
                 return
             end
             if sig == nothing
@@ -227,6 +228,7 @@ function funcMatchesDeprecateInfo(sig, di::DeprecateInfo)
             ret = false
             try
                 ret = eval(:($s1 <: $s2))
+            catch
             end
             return ret
         elseif typeof(s1) == Expr && typeof(s2) == Expr && s1.head == s2.head && length(s1.args)==length(s2.args)

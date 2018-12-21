@@ -16,7 +16,7 @@ const CURLY_CONTRACTS = Dict{Symbol, Any}(
 
 function lintcurly(ex::Expr, ctx::LintContext)
     head = ex.args[1]
-    if head == :Ptr && length(ex.args) == 2 && ex.args[2] == :Void
+    if head == :Ptr && length(ex.args) == 2 && ex.args[2] == :Nothing
         return
     end
     contract = get(CURLY_CONTRACTS, head, nothing)
@@ -28,8 +28,9 @@ function lintcurly(ex::Expr, ctx::LintContext)
             continue # grandfathered
         else
             t = guesstype(a, ctx)
-            if !(t <: Type || t == Symbol || isbits(t) || t == Any)
+            if !(t <: Type || t == Symbol || isbitstype(t) || t == Any)
                 msg(ctx, :W441, a, "probably illegal use inside curly")
+
             elseif contract != nothing
                 if i - 1 > length(contract)
                     msg(ctx, :W446, head, "too many type parameters")

@@ -1,9 +1,16 @@
+include("expression_iterator.jl")
+using Compat
 function lintpkg(pkg::AbstractString)
-    p = joinpath(Pkg.dir(pkg), "src", basename(pkg) * ".jl")
-    if !ispath(p)
-        throw("cannot find path: " * p)
+    if occursin("/", pkg) # pkg is a file path
+        return LintResult(lintpkgforfile(pkg))
     end
-    LintResult(lintpkgforfile(p))
+
+    try
+        p = Base.find_package(pkg)
+        LintResult(lintpkgforfile(p))
+    catch
+        throw("cannot find package: " * pkg)
+    end
 end
 
 """
@@ -15,7 +22,7 @@ If file is in base lint all files in base dir.
 function lintpkgforfile(path::AbstractString, ctx::LintContext=LintContext())
     path = abspath(path)
     if ispath(ctx.path)
-        if is_windows()
+        if Sys.iswindows()
             len = count(x -> x == '\\', path)
         else
             len = count(x -> x == '/', path) - 1
@@ -74,34 +81,27 @@ function lintfile(f::AbstractString, code::AbstractString)
     LintResult(msgs)
 end
 
+"Lint over each expression in each line.
+
+Calls `lintexpr` over each parseable-parsed expression.
+Each parse is called over each line."
 function _lintstr(str::AbstractString, ctx::LintContext, lineoffset = 0)
-    linecharc = cumsum(map(x->endof(x)+1, split(str, "\n", keep=true)))
-    numlines = length(linecharc)
-    i = start(str)
-    while !done(str,i)
-        problem = false
-        ex = nothing
-        linerange = searchsorted(linecharc, i)
-        if linerange.start > numlines # why is it not donw?
-            break
-        else
-            linebreakloc = linecharc[linerange.start]
+    non_empty_lines=split(str, "\n", limit=0, keepempty=false)
+    offset_where_last_expression_ends=nothing
+    try
+        for (ex, line_begin, line_end) in ExpressionIterator.each_expression_and_offset(str)
+            # inform context of current line
+            ctx.line = ctx.lineabs = line_end + lineoffset +1
+            lintexpr(ex, ctx)
         end
-        if linebreakloc == i || isempty(strip(str[i:(linebreakloc-1)]))# empty line
-            i = linebreakloc + 1
-            continue
+    catch y
+        # report an unexpected error
+        # end-of-input and parsing errors are expected
+        if typeof(y) != Meta.ParseError || y.msg != "end of input"
+            msg(ctx, :E111, string(y))
         end
-        ctx.line = ctx.lineabs = linerange.start + lineoffset
-        try
-            (ex, i) = parse(str,i)
-        catch y
-            if typeof(y) != ParseError || y.msg != "end of input"
-                msg(ctx, :E111, string(y))
-            end
-            break
-        end
-        lintexpr(ex, ctx)
     end
+
 end
 
 """

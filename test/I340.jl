@@ -7,7 +7,7 @@
     end
     """)
     @test messageset(msgs) == Set([:I340])
-    @test contains(msgs[1].message, "unused local variable")
+    @test occursin("unused local variable", msgs[1].message)
     @test_broken msgs[1].line == 2
 
     msgs = lintstr("""
@@ -17,7 +17,7 @@
     end
     """)
     @test messageset(msgs) == Set([:I340])
-    @test contains(msgs[1].message, "unused local variable")
+    @test occursin("unused local variable", msgs[1].message)
     @test_broken msgs[1].line == 2
 
     msgs = lintstr("""
@@ -30,7 +30,7 @@
     end
     """)
     @test messageset(msgs) == Set([:I340])
-    @test contains(msgs[1].message, "unused local variable")
+    @test occursin("unused local variable", msgs[1].message)
 
     msgs = lintstr("""
     function f(x)
@@ -40,7 +40,7 @@
     end
     """)
     @test messageset(msgs) == Set([:I340])
-    @test contains(msgs[1].message, "unused local variable")
+    @test occursin("unused local variable", msgs[1].message)
 
     msgs = lintstr("""
     function f(x)
@@ -50,7 +50,7 @@
     end
     """)
     @test messageset(msgs) == Set([:I340])
-    @test contains(msgs[1].message, "unused local variable")
+    @test occursin("unused local variable", msgs[1].message)
 
     @test isempty(lintstr("""
     function f(x)

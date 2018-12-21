@@ -7,7 +7,7 @@ function lintdict(ex::Expr, ctx::LintContext)
         if ispairexpr(a)
             keyexpr = lexicalfirst(a)
             lit = lexicalvalue(keyexpr)
-            if !isnull(lit)
+            if lit !== nothing
                 if keyexpr in ks
                     msg(ctx, :E334, keyexpr, "duplicate key in Dict")
                 end
@@ -16,7 +16,7 @@ function lintdict(ex::Expr, ctx::LintContext)
             for (j,s) in [(lexicalfirst,ktypes), (lexicallast,vtypes)]
                 kvexpr = j(a)
                 typeguess = lexicaltypeof(kvexpr)
-                if isleaftype(typeguess)
+                if isconcretetype(typeguess)
                     push!(s, typeguess)
                 elseif isexpr(kvexpr, :call) && in(kvexpr.args[1], [:Date, :DateTime])
                     # TODO: use the existing guesstype infrastructure
