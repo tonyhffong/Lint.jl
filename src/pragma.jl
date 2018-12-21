@@ -2,7 +2,7 @@ function lintlintpragma(ex::Expr, ctx::LintContext)
     # TODO(felipe) ↓ should do `@assert ex.args[1] == :(#= none:1 =#)`, but how to express the right hand expresion?
     if length(ex.args) >= 2 && isa(ex.args[end], AbstractString)
         m = match(r"^((Print)|(Info)|(Warn)|(Error)) ((type)|(me)|(version)) +(.+)"s, ex.args[end])
-        if m ≠ nothing
+        if m !== nothing
             action = m.captures[1]
             infotype = m.captures[6]
             rest_str = m.captures[10]

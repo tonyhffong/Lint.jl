@@ -7,7 +7,7 @@ function lintdict(ex::Expr, ctx::LintContext)
         if ispairexpr(a)
             keyexpr = lexicalfirst(a)
             lit = lexicalvalue(keyexpr)
-            if lit ≠ nothing
+            if lit !== nothing
                 if keyexpr in ks
                     msg(ctx, :E334, keyexpr, "duplicate key in Dict")
                 end

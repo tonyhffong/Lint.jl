@@ -1,6 +1,6 @@
 @testset "correctly detect stdlib objects" begin
     @test Lint.stdlibobject(:var) == nothing
-    @test Lint.stdlibobject(:axes) ≠ nothing
+    @test Lint.stdlibobject(:axes) !== nothing
 end
 
 @testset "Handle empty code block" begin

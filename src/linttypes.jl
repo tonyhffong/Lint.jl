@@ -54,7 +54,7 @@ function info!(vi::VarInfo, info::AdditionalVarInfo)
 end
 
 function extractobject(vi::VarInfo)
-    if vi.extra ≠ nothing
+    if vi.extra !== nothing
         extractobject(vi.extra)
     end
 end
@@ -79,7 +79,7 @@ function lookup(data::ModuleInfo, sym::Symbol)::Union{VarInfo, Nothing}
 
     # check standard library
     val = stdlibobject(sym)
-    if val ≠ nothing
+    if val !== nothing
         vi = VarInfo(UNKNOWN_LOCATION, Typeof(val))
         info!(vi, StandardLibraryObject(val))
         return vi
@@ -168,7 +168,7 @@ function finish(ctx::ModuleContext, cursor)
         vi = ctx.data.globals[x]
         if source(vi) ∉ [:imported, :used]  # allow imported/used bindings
             loc = location(vi)
-            if stdlibobject(x) ≠ nothing
+            if stdlibobject(x) !== nothing
                 msg(cursor, :I343, x, "global variable defined at $loc with same name as export from Base")
             end
         end
@@ -208,11 +208,11 @@ function finish(ctx::LocalContext, cursor)
         if usages(ctx.localvars[x]) == 0 && !startswith(string(x), "_")
             # TODO: a better line number
             msg(cursor, :I340, x, "unused local variable, defined at $loc")
-        elseif stdlibobject(x) ≠ nothing
+        elseif stdlibobject(x) !== nothing
             msg(cursor, :I342, x, "local variable defined at $loc shadows export from Base")
-        elseif lookup(tl, x) ≠ nothing
+        elseif lookup(tl, x) !== nothing
             msg(cursor, :I341, x, "local variable defined at $loc shadows global variable defined at $(location(lookup(tl, x)))")
-        elseif lookup(nl, x) ≠ nothing
+        elseif lookup(nl, x) !== nothing
             msg(cursor, :I344, x, "local variable defined at $loc shadows local variable defined at $(location(lookup(nl, x)))")
         end
     end
@@ -221,7 +221,7 @@ end
 function set!(s::LocalContext, name::Symbol, vi::VarInfo)
     # TODO: check if it's soft or hard local scope
     var = locallookup(s, name)
-    if var ≠ nothing
+    if var !== nothing
         # TODO: warn about type instability?
         var.typeactual = Union{var.typeactual, vi.typeactual}
     else
