@@ -14,7 +14,7 @@ function linttype(ex::Expr, ctx::LintContext)
             adt = sube.args[i]
             if isa(adt, Symbol)
                 foundobj = lookup(ctx, adt)
-                if foundobj ≠ nothing && foundobj.typeactual <: Type
+                if foundobj !== nothing && foundobj.typeactual <: Type
                     msg(ctx, :I393, adt, "using an existing type as type parameter name is probably a typo")
                 end
                 # TODO: review all uses of this function
@@ -25,7 +25,7 @@ function linttype(ex::Expr, ctx::LintContext)
 
                 if temptype != :T
                     foundobj = lookup(ctx, temptype)
-                    if foundobj ≠ nothing && foundobj.typeactual <: Type
+                    if foundobj !== nothing && foundobj.typeactual <: Type
                         msg(ctx, :E538, temptype, "known type in parametric data type, " *
                             "use {T<:...}")
                     end

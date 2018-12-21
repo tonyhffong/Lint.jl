@@ -24,7 +24,7 @@ end
 
 function istype(ctx::LintContext, x)
     obj = abstract_eval(ctx, x)
-    obj ≠ nothing && isa(obj, Type)
+    obj !== nothing && isa(obj, Type)
 end
 
 # if ctorType isn't symbol("") then we are in the context of
@@ -308,7 +308,6 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
             msg(ctx, :E311, inclfile, "cannot find include file")
             return
         else
-            #println("include: ", inclfile)
             lintinclude(ctx, inclfile)
         end
     else
@@ -319,7 +318,7 @@ function lintfunctioncall(ex::Expr, ctx::LintContext; inthrow::Bool=false)
         end
         func = abstract_eval(ctx, ex.args[1])
 
-        if func ≠ nothing && isa(func, Type) && func <: Dict
+        if func !== nothing && isa(func, Type) && func <: Dict
             lintdict(ex, ctx)
         end
 

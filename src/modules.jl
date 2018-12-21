@@ -28,7 +28,7 @@ function lintmodule(ex::Expr, ctx::LintContext)
             end
         end
     end
-    @assert lookup(ctx.current, name) ≠ nothing
+    @assert lookup(ctx.current, name) !== nothing
     info!(lookup(ctx.current, name), data(mctx))
 end
 
@@ -98,7 +98,7 @@ function lintimport(ex::Expr, ctx::LintContext)
         return  # not safe to import in quotes
     end
     imp = understand_import(ex)
-    @assert imp ≠ nothing
+    @assert imp !== nothing
     @checktoplevel(ctx, kind(imp))
 
     # Don't use modules protected by a guard (these can cause crashes!)
@@ -156,7 +156,7 @@ function lintimport(ex::Expr, ctx::LintContext)
                 return
             else
                 vi = result
-                if vi.typeactual <: Module && vi.extra ≠ nothing && isa(vi.extra, ModuleInfo)
+                if vi.typeactual <: Module && vi.extra !== nothing && isa(vi.extra, ModuleInfo)
                     frommodule = vi.extra
                 else
                     canimport = false
@@ -166,11 +166,11 @@ function lintimport(ex::Expr, ctx::LintContext)
 
         set!(ctx.current, path(imp)[end], VarInfo(vi; source=source))
         
-        if getexports && vi.typeactual <: Module && vi.extra ≠ nothing &&
+        if getexports && vi.typeactual <: Module && vi.extra !== nothing &&
            isa(vi.extra, ModuleInfo)
             for n in vi.extra.exports
                 nvi = lookup(vi.extra, n)
-                if nvi ≠ nothing
+                if nvi !== nothing
                     set!(ctx.current, n, VarInfo(nvi); source=source)
                 else
                     set!(ctx.current, n, VarInfo(location(ctx); source=source))

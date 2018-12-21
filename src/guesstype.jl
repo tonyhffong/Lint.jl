@@ -23,11 +23,11 @@ Obtain a supertype of the type represented by `ex`.
 """
 function parsetype(ctx::LintContext, ex)
     obj = abstract_eval(ctx, ex)
-    if obj ≠ nothing && isa(obj, Type)
+    if obj !== nothing && isa(obj, Type)
         obj
     elseif isexpr(ex, :curly)
         obj = abstract_eval(ctx, ex.args[1])
-        if obj ≠ nothing && isa(obj, Type) && obj !== Union
+        if obj !== nothing && isa(obj, Type) && obj !== Union
             obj
         else
             Any
@@ -144,7 +144,7 @@ function guesstype(ex::Expr, ctx::LintContext, ::Type{CallTag})::Type
     # infer return types of Base functions
     obj = abstract_eval(ctx, fn)
     type_argtypes = [isa(t, Type) ? t : Any for t in argtypes]
-    if obj ≠ nothing
+    if obj !== nothing
         inferred = StaticTypeAnalysis.infertype(obj, type_argtypes)
         if inferred ≠ Any
             return inferred
@@ -164,7 +164,7 @@ end
 function guesstype(ex::Expr, ctx::LintContext, ::Type{RefTag})::Type
         if isexpr(ex.args[1], :curly) # must be a datatype, right?
             elt = abstract_eval(ctx, ex.args[1])
-            if elt ≠ nothing && isa(elt, Type)
+            if elt !== nothing && isa(elt, Type)
                 return Vector{elt}
             else
                 return Vector
@@ -175,7 +175,7 @@ function guesstype(ex::Expr, ctx::LintContext, ::Type{RefTag})::Type
             what = registersymboluse(ex.args[1], ctx)
             if what <: Type
                 elt = abstract_eval(ctx, ex.args[1])
-                if elt ≠ nothing && isa(elt, Type)
+                if elt !== nothing && isa(elt, Type)
                     return Vector{elt}
                 else
                     return Vector

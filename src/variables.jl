@@ -6,7 +6,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext)
 
     lookupresult = nothing
     let lu = lookup(ctx, sym)
-        if lu ≠ nothing
+        if lu !== nothing
             lookupresult = registeruse!(lu)
         end
     end
@@ -26,7 +26,7 @@ function lintglobal(ex::Expr, ctx::LintContext)
     for sym in ex.args
         if isa(sym, Symbol)
             globalset!(ctx.current, sym, VarInfo(location(ctx), Any))
-        elseif expand_assignment(sym) ≠ nothing
+        elseif expand_assignment(sym) !== nothing
             ea = expand_assignment(sym)
             lintassignment(Expr(:(=), ea[1], ea[2]), ctx; isGlobal=true)
         else
@@ -114,7 +114,7 @@ function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=fal
 
         if lhsIsTuple
             computedlength = StaticTypeAnalysis.length(rhstype)
-            if (computedlength ≠ nothing
+            if (computedlength !== nothing
                 && computedlength ≠ tuplelen)
                 msg(ctx, :I474, rhstype, "iteration generates tuples, " *
                     "$tuplelen of $(computedlength) variables used")
@@ -122,7 +122,7 @@ function lintassignment(ex::Expr, ctx::LintContext; islocal = false, isConst=fal
         end
     elseif isa(rhstype, Type) && lhsIsTuple
         computedlength = StaticTypeAnalysis.length(rhstype)
-        if computedlength ≠ nothing
+        if computedlength !== nothing
             if computedlength < tuplelen
                 msg(ctx, :E418, rhstype, "RHS is a tuple, $tuplelen of " *
                     "$(computedlength) variables used")

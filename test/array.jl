@@ -4,7 +4,6 @@ let s = """
     """,
     msgs = lintstr(s)
     @test msgs[1].code == :W444
-    @test occursin(msgs[1].message, "nested vcat is treated as a 1-dimensional array")
 end
 
 let s = """
@@ -20,8 +19,6 @@ let s = """
     """,
     msgs = lintstr(s)
     @test msgs[1].code == :W445
-    @test occursin(msgs[1].message, "nested hcat is treated as a 1-row horizontal array of " *
-                   "dim=2")
 end
 
 let s = """
@@ -40,7 +37,6 @@ let s = """
     """,
     msgs = lintstr(s)
     @test msgs[1].code == :E436
-    @test occursin(msgs[1].message, "more indices than dimensions")
 end
 
 let s = """
@@ -50,7 +46,6 @@ let s = """
     """,
     msgs = lintstr(s)
     @test msgs[1].code == :E436
-    @test occursin(msgs[1].message, "more indices than dimensions")
 end
 
 let s = """
@@ -73,7 +68,6 @@ let s = """
     """,
     msgs = lintstr(s)
     @test msgs[1].code == :I271
-    @test occursin(msgs[1].message, "typeof(y) == Float64")
 end
 
 let s = """
@@ -90,15 +84,11 @@ let s = """
     """,
     msgs = lintstr(s)
     @test msgs[1].code == :I271
-    @test occursin(msgs[1].message, "typeof(x1) == Array{Float64,2}")
     @test msgs[2].code == :I271
-    @test occursin(msgs[2].message, "typeof(x2) == Array{Int64,2}")
 
     @test msgs[3].code == :I271
-    @test occursin(msgs[3].message, "typeof(x3) == $Array")
 
     @test msgs[4].code == :I271
-    @test occursin(msgs[4].message, "typeof(x4) == Array{Float64,2}")
 end 
 
 # more array function
@@ -120,15 +110,10 @@ let s = """
     """,
     msgs = lintstr(s)
     @test msgs[1].code == :I271
-    @test occursin(msgs[1].message, "typeof(x2) == Array{Int64,1}")
     @test msgs[2].code == :I271
-    @test occursin(msgs[2].message, "typeof(x3) == Array{Int64,2}")
     @test msgs[3].code == :I271
-    @test occursin(msgs[3].message, "typeof(x4) == Any")
     @test msgs[4].code == :I271
-    @test occursin(msgs[4].message, "typeof(x6) == Array{Int64,2}")
     @test msgs[5].code == :I271
-    @test occursin(msgs[5].message, "typeof(x7) == Array{Int64,2}")
 end
 
 let s = """
@@ -141,7 +126,6 @@ let s = """
     msgs = lintstr(s)
     # it could be Float64, or it could be an array still!
     @test msgs[1].code == :I271
-    @test occursin(msgs[1].message, "typeof(x) == Any")
 end
 
 let s = """
@@ -150,7 +134,6 @@ let s = """
     """,
     msgs = lintstr(s)
     @test msgs[1].code == :I681
-    @test occursin(msgs[1].message, "ambiguity of :end as a symbol vs as part of a range")
 end
 
 let s = """
@@ -159,7 +142,6 @@ let s = """
     """,
     msgs = lintstr(s)
     @test msgs[1].code == :I682
-    @test occursin(msgs[1].message, "ambiguity of `[end -n]` as a matrix row vs index [end-n]")
 end
 
 let s = """

@@ -6,7 +6,7 @@ Returns `nothing` if the result can't be evaluated.
 """
 function abstract_eval(ctx::LintContext, ex::Symbol)
     let lu = lookup(ctx, ex)
-        if lu ≠ nothing
+        if lu !== nothing
             extractobject(lu)
         end
     end
@@ -28,7 +28,7 @@ Otherwise, return `nothing`.
 abstract_eval(ctx::LintContext, ex::Expr) = begin
     if isexpr(ex, :curly)
         objs = [abstract_eval(ctx, arg) for arg in ex.args]
-        if all(e->e≠nothing, objs)
+        if all(e->e!==nothing, objs)
             try
                 Core.apply_type(objs...)
             catch
@@ -41,7 +41,7 @@ abstract_eval(ctx::LintContext, ex::Expr) = begin
         head = ex.args[1]
         tail = ex.args[2].value
         obj = abstract_eval(ctx, head)
-        if obj ≠ nothing
+        if obj !== nothing
             try
                 getfield(obj, tail)
             catch

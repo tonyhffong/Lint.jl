@@ -4,6 +4,7 @@ using Test
 
 messageset(msgs) = Set(x.code for x in msgs)
 
+include("variables.jl")
 include("exprutils.jl")
 include("statictype.jl")
 
