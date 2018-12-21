@@ -99,7 +99,7 @@ function lintexpr(ex::Expr, ctx::LintContext)
         lintmacrocall(ex, ctx)
     elseif ex.head == :call
         lintfunctioncall(ex, ctx)
-    elseif ex.head == :(:)
+    elseif ex.head == :(:) # TODO(felipe) check for `Colon()`
         lintrange(ex, ctx)
     elseif ex.head == :(::) # type assert/convert
         lintexpr(ex.args[1], ctx)
