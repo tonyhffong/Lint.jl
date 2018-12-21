@@ -1,3 +1,4 @@
+include("expression_iterator.jl")
 using Compat
 function lintpkg(pkg::AbstractString)
     if occursin("/", pkg) # pkg is a file path
