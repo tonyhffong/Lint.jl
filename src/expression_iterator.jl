@@ -6,9 +6,8 @@ each_line_iterator(s::AbstractString) = Channel(c->begin
             end
             end, ctype=SubString{String})
 
-struct EachExpression
+struct EachExpressionAndOffset
     original::String
-    current_line_offset::Int # used externally
     next_line_offset_it # `lines_offsets(…)`
 end
 
@@ -19,16 +18,16 @@ lines_offsets(s::AbstractString) = map(line->begin
                                        end, each_line_iterator(s))
 
 """points to info about "where should we get our *next* expression"""
-struct _EachExpressionState
+struct _EachExpressionAndOffsetState
     maybe_next_line_offset # as in ` = iterate(…)`
     offset_where_last_expression_ends::Union{Nothing,Int}
 end
 
-_EachExpressionState(iter::EachExpression) = _EachExpressionState(
+_EachExpressionAndOffsetState(iter::EachExpressionAndOffset) = _EachExpressionAndOffsetState(
     Base.iterate(iter.next_line_offset_it),
     nothing)
 
-function Base.iterate(iter::EachExpression, state=_EachExpressionState(iter)) #::Union{Nothing, Tuple{EachExpression, _EachExpressionState}}
+function Base.iterate(iter::EachExpressionAndOffset, state=_EachExpressionAndOffsetState(iter)) #::Union{Nothing, Tuple{EachExpressionAndOffset, _EachExpressionAndOffsetState}}
     if state.maybe_next_line_offset == nothing
         # no more lines → we're done
         return nothing
@@ -58,19 +57,29 @@ function Base.iterate(iter::EachExpression, state=_EachExpressionState(iter)) #:
     end
 
     (ex, i_for_end_of_expression) = Meta.parse(iter.original, line_begin)
-
-    return (ex, _EachExpressionState(maybe_next_line,
-                                     i_for_end_of_expression))
+    iter_value=(ex, line_begin, line_end)
+    iter_state=_EachExpressionAndOffsetState(maybe_next_line,
+                                     i_for_end_of_expression)
+    return (iter_value, iter_state)
 end
 
-each_expression(original::String, current_line_offset=0) = EachExpression(original, current_line_offset, lines_offsets(original))
+each_expression_and_offset(original::AbstractString) = EachExpressionAndOffset(original, lines_offsets(original))
 
-function Base.length(iter::EachExpression)
+function Base.length(iter::EachExpressionAndOffset)
     count=0
     for ex in iter
         count += 1
     end
     count
 end
+
+each_expression(original::AbstractString) = map(ex_off->begin
+                                                (ex, line_begin, line_end) = ex_off
+                                                ex
+                                                end, each_expression_and_offset(original))
+
+
+
+
 
 end # module ExpressionIterator
