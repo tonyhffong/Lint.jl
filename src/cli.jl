@@ -88,11 +88,20 @@ Each parse is called over each line."
 function _lintstr(str::AbstractString, ctx::LintContext, lineoffset = 0)
     non_empty_lines=split(str, "\n", limit=0, keepempty=false)
     offset_where_last_expression_ends=nothing
-    for (ex, line_begin, line_end) in ExpressionIterator.each_expression_and_offset(str)
-        # inform context of current line
-        ctx.line = ctx.lineabs = line_end + lineoffset
-        lintexpr(ex, ctx)
+    try
+        for (ex, line_begin, line_end) in ExpressionIterator.each_expression_and_offset(str)
+            # inform context of current line
+            ctx.line = ctx.lineabs = line_end + lineoffset +1
+            lintexpr(ex, ctx)
+        end
+    catch y
+        # report an unexpected error
+        # end-of-input and parsing errors are expected
+        if typeof(y) != Meta.ParseError || y.msg != "end of input"
+            msg(ctx, :E111, string(y))
+        end
     end
+
 end
 
 """
