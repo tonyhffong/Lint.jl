@@ -35,7 +35,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E331
-@test occursin("duplicate argument", msgs[1].message)
 
 s = """
 function f{Int64}(x::Int64, y::Int64)
@@ -45,8 +44,6 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :E534
 @test msgs[1].variable == "Int64"
-@test occursin("introducing a new name for an implicit argument to the " *
-    "function, use {T<:Int64}", msgs[1].message)
 
 s = """
 function f{T<:Int64}(x::T, y::T)
@@ -56,7 +53,6 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :E513
 @test msgs[1].variable == "T <: Int64"
-@test occursin("leaf type as a type constraint makes no sense", msgs[1].message)
 
 s = """
 function f{Int<:Real}(x::Int, y::Int)
@@ -65,7 +61,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E536
-@test occursin("use {T<:...} instead of a known type", msgs[1].message)
 
 s = """
 function f(x, args...)
@@ -82,7 +77,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E413
-@test occursin("positional ellipsis ... can only be the last argument", msgs[1].message)
 
 s = """
 function f(x=1, y, args...)
@@ -91,7 +85,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E411
-@test occursin("non-default argument following default arguments", msgs[1].message)
 
 s = """
 function f(x, y; z, q=1)
@@ -100,7 +93,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E423
-@test occursin("named keyword argument must have a default", msgs[1].message)
 
 s = """
 function f(x, y; args..., z=1)
@@ -109,7 +101,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E412
-@test occursin("named ellipsis ... can only be the last argument", msgs[1].message)
 
 s = """
 function f(x, args...; kwargs...)
@@ -126,7 +117,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E533
-@test occursin("type parameters are invariant, try f{T<:Number}(x::T, msgs[1].message)...")
 
 s = """
 function f(x::Dict{Symbol,Number})
@@ -135,7 +125,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E533
-@test occursin("type parameters are invariant, try f{T<:Number}(x::T, msgs[1].message)...")
 
 s = """
 function f(x; y = 1, z::Int = 0.1)
@@ -144,7 +133,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E516
-@test occursin("type assertion and default", msgs[1].message)
 
 s = """
 function f(x; y = 1, z::Int = error("You must provide z"))
@@ -190,21 +178,15 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin("typeof(a, msgs[1].message) == Array")
 @test msgs[2].code == :I271
-@test occursin("typeof(n, msgs[2].message) == Tuple{Int64}")
 if VERSION ≥ v"0.6-"
     @test msgs[3].code == :I271
-    @test occursin("typeof(tmp, msgs[3].message) == Array")
 end
 @test msgs[4].code == :I271
-@test_broken occursin("typeof(T, msgs[4].message) == Type")
 if VERSION ≥ v"0.6-"
     @test msgs[5].code == :I271
-    @test occursin("typeof(tmp2, msgs[5].message) == Array")
 end
 @test msgs[6].code == :I271
-@test occursin("typeof(tmp3, msgs[6].message) == Array{Float64,3}")
 
 s = """
 function f(x)
@@ -215,7 +197,6 @@ end
 msgs = lintstr(s)
 @test msgs[1].code == :W355
 @test msgs[1].variable == "f"
-@test occursin("conflicts with function name", msgs[1].message)
 
 s = """
 function f(x)
@@ -242,7 +223,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin("typeof(x, msgs[1].message) == Int")
 
 s = """
 function f(x::Int8=Int8(1))
@@ -252,7 +232,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin("typeof(x, msgs[1].message) == Int8")
 
 s = """
 function f(c::Char)
@@ -263,7 +242,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin("typeof(x, msgs[1].message) == Int")
 
 s = """
 function f(args...; dict...)
@@ -274,9 +252,7 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin("typeof(args, msgs[1].message) == Tuple")
 @test msgs[2].code == :I271
-@test occursin("typeof(dict, msgs[2].message) == Tuple")
 
 s = """
 function f(args::Float64...)
@@ -286,7 +262,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :I271
-@test occursin("typeof(args, msgs[1].message) == Tuple{Vararg{Float64")
 
 s = """
 function f(args::Float64...)
@@ -311,7 +286,6 @@ end
 """
 msgs = lintstr(s)
 @test msgs[1].code == :W542
-@test occursin("comparing apparently incompatible type", msgs[1].message)
 
 s = """
 function f(X::Int)
@@ -351,7 +325,6 @@ f(; 2)
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E133
-@test occursin("unknown keyword pattern", msgs[1].message)
 
 s = """
 function () end
@@ -376,7 +349,6 @@ s="""
 """
 msgs = lintstr(s)
 @test msgs[1].code == :E132
-@test occursin("Lint does not understand argument", msgs[1].message)
 
 s = """
 (==)((1, 1)...)
