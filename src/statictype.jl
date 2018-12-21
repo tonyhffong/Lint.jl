@@ -51,6 +51,10 @@ Consumers of this package are advised to use `infertype` and check the result
 against `Union{}`, which covers more cases.
 """
 isknownerror(_f, _argtypes) = false
+function isknownerror(::typeof(Base.getindex), argtypes::Tuple)
+    # correctly forward arguments from `infertype` below
+    isknownerror(typeof(Base.getindex), argtypes[1])
+end
 function isknownerror(::typeof(Base.getindex), argtypes)
     if isempty(argtypes)
         true
