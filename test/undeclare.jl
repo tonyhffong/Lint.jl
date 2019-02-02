@@ -70,7 +70,7 @@ end
 else
 s = """
 function f()
-    open(readstring, "tmp.txt")
+    read("tmp.txt", String)
 end
 """
 end

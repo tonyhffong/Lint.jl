@@ -21,7 +21,7 @@ function Base.show(io::IO, res::LintResult)
 end
 function Base.show(io::IO, ::MIME"text/plain", res::LintResult)
     for m in res.messages
-        Base.println_with_color(LINT_RESULT_COLORS[level(m)], io, string(m))
+        Base.printstyled(io, string(m), color = LINT_RESULT_COLORS[level(m)])
     end
 end
 
