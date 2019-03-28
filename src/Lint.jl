@@ -8,6 +8,7 @@ using Compat: TypeUtils, readline
 using JSON
 using AutoHashEquals
 using Printf
+using Sockets
 
 if isdefined(Base, :unwrap_unionall)
     using Base: unwrap_unionall
