@@ -52,11 +52,10 @@ function lintpkgforfile(path::AbstractString, ctx::LintContext=LintContext())
 end
 
 function lintfile(f::AbstractString)
-    if !ispath(f)
+    if !isfile(f)
         throw("no such file exists")
     end
-    str = open(readstring, f)
-    lintfile(f, str)
+    lintfile(f, read(f, String))
 end
 
 function lintfile(f::AbstractString, code::AbstractString)
