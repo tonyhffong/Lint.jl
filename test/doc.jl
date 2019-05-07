@@ -9,13 +9,6 @@ msgs = lintstr(s)
 @test isempty(msgs)
 
 s = """
-@doc "this is a test"
-f() = 0
-"""
-msgs = lintstr(s)
-@test msgs[1].code == :W443
-
-s = """
 @doc "this is a test" f() = 0
 """
 msgs = lintstr(s)

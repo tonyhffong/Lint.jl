@@ -62,8 +62,6 @@ function lintmacrocall(ex::Expr, ctx::LintContext)
              )
             if length(ex.args) >= 3
                 lintexpr(ex.args[3], ctx)
-            else
-                msg(ctx, :W443, "did you forget an -> after @doc or make it inline?")
             end
             return
         end

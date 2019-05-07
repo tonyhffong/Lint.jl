@@ -143,7 +143,6 @@ Every error code starts with letter for the severity `E`:`ERROR`, `W`:`WARN` or 
 |        |
 | **W4** | *Usage Warning*
 | W441   | probably illegal use of inside curly
-| W443   | did you forget an -> after @doc or make it inline?
 | W444   | nested vcat is treated as a 1-dimensional array
 | W445   | nested hcat is treated as a 1-row horizontal array of dim=2
 | W446   | too many type parameters
