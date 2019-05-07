@@ -58,7 +58,7 @@ function lintfunction(ex::Expr, ctx::LintContext; ctorType = Symbol(""), isstage
     if isa(fname, Symbol)
         # TODO: warn if it's a using'd thing
         finfo = lookup(ctx.current, fname)
-        if finfo == nothing
+        if finfo ≡ nothing
             set!(ctx.current, fname, VarInfo(location(ctx), Function))
         else
             # TODO: warn if it's something bad

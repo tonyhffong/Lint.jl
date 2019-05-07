@@ -11,7 +11,7 @@ function registersymboluse(sym::Symbol, ctx::LintContext)
         end
     end
 
-    if lookupresult == nothing
+    if lookupresult ≡ nothing
         if (!pragmaexists("Ignore use of undeclared variable $sym", ctx.current)
             && ctx.quoteLvl == 0)
             msg(ctx, :E321, sym, "use of undeclared symbol")

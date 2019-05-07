@@ -116,7 +116,7 @@ function test_similarity_string(str::T) where T<:AbstractString
             problem = true
         end
         if !problem
-            if firstexpr == nothing
+            if firstexpr ≡ nothing
                 firstexpr = ex
             end
             if lastexpr != nothing

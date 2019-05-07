@@ -129,7 +129,7 @@ alone.
 """
 function lexicaltypeof(x)
     lex_value = lexicalvalue(x)
-    if lex_value == nothing
+    if lex_value ≡ nothing
         return Nothing
     end
     broadcast(typeof, lex_value)

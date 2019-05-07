@@ -28,7 +28,7 @@ _EachExpressionAndOffsetState(iter::EachExpressionAndOffset) = _EachExpressionAn
     nothing)
 
 function Base.iterate(iter::EachExpressionAndOffset, state=_EachExpressionAndOffsetState(iter)) #::Union{Nothing, Tuple{EachExpressionAndOffset, _EachExpressionAndOffsetState}}
-    if state.maybe_next_line_offset == nothing
+    if state.maybe_next_line_offset ≡ nothing
         # no more lines → we're done
         return nothing
     end

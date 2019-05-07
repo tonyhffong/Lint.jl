@@ -44,7 +44,7 @@ end
 
 function guesstype(ex::Symbol, ctx::LintContext)
     result = lookup(ctx, ex)
-    if result == nothing
+    if result ≡ nothing
         Any  # conservative guess
     else
         result.typeactual

@@ -126,7 +126,7 @@ function parseDeprecate(ex, lineabs)
             if occursin("deprecate", string(funcname))
                 return
             end
-            if sig == nothing
+            if sig ≡ nothing
                 return
             end
             if !haskey(deprecates, funcname)
@@ -213,7 +213,7 @@ function functionIsDeprecated(callex::Expr)
 end
 
 function funcMatchesDeprecateInfo(sig, di::DeprecateInfo)
-    if di.sig == nothing
+    if di.sig ≡ nothing
         return true
     end
 

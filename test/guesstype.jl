@@ -1,5 +1,5 @@
 @testset "correctly detect stdlib objects" begin
-    @test Lint.stdlibobject(:var) == nothing
+    @test Lint.stdlibobject(:var) ≡ nothing
     @test Lint.stdlibobject(:axes) !== nothing
 end
 

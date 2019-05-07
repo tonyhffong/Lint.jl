@@ -23,7 +23,7 @@ function lintmodule(ex::Expr, ctx::LintContext)
     withcontext(ctx, mctx) do
         lintexpr(ex.args[3], ctx)
         for sym in exports(ctx.current)
-            if lookup(ctx.current, sym) == nothing
+            if lookup(ctx.current, sym) ≡ nothing
                 msg(ctx, :W361, sym, "exporting undefined symbol")
             end
         end
@@ -72,7 +72,7 @@ function importintocontext(m::Module, p::AbstractVector{Symbol},
                            source::Symbol, getexports::Bool, ctx::LintContext)
     # walk down m until we get to the requested symbol
     maybem = walkmodulepath(m, @view(p[2:end]))
-    if maybem == nothing
+    if maybem ≡ nothing
         msg(ctx, :W360, join(string.(p), "."),
             "importing probably undefined symbol")
         return
@@ -116,7 +116,7 @@ function lintimport(ex::Expr, ctx::LintContext)
         elseif getexports
             # unfortunately, we need to import dynamically
             maybem = dynamic_import_toplevel_module(path(imp)[1])
-            if maybem == nothing
+            if maybem ≡ nothing
                 # TODO: make an effort to import the symbol?
                 msg(ctx, :W101, path(imp)[1],
                     "unfortunately, Lint could not determine the exports of this module")
@@ -150,7 +150,7 @@ function lintimport(ex::Expr, ctx::LintContext)
                 return
             end
             result = lookup(frommodule, s)
-            if result == nothing
+            if result ≡ nothing
                 msg(ctx, :W360, join(string.(path(imp)), "."),
                     "importing probably undefined symbol")
                 return

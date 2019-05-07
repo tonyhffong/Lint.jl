@@ -148,7 +148,7 @@ struct ModuleContext <: _LintContext
     ModuleContext(parent, data) = new(parent, data, Dict(), [])
 end
 
-isroot(mctx::ModuleContext) = mctx.parent == nothing
+isroot(mctx::ModuleContext) = mctx.parent ≡ nothing
 pragmas(mctx::ModuleContext) = mctx.pragmas
 parent(mctx::ModuleContext) = get(mctx.parent)
 data(mctx::ModuleContext) = mctx.data
@@ -253,7 +253,7 @@ end
 
 function lookup(ctx::LocalContext, name::Symbol)::Union{VarInfo, Nothing}
     var = locallookup(ctx, name)
-    if var == nothing
+    if var ≡ nothing
         lookup(toplevel(ctx), name)
     else
         var
