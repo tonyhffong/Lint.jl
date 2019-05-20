@@ -142,14 +142,14 @@ function guesstype(ex::Expr, ctx::LintContext, ::Type{CallTag})::Type
     argtypes = map(x -> guesstype(x, ctx), ex.args[2:end])
 
     # infer return types of Base functions
-    return_type = abstract_eval(ctx, fn)
+    obj = abstract_eval(ctx, fn)
     type_argtypes = [isa(t, Type) ? t : Any for t in argtypes]
-    if return_type !== nothing
-        if return_type <: Dict
+    if obj !== nothing
+        if isa(obj, UnionAll) && obj <: Dict # obj is a Dict-like type
             # TODO felipel: make sure that returned Dict has proper parameter types (Dict{KeyType,ValueType})
-            return return_type
+            return obj
         end
-        inferred = StaticTypeAnalysis.infertype(return_type, type_argtypes)
+        inferred = StaticTypeAnalysis.infertype(obj, type_argtypes)
         if inferred ≠ Any
             return inferred
         end
