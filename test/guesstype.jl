@@ -18,3 +18,12 @@ end
     @test Lint.iscolon(:(:))
     @test Lint.iscolon(:(Colon()))
 end
+
+@testset "Dictionary" begin
+    let s = """
+        Dict{Symbol,Int}(:a=>1, :b=>2)
+        """,
+        ex=Meta.parse(s)
+        @test Lint.guesstype(ex, LintContext()) ≠ Any # ????
+    end
+end
