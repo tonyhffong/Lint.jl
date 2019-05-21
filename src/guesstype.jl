@@ -1,4 +1,5 @@
 using Base: isexported
+using Base.Meta: isexpr
 
 """
     stdlibobject(name::Symbol)
@@ -65,6 +66,7 @@ struct CurlyTag <: ExpressionTag end
 struct TernaryIfTag <: ExpressionTag end
 struct LambdaTag <: ExpressionTag end
 struct AssignTag <: ExpressionTag end
+struct VectorTag <: ExpressionTag end
 struct DefaultTag <: ExpressionTag end
 
 # condition → tag
@@ -88,6 +90,9 @@ function get_tag_per_condition(ex::Expr)
     end
     if isexpr(ex, :macrocall)
         return MacroCallTag
+    end
+    if isexpr(ex, :vect) # Todo felipel: :vcat, :hcat, :comprehension …
+        return VectorTag
     end
     if isexpr(ex, :ref) # it could be a ref a[b] or an array Int[1,2,3], Vector{Int}[]
         return RefTag
@@ -265,6 +270,22 @@ end
 
 function guesstype(ex::Expr, ctx::LintContext, ::Type{LambdaTag})::Type
     Function
+end
+
+"""
+
+    guesstype(ex::Expr, ctx::LintContext, ::Type{VectorTag})::Type
+Try real hard to guess the type of a vector or an array. If there's a single symbol, then guessing will halt and give up (return Any)
+"""
+function guesstype(ex::Expr, ctx::LintContext, ::Type{VectorTag})::Type
+    inner_array_content = ex.args[1]
+    has_symbol = ???
+    try
+        return eval(Expr(:call, :typeof, ex))
+    catch
+    end
+    # couldn't deduce vector type (non-literal)
+    return Any
 end
 
 function guesstype(ex::Expr, ctx::LintContext, ::Type{DefaultTag})::Type

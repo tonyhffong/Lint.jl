@@ -28,8 +28,16 @@ end
     end
 end
 
-@testset "Array-of-Tuples" begin
+@testset "Literal arrays" begin
+    # literal
+    let ex = :([ 1 2 3 ]),
+        @test Lint.guesstype(ex, LintContext()) ≠ Any
+    end
     let ex = :([(1, 2, 3), (4, 5, 6)]),
-        @test Lint.guesstype(ex, LintContext()) ≠ Any # currently failing
+        @test Lint.guesstype(ex, LintContext()) ≠ Any
+    end
+    # non-literal
+    let ex = :([i for i in 1:10]),
+        @test Lint.guesstype(ex, LintContext()) == Any
     end
 end
