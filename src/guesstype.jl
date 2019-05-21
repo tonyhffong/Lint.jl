@@ -68,6 +68,7 @@ struct AssignTag <: ExpressionTag end
 struct DefaultTag <: ExpressionTag end
 
 # condition → tag
+# see devdocs/ast for a comprehensible table of expressions
 # TODO(felipe): Use Match.jl
 function get_tag_per_condition(ex::Expr)
     if isexpr(ex, :tuple)

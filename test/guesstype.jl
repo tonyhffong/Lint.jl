@@ -27,3 +27,9 @@ end
         @test Lint.guesstype(ex, LintContext()) ≠ Any
     end
 end
+
+@testset "Array-of-Tuples" begin
+    let ex = :([(1, 2, 3), (4, 5, 6)]),
+        @test Lint.guesstype(ex, LintContext()) ≠ Any # currently failing
+    end
+end
