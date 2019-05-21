@@ -24,6 +24,6 @@ end
         Dict{Symbol,Int}(:a=>1, :b=>2)
         """,
         ex=Meta.parse(s)
-        @test Lint.guesstype(ex, LintContext()) ≠ Any # ????
+        @test Lint.guesstype(ex, LintContext()) ≠ Any
     end
 end
