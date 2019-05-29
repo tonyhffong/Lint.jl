@@ -273,18 +273,40 @@ function guesstype(ex::Expr, ctx::LintContext, ::Type{LambdaTag})::Type
 end
 
 """
+    _hassymbol(ex::Expr)
+
+Tell if expression (or any of its subexpressions) has symbols
+
+Note: this a _really_ simple implementation, feel free to expand
+"""
+function _hassymbol(expression_or_literal)
+    # simple cases: visible Symbol
+    if expression_or_literal isa Symbol
+        return true
+    end
+    if expression_or_literal isa Expr
+        if any(map(arg->arg isa Symbol, expression_or_literal.args))
+            return true
+        end
+        return reduce(&, _hassymbol.(expression_or_literal.args))
+    end
+    # not one symbol is visible
+    return false
+end
+
+"""
 
     guesstype(ex::Expr, ctx::LintContext, ::Type{VectorTag})::Type
 Try real hard to guess the type of a vector or an array. If there's a single symbol, then guessing will halt and give up (return Any)
 """
 function guesstype(ex::Expr, ctx::LintContext, ::Type{VectorTag})::Type
     inner_array_content = ex.args[1]
-    has_symbol = ???
+    has_symbol = _hassymbol(ex)
     try
         return eval(Expr(:call, :typeof, ex))
     catch
     end
-    # couldn't deduce vector type (non-literal)
+    # couldn't deduce vector type (most likely non-literal)
     return Any
 end
 
