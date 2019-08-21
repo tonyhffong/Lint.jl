@@ -12,7 +12,7 @@ Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 AutoHashEquals = "≥ 0.1.0"
 Compat = "≥ 0.22.0"
 JSON = "≥ 0.6.0"
-julia = "≥ 0.5.0"
+julia = "≥ 1.0.0"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
